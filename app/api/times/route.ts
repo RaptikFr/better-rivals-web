@@ -60,16 +60,16 @@ export async function POST(request: NextRequest) {
 
     // --- FIN DE LA SÉCURITÉ ---
 
-    // On enregistre le chrono en utilisant le véritable ID (UUID) du joueur
+    // On enregistre le chrono avec les noms de colonnes exacts de ton ancienne table
     const { data, error } = await supabaseAdmin
       .from('lap_times')
       .insert([
         { 
-          player_id: finalPlayerId, // On utilise l'ID unique au lieu du texte
-          car_id, 
-          track_id, 
-          lap_time,
-          created_at: new Date().toISOString()
+          player_id: finalPlayerId,
+          car_ordinal: parseInt(car_id),         // Au lieu de car_id
+          track_id: parseInt(track_id),          // Assure le format numérique
+          time_ms: Math.round(lap_time * 1000),  // Convertit les secondes en millisecondes
+          verified: is_valid                     // Au lieu de is_valid
         }
       ])
       .select();
