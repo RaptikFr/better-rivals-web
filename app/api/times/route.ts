@@ -18,7 +18,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { player_id, pin_code, car_id, track_id, lap_time, is_valid } = body;
+    const { 
+      player_id, pin_code, car_id, track_id, lap_time, is_valid,
+      drivetrain, car_class, car_pi, num_cylinders 
+    } = body;
 
     if (!is_valid) {
       return NextResponse.json({ error: 'Tour invalide détecté par la télémétrie' }, { status: 400 });
@@ -61,15 +64,20 @@ export async function POST(request: NextRequest) {
     // --- FIN DE LA SÉCURITÉ ---
 
     // On enregistre le chrono avec les noms de colonnes exacts de ton ancienne table
+    // On enregistre le chrono avec toutes les données mécaniques
     const { data, error } = await supabaseAdmin
       .from('lap_times')
       .insert([
         { 
           player_id: finalPlayerId,
-          car_ordinal: parseInt(car_id),         // Au lieu de car_id
-          track_id: parseInt(track_id),          // Assure le format numérique
-          time_ms: Math.round(lap_time * 1000),  // Convertit les secondes en millisecondes
-          verified: is_valid                     // Au lieu de is_valid
+          car_ordinal: parseInt(car_id),
+          track_id: parseInt(track_id),
+          time_ms: Math.round(lap_time * 1000),
+          verified: is_valid,
+          drivetrain: drivetrain,
+          car_class: car_class,
+          car_pi: car_pi,
+          num_cylinders: num_cylinders
         }
       ])
       .select();
