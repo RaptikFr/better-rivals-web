@@ -28,27 +28,23 @@ export async function POST(request: NextRequest) {
     }
 
     if (!player_id || !pin_code || !car_id || !track_id || !lap_time) {
-      return NextResponse.json({ error: 'Données incomplètes (PIN manquant ?)' }, { status: 400 });
+      return NextResponse.json({ error: 'Données incomplètes' }, { status: 400 });
     }
 
-    // --- NOUVELLE ÉTAPE DE SÉCURITÉ : VÉRIFICATION DU JOUEUR ---
-    
-    // 1. On cherche si le joueur existe déjà
+    // --- VÉRIFICATION DU JOUEUR ---
     let { data: player } = await supabaseAdmin
       .from('players')
       .select('*')
       .eq('pseudo', player_id)
       .single();
 
-    let finalPlayerId = player?.id; // L'identifiant unique UUID dans la base
+    let finalPlayerId = player?.id;
 
     if (player) {
-      // 2. Le joueur existe : on vérifie son code PIN
       if (player.pin_code !== pin_code) {
         return NextResponse.json({ error: 'Code PIN incorrect pour ce Gamertag.' }, { status: 401 });
       }
     } else {
-      // 3. Le joueur n'existe pas : on le crée en lui attribuant ce PIN
       const { data: newPlayer, error: createError } = await supabaseAdmin
         .from('players')
         .insert([{ pseudo: player_id, pin_code: pin_code }])
@@ -61,32 +57,70 @@ export async function POST(request: NextRequest) {
       finalPlayerId = newPlayer.id;
     }
 
-    // --- FIN DE LA SÉCURITÉ ---
+    // --- GESTION DU CLASSEMENT PAR CONFIGURATION DE VOITURE ---
+    const newTimeMs = Math.round(lap_time * 1000);
+    const numTrackId = parseInt(track_id);
+    const numCarOrdinal = parseInt(car_id);
 
-    // On enregistre le chrono avec les noms de colonnes exacts de ton ancienne table
-    // On enregistre le chrono avec toutes les données mécaniques
-    const { data, error } = await supabaseAdmin
+    // On cherche un enregistrement existant qui correspond STRICTEMENT à cette configuration
+    const { data: existingTime } = await supabaseAdmin
       .from('lap_times')
-      .insert([
-        { 
-          player_id: finalPlayerId,
-          car_ordinal: parseInt(car_id),
-          track_id: parseInt(track_id),
-          time_ms: Math.round(lap_time * 1000),
-          verified: is_valid,
-          drivetrain: drivetrain,
-          car_class: car_class,
-          car_pi: car_pi,
-          num_cylinders: num_cylinders
+      .select('id, time_ms')
+      .eq('player_id', finalPlayerId)
+      .eq('track_id', numTrackId)
+      .eq('car_ordinal', numCarOrdinal)
+      .eq('car_class', car_class)
+      .eq('drivetrain', drivetrain)
+      .single();
+
+    if (existingTime) {
+      // Si cette configuration exacte existe déjà, on compare les temps pour l'écraser
+      if (newTimeMs < existingTime.time_ms) {
+        
+        const { data, error } = await supabaseAdmin
+          .from('lap_times')
+          .update({
+            time_ms: newTimeMs,
+            verified: is_valid,
+            car_pi: car_pi,
+            num_cylinders: num_cylinders
+          })
+          .eq('id', existingTime.id)
+          .select();
+
+        if (error) {
+          return NextResponse.json({ error: error.message }, { status: 500 });
         }
-      ])
-      .select();
+        return NextResponse.json({ success: true, message: "Record écrasé pour cette configuration !", data }, { status: 200 });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      } else {
+        return NextResponse.json({ success: true, message: "Chrono ignoré : ton record avec cette config est meilleur." }, { status: 200 });
+      }
+
+    } else {
+      // Si c'est une nouvelle voiture, une nouvelle classe ou une autre transmission, on crée une nouvelle ligne
+      const { data, error } = await supabaseAdmin
+        .from('lap_times')
+        .insert([
+          { 
+            player_id: finalPlayerId,
+            car_ordinal: numCarOrdinal,
+            track_id: numTrackId,
+            time_ms: newTimeMs,
+            verified: is_valid,
+            drivetrain: drivetrain,
+            car_class: car_class,
+            car_pi: car_pi,
+            num_cylinders: num_cylinders
+          }
+        ])
+        .select();
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, message: "Nouveau chrono enregistré pour cette configuration !", data }, { status: 200 });
     }
-
-    return NextResponse.json({ success: true, data }, { status: 200 });
 
   } catch (err) {
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
