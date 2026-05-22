@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 
 // 1. On donne les clés du camion au serveur (Il utilise la clé secrète Administrateur)
 const supabaseAdmin = createClient(
