@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { LapTime, Drivetrain } from '@/types/supabase';
 
+const ITEMS_PER_PAGE = 20;
+
 // Formatage du temps en mm:ss.ms
 function formatTime(ms: number): string {
   const minutes = Math.floor(ms / 60000);
@@ -40,9 +42,17 @@ export default function ClassementsClient() {
   const [selectedTrack, setSelectedTrack] = useState("Tous");
   const [selectedDrivetrain, setSelectedDrivetrain] = useState<"Tous" | Drivetrain>("Tous");
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Remettre à la page 1 quand un filtre change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClass, selectedTrack, selectedDrivetrain]);
 
   async function fetchData() {
     setIsLoading(true);
@@ -79,6 +89,16 @@ export default function ClassementsClient() {
     const matchDrivetrain = selectedDrivetrain === "Tous" || lap.drivetrain === selectedDrivetrain;
     return matchClass && matchTrack && matchDrivetrain;
   });
+
+  // Calculs de pagination
+  const totalPages = Math.max(1, Math.ceil(filteredLaps.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedLaps = filteredLaps.slice(
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE
+  );
+  // L'index réel dans le classement global (pas remis à 1 à chaque page)
+  const globalOffset = (safePage - 1) * ITEMS_PER_PAGE;
 
   return (
     <main className="min-h-screen p-6">
@@ -161,6 +181,7 @@ export default function ClassementsClient() {
             {selectedDrivetrain !== "Tous" || selectedClass !== "Toutes" || selectedTrack !== "Tous"
               ? " avec les filtres actuels"
               : " au total"}
+            {totalPages > 1 && ` — page ${safePage} / ${totalPages}`}
           </p>
         )}
 
@@ -200,10 +221,10 @@ export default function ClassementsClient() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredLaps.length > 0 ? (
-                filteredLaps.map((lap, index) => (
+              ) : paginatedLaps.length > 0 ? (
+                paginatedLaps.map((lap, index) => (
                   <tr key={index} className="border-b border-neutral-800/50 hover:bg-neutral-800 transition-colors">
-                    <td className="p-4 font-bold text-neutral-600">{index + 1}</td>
+                    <td className="p-4 font-bold text-neutral-600">{globalOffset + index + 1}</td>
                     <td className="p-4 font-bold text-white">{lap.players?.[0]?.pseudo ?? 'Inconnu'}</td>
                     <td className="p-4 font-mono font-bold text-pink-400 text-lg">
                       {formatTime(lap.time_ms)}
@@ -235,6 +256,64 @@ export default function ClassementsClient() {
             </tbody>
           </table>
         </div>
+
+        {/* --- PAGINATION --- */}
+        {!isLoading && !error && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+
+            {/* Bouton Précédent */}
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="px-4 py-2 rounded-lg border border-neutral-700 text-sm font-bold text-neutral-400 hover:text-white hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              ← Précédent
+            </button>
+
+            {/* Numéros de pages */}
+            <div className="flex gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(page =>
+                  page === 1 ||
+                  page === totalPages ||
+                  Math.abs(page - safePage) <= 1
+                )
+                .reduce<(number | "...")[]>((acc, page, i, arr) => {
+                  if (i > 0 && page - (arr[i - 1] as number) > 1) acc.push("...");
+                  acc.push(page);
+                  return acc;
+                }, [])
+                .map((item, i) =>
+                  item === "..." ? (
+                    <span key={`ellipsis-${i}`} className="px-2 py-2 text-neutral-600 text-sm">…</span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => setCurrentPage(item as number)}
+                      className={`w-9 h-9 rounded-lg text-sm font-bold transition-all ${
+                        safePage === item
+                          ? "bg-pink-500 text-white border border-pink-500"
+                          : "border border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                )
+              }
+            </div>
+
+            {/* Bouton Suivant */}
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="px-4 py-2 rounded-lg border border-neutral-700 text-sm font-bold text-neutral-400 hover:text-white hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              Suivant →
+            </button>
+
+          </div>
+        )}
 
       </div>
     </main>
