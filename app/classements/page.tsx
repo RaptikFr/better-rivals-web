@@ -1,4 +1,4 @@
-"use client"; // On autorise l'interactivité !
+"use client";
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -15,8 +15,8 @@ function formatTime(ms: number) {
 export default function ClassementsPage() {
   
   // 2. Les "Mémoires" de notre page (les États)
-  const [lapTimes, setLapTimes] = useState<any[]>([]); // Tous les temps de la base
-  const [isLoading, setIsLoading] = useState(true); // Est-ce qu'on est en train de charger ?
+  const [lapTimes, setLapTimes] = useState<any[]>([]); 
+  const [isLoading, setIsLoading] = useState(true);
   
   // Les mémoires de nos filtres
   const [selectedClass, setSelectedClass] = useState("Toutes");
@@ -31,7 +31,7 @@ export default function ClassementsPage() {
           time_ms, car_class, car_pi,
           players ( pseudo ),
           cars ( manufacturer, name, year ),
-          tracks ( name )
+          tracks ( name, length_km )
         `)
         .order('time_ms', { ascending: true })
         .limit(200);
@@ -45,14 +45,13 @@ export default function ClassementsPage() {
     }
     
     fetchData();
-  }, []); // Le tableau vide [] signifie : "Fais ça une seule fois au chargement"
+  }, []);
 
-  // 4. L'intelligence du filtre : On extrait les options uniques pour nos menus déroulants
-  // (Cela évite d'avoir 10 fois "Classe S1" dans le menu si 10 joueurs ont roulé en S1)
+  // 4. L'intelligence du filtre
   const uniqueClasses = ["Toutes", ...Array.from(new Set(lapTimes.map(lap => lap.car_class)))].filter(Boolean);
-  const uniqueTracks = ["Tous", ...Array.from(new Set(lapTimes.map(lap => lap.tracks?.name || "Inconnu")))];
+  const uniqueTracks = ["Tous", ...Array.from(new Set(lapTimes.map(lap => lap.tracks?.name || "Inconnu")))].sort();
 
-  // 5. L'application des filtres : On crée une nouvelle liste triée selon les choix du joueur
+  // 5. L'application des filtres
   const filteredLaps = lapTimes.filter((lap) => {
     const matchClass = selectedClass === "Toutes" || lap.car_class === selectedClass;
     const matchTrack = selectedTrack === "Tous" || lap.tracks?.name === selectedTrack;
@@ -107,7 +106,6 @@ export default function ClassementsPage() {
           </div>
           
         </div>
-        {/* --------------------------- */}
 
         {/* Le Tableau des temps */}
         <div className="overflow-x-auto bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl">
@@ -146,7 +144,9 @@ export default function ClassementsPage() {
                       </span>
                       <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi}</span>
                     </td>
-                    <td className="p-4 text-neutral-400">{lap.tracks?.name || 'Inconnu'}</td>
+                    <td className="p-4 text-neutral-400">
+                      {lap.tracks?.name || 'Inconnu'} {lap.tracks?.length_km ? `(${lap.tracks.length_km} km)` : ''}
+                    </td>
                   </tr>
                 ))
               ) : (
@@ -159,7 +159,6 @@ export default function ClassementsPage() {
             </tbody>
           </table>
         </div>
-
       </div>
     </main>
   );
