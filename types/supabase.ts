@@ -22,12 +22,13 @@ export interface Track {
   length_km: number | null;
 }
 
+// Supabase retourne les jointures sous forme de tableaux
 export interface LapTime {
   time_ms: number;
   car_class: CarClass;
   car_pi: number;
   drivetrain: Drivetrain;
-  players: Pick<Player, "pseudo"> | null;
-  cars: Pick<Car, "manufacturer" | "name" | "year"> | null;
-  tracks: Pick<Track, "name" | "length_km"> | null;
+  players: Pick<Player, "pseudo">[] | null;
+  cars: Pick<Car, "manufacturer" | "name" | "year">[] | null;
+  tracks: Pick<Track, "name" | "length_km">[] | null;
 }
