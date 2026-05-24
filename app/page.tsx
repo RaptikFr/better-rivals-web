@@ -46,7 +46,7 @@ export default function Home() {
             <div className="text-pink-500 font-black text-4xl mb-4">01</div>
             <h3 className="text-xl font-bold text-white mb-2">Le Relais Télémétrique</h3>
             <p className="text-neutral-400">
-              Téléchargez notre petit programme relais et lancez-le en arrière-plan. Assurez-vous d'avoir activé la "Sortie de données" dans les paramètres HUD de Forza.
+              Téléchargez notre petit programme relais et lancez-le en arrière-plan. Assurez-vous d&apos;avoir activé la &quot;Sortie de données&quot; dans les paramètres HUD de Forza.
             </p>
           </div>
 
@@ -64,7 +64,7 @@ export default function Home() {
             <div className="text-pink-500 font-black text-4xl mb-4">03</div>
             <h3 className="text-xl font-bold text-white mb-2">Roulez en Solo</h3>
             <p className="text-neutral-400">
-              Dans Forza, entrez le code EventLab et lancez l'épreuve en mode <strong>Solo / Test Drive</strong>. Le jeu gère le chronomètre, notre relais s'occupe du reste.
+              Dans Forza, entrez le code EventLab et lancez l&apos;épreuve en mode <strong>Solo / Test Drive</strong>. Le jeu gère le chronomètre, notre relais s&apos;occupe du reste.
             </p>
           </div>
 
@@ -73,9 +73,52 @@ export default function Home() {
             <div className="text-violet-500 font-black text-4xl mb-4">04</div>
             <h3 className="text-xl font-bold text-white mb-2">Pilotez Proprement</h3>
             <p className="text-neutral-400">
-              Ici, on joue "Fair Play". Si vous utilisez la fonction <strong>Rembobiner</strong> ou si vous ratez un point de contrôle, votre tour sera invalidé par la télémétrie.
+              Ici, on joue &quot;Fair Play&quot;. Si vous utilisez la fonction <strong>Rembobiner</strong> ou si vous ratez un point de contrôle, votre tour sera invalidé par la télémétrie.
             </p>
           </div>
+
+        </div>
+      </div>
+
+      {/* --- SECTION TÉLÉCHARGEMENT --- */}
+      <div id="telecharger" className="mt-24 max-w-5xl mx-auto w-full border-t border-neutral-800 pt-16">
+        <h2 className="text-3xl font-bold text-center mb-4">Télécharger le Relais UDP</h2>
+        <p className="text-neutral-400 text-center mb-10 max-w-2xl mx-auto">
+          Le relais est un petit programme Python à lancer sur votre PC avant de jouer. Il capte les données télémétriques de Forza et les envoie sur Better Rivals.
+        </p>
+
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 flex flex-col md:flex-row items-center gap-8">
+          
+          {/* Infos */}
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🐍</span>
+              <div>
+                <p className="font-bold text-white">relais.py</p>
+                <p className="text-sm text-neutral-500">Nécessite Python 3.8+ et la librairie <code className="bg-neutral-800 px-1 rounded text-pink-400">requests</code></p>
+              </div>
+            </div>
+            <ol className="text-sm text-neutral-400 space-y-1 list-decimal list-inside">
+              <li>Téléchargez le fichier ci-contre</li>
+              <li>Installez les dépendances : <code className="bg-neutral-800 px-1 rounded text-violet-400">pip install requests</code></li>
+              <li>Lancez : <code className="bg-neutral-800 px-1 rounded text-violet-400">python relais.py</code></li>
+              <li>Activez la &quot;Sortie de données&quot; dans les options HUD de Forza</li>
+            </ol>
+          </div>
+
+          {/* Bouton de téléchargement */}
+          <a
+            href="/relais.py"
+            download="relais.py"
+            className="flex-shrink-0 flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg shadow-pink-500/20"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Télécharger relais.py
+          </a>
 
         </div>
       </div>
