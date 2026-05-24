@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
 // Formatage du temps en mm:ss.ms
@@ -81,11 +80,6 @@ export default function ClassementsPage() {
     <main className="min-h-screen bg-neutral-950 text-white p-6">
 
       {/* Navigation */}
-      <nav className="max-w-6xl mx-auto py-4 mb-8 border-b border-neutral-800">
-        <Link href="/" className="text-neutral-400 hover:text-white transition-colors">
-          ← Retour à l&apos;accueil
-        </Link>
-      </nav>
 
       <div className="max-w-6xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
