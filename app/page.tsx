@@ -82,34 +82,34 @@ export default function Home() {
 
       {/* --- SECTION TÉLÉCHARGEMENT --- */}
       <div id="telecharger" className="mt-24 max-w-5xl mx-auto w-full border-t border-neutral-800 pt-16">
-        <h2 className="text-3xl font-bold text-center mb-4">Télécharger le Relais UDP</h2>
+        <h2 className="text-3xl font-bold text-center mb-4">Télécharger le Relais</h2>
         <p className="text-neutral-400 text-center mb-10 max-w-2xl mx-auto">
-          Le relais est un petit programme Python à lancer sur votre PC avant de jouer. Il capte les données télémétriques de Forza et les envoie sur Better Rivals.
+          Un programme Windows à lancer avant de jouer. Il capte les données télémétriques de Forza et les envoie sur Better Rivals automatiquement.
         </p>
 
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 flex flex-col md:flex-row items-center gap-8">
-          
+
           {/* Infos */}
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">🐍</span>
+              <span className="text-2xl">🖥️</span>
               <div>
-                <p className="font-bold text-white">relais.py</p>
-                <p className="text-sm text-neutral-500">Nécessite Python 3.8+ et la librairie <code className="bg-neutral-800 px-1 rounded text-pink-400">requests</code></p>
+                <p className="font-bold text-white">BetterRivals.exe</p>
+                <p className="text-sm text-neutral-500">Windows 10/11 — Aucune installation requise</p>
               </div>
             </div>
             <ol className="text-sm text-neutral-400 space-y-1 list-decimal list-inside">
-              <li>Téléchargez le fichier ci-contre</li>
-              <li>Installez les dépendances : <code className="bg-neutral-800 px-1 rounded text-violet-400">pip install requests</code></li>
-              <li>Lancez : <code className="bg-neutral-800 px-1 rounded text-violet-400">python relais.py</code></li>
+              <li>Créez un compte sur Better Rivals</li>
+              <li>Téléchargez et lancez <strong className="text-white">BetterRivals.exe</strong></li>
+              <li>Connectez-vous avec votre email et mot de passe</li>
               <li>Activez la &quot;Sortie de données&quot; dans les options HUD de Forza</li>
+              <li>Sélectionnez un circuit et lancez les mesures !</li>
             </ol>
           </div>
 
           {/* Bouton de téléchargement */}
           <a
-            href="/relais.py"
-            download="relais.py"
+            href="https://github.com/RaptikFr/better-rivals-web/releases/download/v1.0.0/BetterRivals.exe"
             className="flex-shrink-0 flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg shadow-pink-500/20"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -117,7 +117,7 @@ export default function Home() {
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Télécharger relais.py
+            Télécharger v1.0.0
           </a>
 
         </div>
