@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, event_lab_code, type, length_km, description } = body;
+    const { name, event_lab_code, type, length_km, description, is_sprint } = body;
 
     if (!name || !event_lab_code || !type) {
       return NextResponse.json({ error: 'Nom, code EventLab et type sont obligatoires.' }, { status: 400 });
@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
         length_km:    length_km ? parseFloat(length_km) : null,
         description:  description || null,
         is_official:  false,
+        is_sprint:    is_sprint ?? false,
         status:       'pending',
         submitted_by: user.id,
       }])
