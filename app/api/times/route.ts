@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) {
       return NextResponse.json({ error: 'Token invalide ou expiré. Reconnecte-toi.' }, { status: 401 });
@@ -38,7 +37,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       car_id, track_id, lap_time, is_valid,
-      drivetrain, car_class, car_pi, num_cylinders
+      drivetrain, car_class, car_pi, num_cylinders,
+      car_manufacturer, car_name, car_year
     } = body;
 
     if (!is_valid) {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const numTrackId    = parseInt(track_id);
     const numCarOrdinal = parseInt(car_id);
 
-    // --- INSERTION AUTO DE LA VOITURE SI INCONNUE ---
+    // --- GESTION DE LA VOITURE ---
     const { data: existingCar } = await supabaseAdmin
       .from('cars')
       .select('car_ordinal')
@@ -61,14 +61,22 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (!existingCar) {
+      // Nouvelle voiture — on insère avec les infos fournies par le joueur
       await supabaseAdmin
         .from('cars')
         .insert([{
           car_ordinal:  numCarOrdinal,
-          manufacturer: 'Inconnu',
-          name:         `Voiture #${numCarOrdinal}`,
-          year:         0,
+          manufacturer: car_manufacturer ?? 'Inconnu',
+          name:         car_name         ?? `Voiture #${numCarOrdinal}`,
+          year:         car_year         ?? 0,
         }]);
+    } else if (car_manufacturer && car_name && car_year) {
+      // Voiture existante mais infos fournies → mise à jour si c'était "Inconnu"
+      await supabaseAdmin
+        .from('cars')
+        .update({ manufacturer: car_manufacturer, name: car_name, year: car_year })
+        .eq('car_ordinal', numCarOrdinal)
+        .eq('manufacturer', 'Inconnu');
     }
 
     // --- GESTION DU CLASSEMENT ---
