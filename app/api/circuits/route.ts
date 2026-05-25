@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const { data, error } = await supabaseAdmin
       .from('tracks')
-      .select('id, name, length_km, type, is_official', is_sprint')
+      .select('id, name, length_km, type, is_official, is_sprint')
       .eq('status', 'approved')
       .order('is_official', { ascending: false })
       .order('type', { ascending: true })
