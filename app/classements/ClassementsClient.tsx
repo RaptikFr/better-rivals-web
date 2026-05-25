@@ -84,6 +84,7 @@ export default function ClassementsClient() {
       console.error("Erreur de récupération Supabase :", error);
       setError("Impossible de charger les classements. Vérifie ta connexion ou réessaie dans quelques instants.");
     } else if (data) {
+      console.log("Data reçue :", JSON.stringify(data[0], null, 2));
       setLapTimes(data as unknown as LapTime[]);
     }
     setIsLoading(false);
