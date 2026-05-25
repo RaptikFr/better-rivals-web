@@ -10,9 +10,9 @@ interface LapTime {
   car_pi: number;
   car_ordinal: number;
   drivetrain: Drivetrain;
-  players: { pseudo: string }[] | null;
-  cars: { manufacturer: string; name: string; year: number }[] | null;
-  tracks: { name: string; length_km: number | null }[] | null;
+  players: { pseudo: string } | null;
+  cars: { manufacturer: string; name: string; year: number } | null;
+  tracks: { name: string; length_km: number | null } | null;
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -84,7 +84,6 @@ export default function ClassementsClient() {
       console.error("Erreur de récupération Supabase :", error);
       setError("Impossible de charger les classements. Vérifie ta connexion ou réessaie dans quelques instants.");
     } else if (data) {
-      console.log("Data reçue :", JSON.stringify(data[0], null, 2));
       setLapTimes(data as unknown as LapTime[]);
     }
     setIsLoading(false);
@@ -92,12 +91,12 @@ export default function ClassementsClient() {
 
   // Options de filtres dynamiques
   const uniqueClasses = ["Toutes", ...Array.from(new Set(lapTimes.map(lap => lap.car_class)))].filter(Boolean);
-  const uniqueTracks = ["Tous", ...Array.from(new Set(lapTimes.map(lap => lap.tracks?.[0]?.name ?? "Inconnu")))].sort();
+  const uniqueTracks = ["Tous", ...Array.from(new Set(lapTimes.map(lap => lap.tracks?.name ?? "Inconnu")))].sort();
 
   // Application des filtres
   const filteredLaps = lapTimes.filter((lap) => {
     const matchClass = selectedClass === "Toutes" || lap.car_class === selectedClass;
-    const matchTrack = selectedTrack === "Tous" || lap.tracks?.[0]?.name === selectedTrack;
+    const matchTrack = selectedTrack === "Tous" || lap.tracks?.name === selectedTrack;
     const matchDrivetrain = selectedDrivetrain === "Tous" || lap.drivetrain === selectedDrivetrain;
     return matchClass && matchTrack && matchDrivetrain;
   });
@@ -237,12 +236,12 @@ export default function ClassementsClient() {
                 paginatedLaps.map((lap, index) => (
                   <tr key={index} className="border-b border-neutral-800/50 hover:bg-neutral-800 transition-colors">
                     <td className="p-4 font-bold text-neutral-600">{globalOffset + index + 1}</td>
-                    <td className="p-4 font-bold text-white">{lap.players?.[0]?.pseudo ?? 'Inconnu'}</td>
+                    <td className="p-4 font-bold text-white">{lap.players?.pseudo ?? 'Inconnu'}</td>
                     <td className="p-4 font-mono font-bold text-pink-400 text-lg">
                       {formatTime(lap.time_ms)}
                     </td>
                     <td className="p-4 text-neutral-300">
-                      {lap.cars?.[0]?.year} {lap.cars?.[0]?.manufacturer} {lap.cars?.[0]?.name}
+                      {lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}
                     </td>
                     <td className="p-4">
                       <span className="px-2 py-1 bg-neutral-800 border border-neutral-700 rounded text-xs font-bold mr-2 text-white">
@@ -254,7 +253,7 @@ export default function ClassementsClient() {
                       <DrivetrainBadge drivetrain={lap.drivetrain} />
                     </td>
                     <td className="p-4 text-neutral-400">
-                      {lap.tracks?.[0]?.name ?? 'Inconnu'}{lap.tracks?.[0]?.length_km ? ` (${lap.tracks[0].length_km} km)` : ''}
+                      {lap.tracks?.name ?? 'Inconnu'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
                     </td>
                   </tr>
                 ))
