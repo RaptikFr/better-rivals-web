@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Better Rivals",
+    default: "Better Rivals FH6",
     template: "%s | Better Rivals",
   },
   description:
@@ -25,8 +25,8 @@ export const metadata: Metadata = {
     title: "Better Rivals",
     description:
       "Le classement alternatif, équitable et par modèle de voiture pour Forza Horizon 6.",
-    url: "https://better-rivals.vercel.app",
-    siteName: "Better Rivals",
+    url: "https://better-rivals-fh6.vercel.app",
+    siteName: "Better Rivals FH6",
     locale: "fr_FR",
     type: "website",
   },
