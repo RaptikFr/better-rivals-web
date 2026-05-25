@@ -11,9 +11,10 @@ export async function GET() {
     const { data, error } = await supabaseAdmin
       .from('tracks')
       .select('id, name, length_km, type, is_official')
-      .order('is_official', { ascending: false }) // Officiels en premier
-      .order('type',        { ascending: true  }) // Puis par type (alphabétique)
-      .order('name',        { ascending: true  }); // Puis par nom
+      .eq('status', 'approved')
+      .order('is_official', { ascending: false })
+      .order('type', { ascending: true })
+      .order('name', { ascending: true  });
 
     if (error) {
       return NextResponse.json(
