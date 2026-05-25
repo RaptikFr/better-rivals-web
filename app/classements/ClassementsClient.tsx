@@ -2,7 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { LapTime, Drivetrain } from '@/types/supabase';
+import type { Drivetrain, CarClass } from '@/types/supabase';
+
+interface LapTime {
+  time_ms: number;
+  car_class: CarClass;
+  car_pi: number;
+  car_ordinal: number;
+  drivetrain: Drivetrain;
+  players: { pseudo: string }[] | null;
+  cars: { manufacturer: string; name: string; year: number }[] | null;
+  tracks: { name: string; length_km: number | null }[] | null;
+}
 
 const ITEMS_PER_PAGE = 20;
 
@@ -61,7 +72,7 @@ export default function ClassementsClient() {
     const { data, error } = await supabase
       .from('lap_times')
       .select(`
-        time_ms, car_class, car_pi, drivetrain,
+        time_ms, car_class, car_pi, drivetrain, car_ordinal,
         players ( pseudo ),
         cars ( manufacturer, name, year ),
         tracks ( name, length_km )
