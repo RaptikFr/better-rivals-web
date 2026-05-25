@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '');
 
-    // Vérifie le JWT Supabase et récupère l'utilisateur
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) {
       return NextResponse.json({ error: 'Token invalide ou expiré. Reconnecte-toi.' }, { status: 401 });
@@ -50,21 +49,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Données incomplètes.' }, { status: 400 });
     }
 
-    // --- GESTION DU CLASSEMENT ---
-    const newTimeMs    = Math.round(lap_time * 1000);
-    const numTrackId   = parseInt(track_id);
+    const newTimeMs     = Math.round(lap_time * 1000);
+    const numTrackId    = parseInt(track_id);
     const numCarOrdinal = parseInt(car_id);
 
-    // Cherche un temps existant pour cette config exacte
+    // --- INSERTION AUTO DE LA VOITURE SI INCONNUE ---
+    const { data: existingCar } = await supabaseAdmin
+      .from('cars')
+      .select('car_ordinal')
+      .eq('car_ordinal', numCarOrdinal)
+      .maybeSingle();
+
+    if (!existingCar) {
+      await supabaseAdmin
+        .from('cars')
+        .insert([{
+          car_ordinal:  numCarOrdinal,
+          manufacturer: 'Inconnu',
+          name:         `Voiture #${numCarOrdinal}`,
+          year:         0,
+        }]);
+    }
+
+    // --- GESTION DU CLASSEMENT ---
     const { data: existingTime } = await supabaseAdmin
       .from('lap_times')
       .select('id, time_ms')
-      .eq('player_id',  player.id)
-      .eq('track_id',   numTrackId)
+      .eq('player_id',   player.id)
+      .eq('track_id',    numTrackId)
       .eq('car_ordinal', numCarOrdinal)
-      .eq('car_class',  car_class)
-      .eq('drivetrain', drivetrain)
-      .single();
+      .eq('car_class',   car_class)
+      .eq('drivetrain',  drivetrain)
+      .maybeSingle();
 
     if (existingTime) {
       if (newTimeMs < existingTime.time_ms) {
