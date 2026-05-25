@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
 const navLinks = [
+  { href: '/epreuves',   label: 'Épreuves'    },
   { href: '/classements', label: 'Classements' },
   { href: '/#telecharger', label: 'Télécharger' },
 ];
@@ -50,11 +51,10 @@ export default function Navbar() {
             );
           })}
 
-          {/* Zone auth — skeleton pendant le chargement */}
+          {/* Zone auth */}
           {loading ? (
             <div className="w-24 h-8 bg-neutral-800 rounded-lg animate-pulse ml-2" />
           ) : user ? (
-            // Connecté
             <div className="flex items-center gap-2 ml-2">
               <Link
                 href="/profil"
@@ -74,7 +74,6 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            // Non connecté
             <div className="flex items-center gap-2 ml-2">
               <Link
                 href="/connexion"
