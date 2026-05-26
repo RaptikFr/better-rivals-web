@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +32,22 @@ interface Stats {
   classFavorite: string;
   drivetrainFavorite: string;
   bestRank: number | null;
+}
+
+interface TuneSetup {
+  id: number;
+  player_id: number;
+  car_ordinal: number;
+  track_id: number | null;
+  share_code: string;
+  label: string | null;
+  is_original: boolean;
+  updated_at: string;
+}
+
+interface TrackOption {
+  id: number;
+  name: string;
 }
 
 // ============================================================
@@ -67,13 +84,14 @@ function DrivetrainBadge({ drivetrain }: { drivetrain: Drivetrain | null }) {
 // ============================================================
 // ONGLETS
 // ============================================================
-type Tab = 'recents' | 'tous' | 'classements' | 'stats';
+type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'reglages';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'recents',     label: 'Récents',        icon: '🕐' },
   { id: 'tous',        label: 'Tous mes temps',  icon: '📋' },
   { id: 'classements', label: 'Mes classements', icon: '🏆' },
   { id: 'stats',       label: 'Statistiques',    icon: '📊' },
+  { id: 'reglages',    label: 'Mes réglages',    icon: '⚙️' },
 ];
 
 // ============================================================
@@ -85,6 +103,7 @@ export default function ProfilClient() {
 
   const [activeTab, setActiveTab] = useState<Tab>('recents');
   const [pseudo,    setPseudo]    = useState<string>('');
+  const [playerId,  setPlayerId]  = useState<number | null>(null);
   const [laps,      setLaps]      = useState<ProfileLap[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
@@ -111,7 +130,10 @@ export default function ProfilClient() {
       .eq('user_id', user!.id)
       .single();
 
-    if (playerData) setPseudo(playerData.pseudo);
+    if (playerData) {
+      setPseudo(playerData.pseudo);
+      setPlayerId(playerData.id);
+    }
 
     const { data: lapsData, error: lapsError } = await supabase
       .from('lap_times')
@@ -301,6 +323,11 @@ export default function ProfilClient() {
         {/* ── STATISTIQUES ── */}
         {activeTab === 'stats' && (
           <StatsTab stats={stats} laps={laps} />
+        )}
+
+        {/* ── MES RÉGLAGES ── */}
+        {activeTab === 'reglages' && playerId !== null && (
+          <ReglagesTab laps={laps} playerId={playerId} />
         )}
 
       </div>
@@ -518,6 +545,238 @@ function StatsTab({ stats, laps }: { stats: Stats; laps: ProfileLap[] }) {
           }
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Onglet Réglages ──
+function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: number }) {
+  const [setups,        setSetups]        = useState<TuneSetup[]>([]);
+  const [tracks,        setTracks]        = useState<TrackOption[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
+  const [conflictError, setConflictError] = useState<string | null>(null);
+  const [forms,         setForms]         = useState<Record<number, { share_code: string; label: string; track_id: string; is_original: boolean }>>({});
+  const [saving,        setSaving]        = useState<Record<number, boolean>>({});
+
+  const cars = Array.from(
+    new Map(laps.map(l => [l.car_ordinal, {
+      car_ordinal: l.car_ordinal,
+      carName: `${l.cars?.year ?? ''} ${l.cars?.manufacturer ?? ''} ${l.cars?.name ?? ''}`.trim(),
+    }])).values()
+  ).sort((a, b) => a.carName.localeCompare(b.carName));
+
+  useEffect(() => {
+    async function load() {
+      const [setupsRes, tracksRes] = await Promise.all([
+        supabase
+          .from('tune_setups')
+          .select('*')
+          .eq('player_id', playerId)
+          .order('updated_at', { ascending: false }),
+        supabase
+          .from('tracks')
+          .select('id, name')
+          .eq('status', 'approved')
+          .order('name', { ascending: true }),
+      ]);
+      if (setupsRes.data) setSetups(setupsRes.data as TuneSetup[]);
+      if (tracksRes.data) setTracks(tracksRes.data as TrackOption[]);
+      setLoading(false);
+    }
+    load();
+  }, [playerId]);
+
+  function getForm(car_ordinal: number) {
+    return forms[car_ordinal] ?? { share_code: '', label: '', track_id: '', is_original: false };
+  }
+
+  function patchForm(car_ordinal: number, patch: Partial<{ share_code: string; label: string; track_id: string; is_original: boolean }>) {
+    setForms(f => ({ ...f, [car_ordinal]: { ...getForm(car_ordinal), ...patch } }));
+  }
+
+  async function handleAdd(car_ordinal: number) {
+    const form = getForm(car_ordinal);
+    if (!form.share_code.trim()) return;
+    setSaving(s => ({ ...s, [car_ordinal]: true }));
+    setError(null);
+    setConflictError(null);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/tune-setups', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({
+        car_ordinal,
+        share_code:  form.share_code.trim(),
+        label:       form.label.trim() || null,
+        track_id:    form.track_id ? Number(form.track_id) : null,
+        is_original: form.is_original,
+      }),
+    });
+    const json = await res.json();
+
+    if (res.status === 409) {
+      setConflictError(json.error);
+    } else if (!res.ok) {
+      setError(json.error ?? "Erreur lors de l'ajout du réglage.");
+    } else {
+      setSetups(s => [json.data as TuneSetup, ...s]);
+      setForms(f => ({ ...f, [car_ordinal]: { share_code: '', label: '', track_id: '', is_original: false } }));
+    }
+    setSaving(s => ({ ...s, [car_ordinal]: false }));
+  }
+
+  async function handleDelete(id: number) {
+    setError(null);
+    const { error: deleteError } = await supabase
+      .from('tune_setups')
+      .delete()
+      .eq('id', id)
+      .eq('player_id', playerId);
+
+    if (deleteError) setError("Erreur lors de la suppression.");
+    else setSetups(s => s.filter(setup => setup.id !== id));
+  }
+
+  if (loading) return <p className="text-neutral-500 animate-pulse p-4">Chargement des réglages...</p>;
+
+  if (cars.length === 0) return (
+    <EmptyState message="Aucune voiture trouvée — tes voitures apparaîtront ici une fois tes premiers chronos enregistrés." />
+  );
+
+  return (
+    <div className="space-y-5">
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+      {conflictError && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-4 text-amber-400 text-sm space-y-2">
+          <p className="font-bold">⚠️ Conflit de réglage détecté</p>
+          <p>{conflictError}</p>
+          <p className="flex flex-wrap gap-x-4">
+            <Link href="/contact" className="underline hover:text-amber-300 transition-colors">
+              Formulaire de contact
+            </Link>
+            <a href="https://discord.gg/d75NxScNCa" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300 transition-colors">
+              Discord
+            </a>
+          </p>
+        </div>
+      )}
+      {cars.map(({ car_ordinal, carName }) => {
+        const carSetups = setups.filter(s => s.car_ordinal === car_ordinal);
+        const form      = getForm(car_ordinal);
+        const isSaving  = saving[car_ordinal] ?? false;
+
+        return (
+          <div key={car_ordinal} className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+
+            {/* En-tête voiture */}
+            <div className="px-5 py-4 border-b border-neutral-800 flex items-center gap-3">
+              <span className="text-lg">🚗</span>
+              <h3 className="font-bold text-white">{carName}</h3>
+              {carSetups.length > 0 && (
+                <span className="ml-auto text-xs text-neutral-500 font-mono">
+                  {carSetups.length} réglage{carSetups.length > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+
+            <div className="p-5 space-y-4">
+
+              {/* Réglages existants */}
+              {carSetups.length > 0 && (
+                <div className="space-y-2">
+                  {carSetups.map(setup => (
+                    <div key={setup.id} className="flex items-center gap-3 bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono text-sm text-white">
+                          <span className="mr-1.5">{setup.is_original ? '🔧' : '📋'}</span>{setup.share_code}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {setup.label && (
+                            <span className="text-xs text-neutral-400">{setup.label}</span>
+                          )}
+                          {setup.track_id ? (
+                            <span className="text-xs text-violet-400">
+                              📍 {tracks.find(t => t.id === setup.track_id)?.name ?? 'Circuit inconnu'}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-neutral-600">Réglage général</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDelete(setup.id)}
+                        title="Supprimer"
+                        className="text-neutral-600 hover:text-red-400 transition-colors flex-shrink-0 text-base"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Formulaire d'ajout */}
+              <div className="border border-neutral-800 rounded-lg p-4 space-y-3 bg-neutral-950/50">
+                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Ajouter un réglage</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    placeholder="Code de partage *"
+                    value={form.share_code}
+                    onChange={e => patchForm(car_ordinal, { share_code: e.target.value })}
+                    className="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 font-mono focus:outline-none focus:border-pink-500 transition-colors"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Label (optionnel)"
+                    value={form.label}
+                    onChange={e => patchForm(car_ordinal, { label: e.target.value })}
+                    className="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
+                  />
+                </div>
+                <select
+                  value={form.track_id}
+                  onChange={e => patchForm(car_ordinal, { track_id: e.target.value })}
+                  className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                >
+                  <option value="">Réglage général (tous circuits)</option>
+                  {tracks.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <div className="flex items-center justify-between gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={form.is_original}
+                      onChange={e => patchForm(car_ordinal, { is_original: e.target.checked })}
+                      className="w-4 h-4 accent-pink-500"
+                    />
+                    <span className="text-sm text-neutral-400">J&apos;ai créé ce réglage moi-même 🔧</span>
+                  </label>
+                  <button
+                    onClick={() => handleAdd(car_ordinal)}
+                    disabled={!form.share_code.trim() || isSaving}
+                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-violet-600 text-white text-sm font-bold rounded-lg hover:opacity-90 disabled:opacity-40 transition-opacity flex-shrink-0"
+                  >
+                    {isSaving ? '...' : 'Ajouter'}
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

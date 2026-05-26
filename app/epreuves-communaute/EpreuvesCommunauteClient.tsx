@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, type SyntheticEvent } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { TrackCategory } from '@/types/supabase';
@@ -366,6 +367,12 @@ export default function EpreuvesCommunauteClient() {
               {!user && (
                 <p className="text-xs text-neutral-600 mt-3">Connecte-toi pour proposer une épreuve.</p>
               )}
+              <Link
+                href="/criteres-eligibilite"
+                className="inline-flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors mt-3"
+              >
+                En savoir plus sur les critères →
+              </Link>
             </div>
           </div>
         </div>

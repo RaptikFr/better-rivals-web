@@ -9,6 +9,7 @@ const navLinks = [
   { href: '/epreuves-communaute',  label: 'Épreuves communauté' },
   { href: '/classements',          label: 'Classements'          },
   { href: '/#telecharger',         label: 'Télécharger'          },
+  { href: '/contact',              label: 'Contact'              },
 ];
 
 export default function Navbar() {

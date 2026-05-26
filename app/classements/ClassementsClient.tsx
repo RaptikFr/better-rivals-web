@@ -4,11 +4,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 
+interface TuneSetup {
+  player_id: number;
+  car_ordinal: number;
+  share_code: string;
+  is_original: boolean;
+  label: string | null;
+  track_id: number | null;
+}
+
 interface LapTime {
   time_ms: number;
   car_class: CarClass;
   car_pi: number;
   car_ordinal: number;
+  player_id: number;
+  track_id: number;
   drivetrain: Drivetrain;
   players: { pseudo: string } | null;
   cars: { manufacturer: string; name: string; year: number } | null;
@@ -44,13 +55,44 @@ function DrivetrainBadge({ drivetrain }: { drivetrain: Drivetrain | null }) {
   );
 }
 
+function TuneCell({ lap, setups }: { lap: LapTime; setups: TuneSetup[] }) {
+  const [copied, setCopied] = useState(false);
+
+  const carSetups = setups.filter(s => s.player_id === lap.player_id && s.car_ordinal === lap.car_ordinal);
+  const tune = carSetups.find(s => s.track_id === lap.track_id)
+            ?? carSetups.find(s => s.track_id === null)
+            ?? null;
+
+  if (!tune) return <span className="text-neutral-600">—</span>;
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(tune!.share_code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span title={tune.is_original ? 'Réglage original' : 'Réglage partagé'}>{tune.is_original ? '🔧' : '📋'}</span>
+      <button
+        onClick={handleCopy}
+        title="Copier le code de réglage"
+        className="font-mono text-sm text-neutral-300 hover:text-pink-400 transition-colors"
+      >
+        {copied ? <span className="text-green-400 font-bold not-italic">Copié !</span> : tune.share_code}
+      </button>
+    </div>
+  );
+}
+
 const DRIVETRAIN_OPTIONS: Array<"Tous" | Drivetrain> = ["Tous", "AWD", "RWD", "FWD"];
 
 export default function ClassementsClient() {
 
-  const [lapTimes, setLapTimes] = useState<LapTime[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [lapTimes,   setLapTimes]   = useState<LapTime[]>([]);
+  const [tuneSetups, setTuneSetups] = useState<TuneSetup[]>([]);
+  const [isLoading,  setIsLoading]  = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
 
   // Filtres serveur
   const [allTracks, setAllTracks] = useState<Track[]>([]);
@@ -89,7 +131,7 @@ export default function ClassementsClient() {
     let query = supabase
       .from('lap_times')
       .select(`
-        time_ms, car_class, car_pi, drivetrain, car_ordinal,
+        time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id,
         players ( pseudo ),
         cars ( manufacturer, name, year ),
         tracks ( name, length_km )
@@ -105,12 +147,18 @@ export default function ClassementsClient() {
       query = query.limit(200);
     }
 
-    const { data, error } = await query;
+    const [{ data, error }, { data: setupsData }] = await Promise.all([
+      query,
+      supabase
+        .from('tune_setups')
+        .select('player_id, car_ordinal, share_code, is_original, label, track_id'),
+    ]);
 
     if (error) {
       setError("Impossible de charger les classements. Vérifie ta connexion ou réessaie dans quelques instants.");
     } else if (data) {
       setLapTimes(data as unknown as LapTime[]);
+      setTuneSetups((setupsData ?? []) as TuneSetup[]);
     }
     setIsLoading(false);
   }, [selectedTrackId, selectedClass, selectedDrivetrain]);
@@ -303,19 +351,20 @@ export default function ClassementsClient() {
                 <th className="p-4 font-bold text-neutral-400 tracking-wider">VOITURE</th>
                 <th className="p-4 font-bold text-neutral-400 tracking-wider">CLASSE / PI</th>
                 <th className="p-4 font-bold text-neutral-400 tracking-wider">TRANSMISSION</th>
+                <th className="p-4 font-bold text-neutral-400 tracking-wider">RÉGLAGES</th>
                 <th className="p-4 font-bold text-neutral-400 tracking-wider">CIRCUIT</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-neutral-500 font-medium animate-pulse">
+                  <td colSpan={8} className="p-12 text-center text-neutral-500 font-medium animate-pulse">
                     Chargement des données télémétriques...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center">
+                  <td colSpan={8} className="p-12 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <span className="text-3xl">⚠️</span>
                       <p className="text-neutral-400 font-medium">{error}</p>
@@ -348,6 +397,9 @@ export default function ClassementsClient() {
                     <td className="p-4">
                       <DrivetrainBadge drivetrain={lap.drivetrain} />
                     </td>
+                    <td className="p-4">
+                      <TuneCell lap={lap} setups={tuneSetups} />
+                    </td>
                     <td className="p-4 text-neutral-400">
                       {lap.tracks?.name ?? 'Inconnu'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
                     </td>
@@ -355,7 +407,7 @@ export default function ClassementsClient() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-neutral-500 font-medium">
+                  <td colSpan={8} className="p-12 text-center text-neutral-500 font-medium">
                     Aucun temps ne correspond à ces filtres.
                   </td>
                 </tr>
