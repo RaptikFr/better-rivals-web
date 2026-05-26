@@ -39,11 +39,18 @@ interface TuneSetup {
   player_id: number;
   car_ordinal: number;
   track_id: number | null;
+  track_type: string | null;
   share_code: string;
   label: string | null;
   is_original: boolean;
   updated_at: string;
 }
+
+const TRACK_TYPE_LABELS: Record<string, string> = {
+  'Course sur route':   'circuit route',
+  'Course tous chemins':'circuit tous chemins',
+  'Cross-country':      'circuit cross-country',
+};
 
 interface TrackOption {
   id: number;
@@ -588,7 +595,7 @@ function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: number 
   }, [playerId]);
 
   function getForm(car_ordinal: number) {
-    return forms[car_ordinal] ?? { share_code: '', label: '', track_id: '', is_original: false };
+    return forms[car_ordinal] ?? { share_code: '', label: '', track_id: 'type:Course sur route', is_original: false };
   }
 
   function patchForm(car_ordinal: number, patch: Partial<{ share_code: string; label: string; track_id: string; is_original: boolean }>) {
@@ -613,7 +620,8 @@ function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: number 
         car_ordinal,
         share_code:  form.share_code.trim(),
         label:       form.label.trim() || null,
-        track_id:    form.track_id ? Number(form.track_id) : null,
+        track_id:    form.track_id.startsWith('type:') ? null : (form.track_id ? Number(form.track_id) : null),
+        track_type:  form.track_id.startsWith('type:') ? form.track_id.slice(5) : null,
         is_original: form.is_original,
       }),
     });
@@ -707,6 +715,10 @@ function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: number 
                             <span className="text-xs text-violet-400">
                               📍 {tracks.find(t => t.id === setup.track_id)?.name ?? 'Circuit inconnu'}
                             </span>
+                          ) : setup.track_type ? (
+                            <span className="text-xs text-neutral-500">
+                              🌐 Réglage général ({TRACK_TYPE_LABELS[setup.track_type] ?? setup.track_type})
+                            </span>
                           ) : (
                             <span className="text-xs text-neutral-600">Réglage général</span>
                           )}
@@ -748,7 +760,9 @@ function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: number 
                   onChange={e => patchForm(car_ordinal, { track_id: e.target.value })}
                   className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                 >
-                  <option value="">Réglage général (tous circuits)</option>
+                  <option value="type:Course sur route">Réglage général (circuit route)</option>
+                  <option value="type:Course tous chemins">Réglage général (circuit tous chemins)</option>
+                  <option value="type:Cross-country">Réglage général (circuit cross-country)</option>
                   {tracks.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}

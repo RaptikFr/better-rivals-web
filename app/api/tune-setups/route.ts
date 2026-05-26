@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { car_ordinal, share_code, label, track_id, is_original } = body;
+    const { car_ordinal, share_code, label, track_id, track_type, is_original } = body;
 
     if (!car_ordinal || !share_code) {
       return NextResponse.json({ error: 'Données incomplètes.' }, { status: 400 });
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         share_code:  share_code.trim(),
         label:       label?.trim() || null,
         track_id:    track_id || null,
+        track_type:  track_type || null,
         is_original: is_original ?? false,
       }])
       .select()

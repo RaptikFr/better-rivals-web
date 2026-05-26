@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { isAdmin } from '@/lib/admins';
 
 const navLinks = [
   { href: '/epreuves-officielles', label: 'Épreuves officielles' },
@@ -68,6 +69,18 @@ export default function Navbar() {
               >
                 Mon profil
               </Link>
+              {isAdmin(user.email) && (
+                <Link
+                  href="/admin"
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    pathname === '/admin'
+                      ? 'bg-neutral-800 text-white'
+                      : 'text-neutral-500 hover:text-white hover:bg-neutral-800/50'
+                  }`}
+                >
+                  Admin
+                </Link>
+              )}
               <button
                 onClick={handleSignOut}
                 className="px-3 py-2 rounded-lg text-sm font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/50 transition-colors"
