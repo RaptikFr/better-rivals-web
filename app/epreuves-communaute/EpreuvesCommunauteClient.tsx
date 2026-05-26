@@ -186,6 +186,21 @@ function SoumissionModal({ onClose, onSuccess }: { onClose: () => void; onSucces
           <button onClick={onClose} className="text-neutral-400 hover:text-white text-xl">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+
+          {/* Critères complets dans le formulaire */}
+          <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-sm text-neutral-400 space-y-2">
+            <p className="font-bold text-neutral-300">Pour être éligible, ton épreuve doit :</p>
+            <ul className="space-y-1.5 pl-1">
+              <li>🏁 Être un <strong className="text-neutral-200">circuit bouclé</strong> (pas un sprint point A → B)</li>
+              <li>🔄 Avoir au moins <strong className="text-neutral-200">3 tours</strong> configurés dans les paramètres de l&apos;épreuve</li>
+              <li>🚫 Ne pas avoir d&apos;<strong className="text-neutral-200">adversaire</strong> — mode solo uniquement, équivalent au mode Rivaux</li>
+              <li>🔑 Avoir un <strong className="text-neutral-200">code EventLab valide</strong> et accessible</li>
+            </ul>
+            <p className="text-xs text-neutral-600 pt-1">
+              Si ton épreuve remplit ces conditions, soumets-la ci-dessous. Un administrateur l&apos;approuvera ou non.
+            </p>
+          </div>
+
           <div>
             <label className="block text-sm font-bold text-neutral-300 mb-2">Nom du circuit *</label>
             <input type="text" required value={form.name}
@@ -335,6 +350,25 @@ export default function EpreuvesCommunauteClient() {
             ✅ Épreuve soumise ! Elle sera visible après validation.
           </div>
         )}
+
+        {/* Bandeau critères d'éligibilité */}
+        <div className="mb-8 bg-neutral-900 border border-violet-500/30 rounded-xl p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl mt-0.5">📋</span>
+            <div>
+              <h3 className="font-bold text-white mb-2">Critères d&apos;éligibilité</h3>
+              <ul className="text-sm text-neutral-400 space-y-1">
+                <li>✅ L&apos;épreuve doit être un <strong className="text-neutral-200">circuit bouclé</strong> (pas un sprint)</li>
+                <li>✅ Au moins <strong className="text-neutral-200">3 tours</strong> configurés</li>
+                <li>✅ <strong className="text-neutral-200">Aucun adversaire</strong> (équivalent au mode Rivaux)</li>
+                <li>✅ Un <strong className="text-neutral-200">code EventLab valide</strong></li>
+              </ul>
+              {!user && (
+                <p className="text-xs text-neutral-600 mt-3">Connecte-toi pour proposer une épreuve.</p>
+              )}
+            </div>
+          </div>
+        </div>
 
         {tracks.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
