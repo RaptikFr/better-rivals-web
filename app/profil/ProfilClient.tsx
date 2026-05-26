@@ -16,6 +16,7 @@ interface ProfileLap {
   car_pi: number;
   drivetrain: Drivetrain;
   car_ordinal: number;
+  track_id: number;
   created_at: string;
   cars: { manufacturer: string; name: string; year: number } | null;
   tracks: { name: string; length_km: number | null } | null;
@@ -113,7 +114,7 @@ export default function ProfilClient() {
     const { data: lapsData, error: lapsError } = await supabase
       .from('lap_times')
       .select(`
-        id, time_ms, car_class, car_pi, drivetrain, car_ordinal, created_at,
+        id, time_ms, car_class, car_pi, drivetrain, car_ordinal, track_id, created_at,
         cars ( manufacturer, name, year ),
         tracks ( name, length_km )
       `)
@@ -374,6 +375,7 @@ function ClassementsTab({ laps }: { laps: ProfileLap[] }) {
           const { count } = await supabase
             .from('lap_times')
             .select('*', { count: 'exact', head: true })
+            .eq('track_id',    lap.track_id)
             .eq('car_ordinal', lap.car_ordinal)
             .eq('drivetrain',  lap.drivetrain)
             .eq('car_class',   lap.car_class)
@@ -382,6 +384,7 @@ function ClassementsTab({ laps }: { laps: ProfileLap[] }) {
           const { count: total } = await supabase
             .from('lap_times')
             .select('*', { count: 'exact', head: true })
+            .eq('track_id',    lap.track_id)
             .eq('car_ordinal', lap.car_ordinal)
             .eq('drivetrain',  lap.drivetrain)
             .eq('car_class',   lap.car_class);
