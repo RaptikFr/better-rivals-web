@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import type { Drivetrain, CarClass } from '@/types/supabase';
+import type { Drivetrain } from '@/types/supabase';
+
+type CarClass = "D" | "C" | "B" | "A" | "S1" | "S2" | "R" | "X";
 
 // ============================================================
 // TYPES LOCAUX
