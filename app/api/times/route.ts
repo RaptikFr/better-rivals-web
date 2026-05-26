@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: "Chrono enregistré !", data }, { status: 200 });
     }
 
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
   }
 }

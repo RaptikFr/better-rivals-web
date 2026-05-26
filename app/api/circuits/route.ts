@@ -25,7 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ circuits: data }, { status: 200 });
 
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { error: 'Erreur interne du serveur.' },
       { status: 500 }
