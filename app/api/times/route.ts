@@ -8,6 +8,15 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Vitesse max ~360 km/h = 100 m/s, vitesse min ~72 km/h = 20 m/s
+// Marge de 20% pour absorber les imprécisions
+function validerTemps(lapTimeMs: number, lengthKm: number | null): boolean {
+  if (!lengthKm || lengthKm <= 0) return true; // Pas de longueur connue → on accepte
+  const minMs = (lengthKm * 1000 / 100) * 1000 * 0.8;  // Temps min avec marge 20%
+  const maxMs = (lengthKm * 1000 / 20)  * 1000 * 1.2;  // Temps max avec marge 20%
+  return lapTimeMs >= minMs && lapTimeMs <= maxMs;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // --- VÉRIFICATION DU TOKEN JWT ---
@@ -53,6 +62,21 @@ export async function POST(request: NextRequest) {
     const numTrackId    = parseInt(track_id);
     const numCarOrdinal = parseInt(car_id);
 
+    // --- VALIDATION DU TEMPS PAR RAPPORT À LA LONGUEUR DU CIRCUIT ---
+    const { data: trackData } = await supabaseAdmin
+      .from('tracks')
+      .select('length_km, name')
+      .eq('id', numTrackId)
+      .maybeSingle();
+
+    if (trackData && !validerTemps(newTimeMs, trackData.length_km)) {
+      const minS = ((trackData.length_km * 1000 / 100) * 0.8).toFixed(0);
+      const maxS = ((trackData.length_km * 1000 / 20)  * 1.2).toFixed(0);
+      return NextResponse.json({
+        error: `Temps aberrant pour ${trackData.name} (${trackData.length_km} km). Attendu entre ${Math.floor(Number(minS)/60)}:${String(Number(minS)%60).padStart(2,'0')} et ${Math.floor(Number(maxS)/60)}:${String(Number(maxS)%60).padStart(2,'0')}.`
+      }, { status: 400 });
+    }
+
     // --- GESTION DE LA VOITURE ---
     const { data: existingCar } = await supabaseAdmin
       .from('cars')
@@ -61,7 +85,6 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (!existingCar) {
-      // Nouvelle voiture — on insère avec les infos fournies par le joueur
       await supabaseAdmin
         .from('cars')
         .insert([{
@@ -71,7 +94,6 @@ export async function POST(request: NextRequest) {
           year:         car_year         ?? 0,
         }]);
     } else if (car_manufacturer && car_name && car_year) {
-      // Voiture existante mais infos fournies → mise à jour si c'était "Inconnu"
       await supabaseAdmin
         .from('cars')
         .update({ manufacturer: car_manufacturer, name: car_name, year: car_year })
