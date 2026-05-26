@@ -13,6 +13,7 @@ interface Track {
   event_lab_code: string | null;
   description: string | null;
   is_sprint: boolean;
+  votes: { vote: boolean; user_id: string }[];
 }
 
 const TRACK_TYPES = [
@@ -37,12 +38,48 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
-function TrackCard({ track }: { track: Track }) {
+function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
+  const [voted,    setVoted]    = useState(false);
+  const [loading,  setLoading]  = useState(false);
+  const [thumbsUp,   setThumbsUp]   = useState(track.votes.filter(v => v.vote).length);
+  const [thumbsDown, setThumbsDown] = useState(track.votes.filter(v => !v.vote).length);
+
+  useEffect(() => {
+    if (userId) {
+      setVoted(track.votes.some(v => v.user_id === userId));
+    }
+  }, [userId, track.votes]);
+
+  async function handleVote(vote: boolean) {
+    if (!userId || voted || loading) return;
+    setLoading(true);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setLoading(false); return; }
+
+    const res = await fetch('/api/votes', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ track_id: track.id, vote }),
+    });
+
+    if (res.ok) {
+      setVoted(true);
+      if (vote) setThumbsUp(n => n + 1);
+      else setThumbsDown(n => n + 1);
+    }
+    setLoading(false);
+  }
+
   return (
-    <div className={`bg-neutral-900 border rounded-xl p-5 transition-colors ${
+    <div className={`bg-neutral-900 border rounded-xl p-5 transition-colors flex flex-col gap-3 ${
       track.is_sprint ? 'border-neutral-800 opacity-60' : 'border-neutral-800 hover:border-neutral-600'
     }`}>
-      <div className="flex items-start justify-between gap-3 mb-3">
+      {/* En-tête */}
+      <div className="flex items-start justify-between gap-3">
         <h3 className="font-bold text-white text-lg leading-tight">{track.name}</h3>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <TypeBadge type={track.type} />
@@ -53,12 +90,16 @@ function TrackCard({ track }: { track: Track }) {
           )}
         </div>
       </div>
+
       {track.is_sprint && (
-        <p className="text-xs text-neutral-600 mb-3 italic">Non supporté par la télémétrie UDP de Forza.</p>
+        <p className="text-xs text-neutral-600 italic">Non supporté par la télémétrie UDP de Forza.</p>
       )}
+
       {track.description && (
-        <p className="text-sm text-neutral-400 mb-3">{track.description}</p>
+        <p className="text-sm text-neutral-400">{track.description}</p>
       )}
+
+      {/* Infos */}
       <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500">
         {track.length_km && <span>📏 {track.length_km} km</span>}
         {track.event_lab_code && (
@@ -67,6 +108,48 @@ function TrackCard({ track }: { track: Track }) {
           </span>
         )}
       </div>
+
+      {/* Votes */}
+      <div className="flex items-center gap-3 pt-1 border-t border-neutral-800">
+        {/* Pouce haut */}
+        <button
+          onClick={() => handleVote(true)}
+          disabled={!userId || voted || loading}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+            voted
+              ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
+              : userId
+                ? 'bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 cursor-pointer'
+                : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
+          }`}
+        >
+          👍 <span>{thumbsUp}</span>
+        </button>
+
+        {/* Pouce bas */}
+        <button
+          onClick={() => handleVote(false)}
+          disabled={!userId || voted || loading}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+            voted
+              ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
+              : userId
+                ? 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 cursor-pointer'
+                : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
+          }`}
+        >
+          👎 <span>{thumbsDown}</span>
+        </button>
+
+        {/* Message selon état */}
+        {!userId && (
+          <span className="text-xs text-neutral-600 ml-1">Connecte-toi pour voter</span>
+        )}
+        {voted && (
+          <span className="text-xs text-neutral-600 ml-1">Vote enregistré ✓</span>
+        )}
+      </div>
+
     </div>
   );
 }
@@ -195,12 +278,13 @@ export default function EpreuvesCommunauteClient() {
     setError(null);
     const { data, error } = await supabase
       .from('tracks')
-      .select('id, name, type, length_km, event_lab_code, description, is_sprint')
+      .select('id, name, type, length_km, event_lab_code, description, is_sprint, votes(vote, user_id)')
       .eq('status', 'approved')
       .eq('is_official', false)
       .order('name', { ascending: true });
+
     if (error) setError("Impossible de charger les épreuves.");
-    else setTracks(data ?? []);
+    else setTracks((data ?? []) as unknown as Track[]);
     setIsLoading(false);
   }
 
@@ -252,7 +336,6 @@ export default function EpreuvesCommunauteClient() {
           </div>
         )}
 
-        {/* Filtres */}
         {tracks.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
             {allTypes.map(type => (
@@ -271,9 +354,7 @@ export default function EpreuvesCommunauteClient() {
         {filtered.length === 0 ? (
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-12 text-center">
             <p className="text-neutral-500 mb-4">
-              {tracks.length === 0
-                ? "Aucune épreuve communauté pour l'instant."
-                : "Aucune épreuve pour ce filtre."}
+              {tracks.length === 0 ? "Aucune épreuve communauté pour l'instant." : "Aucune épreuve pour ce filtre."}
             </p>
             {user && tracks.length === 0 && (
               <button onClick={() => setShowModal(true)}
@@ -287,7 +368,9 @@ export default function EpreuvesCommunauteClient() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(track => <TrackCard key={track.id} track={track} />)}
+            {filtered.map(track => (
+              <TrackCard key={track.id} track={track} userId={user?.id ?? null} />
+            ))}
           </div>
         )}
 
