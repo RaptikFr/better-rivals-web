@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 
@@ -15,9 +15,14 @@ interface LapTime {
   tracks: { name: string; length_km: number | null } | null;
 }
 
-const ITEMS_PER_PAGE = 20;
+interface Track {
+  id: number;
+  name: string;
+}
 
-// Formatage du temps en mm:ss.ms
+const ITEMS_PER_PAGE = 20;
+const CAR_CLASSES: Array<"Toutes" | CarClass> = ["Toutes", "D", "C", "B", "A", "S1", "S2", "X"];
+
 function formatTime(ms: number): string {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
@@ -25,7 +30,6 @@ function formatTime(ms: number): string {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 }
 
-// Badge coloré pour la transmission
 function DrivetrainBadge({ drivetrain }: { drivetrain: Drivetrain | null }) {
   const colors: Record<Drivetrain, string> = {
     AWD: "bg-blue-500/20 border-blue-500/50 text-blue-400",
@@ -48,28 +52,41 @@ export default function ClassementsClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filtres
+  // Filtres serveur
+  const [allTracks, setAllTracks] = useState<Track[]>([]);
+  const [selectedTrackId, setSelectedTrackId] = useState<number | null>(null);
   const [selectedClass, setSelectedClass] = useState("Toutes");
-  const [selectedTrack, setSelectedTrack] = useState("Tous");
   const [selectedDrivetrain, setSelectedDrivetrain] = useState<"Tous" | Drivetrain>("Tous");
+
+  // Filtre voiture (client-side)
+  const [selectedCar, setSelectedCar] = useState('Toutes');
+  const [carSearch, setCarSearch] = useState('');
+  const [showCarDropdown, setShowCarDropdown] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Charger la liste des circuits au montage
   useEffect(() => {
-    fetchData();
+    async function fetchTracks() {
+      const res = await fetch('/api/circuits');
+      if (res.ok) {
+        const { circuits } = await res.json();
+        setAllTracks(circuits ?? []);
+      }
+    }
+    fetchTracks();
   }, []);
 
-  // Remettre à la page 1 quand un filtre change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedClass, selectedTrack, selectedDrivetrain]);
-
-  async function fetchData() {
+  // Requête Supabase — se redéclenche quand les filtres serveur changent
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setSelectedCar('Toutes');
+    setCarSearch('');
+    setCurrentPage(1);
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('lap_times')
       .select(`
         time_ms, car_class, car_pi, drivetrain, car_ordinal,
@@ -77,39 +94,73 @@ export default function ClassementsClient() {
         cars ( manufacturer, name, year ),
         tracks ( name, length_km )
       `)
-      .order('time_ms', { ascending: true })
-      .limit(200);
+      .order('time_ms', { ascending: true });
+
+    if (selectedTrackId !== null) query = query.eq('track_id', selectedTrackId);
+    if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
+    if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
+
+    // Sans filtre : limite à 200 pour ne pas charger toute la table
+    if (selectedTrackId === null && selectedClass === 'Toutes' && selectedDrivetrain === 'Tous') {
+      query = query.limit(200);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
-      console.error("Erreur de récupération Supabase :", error);
       setError("Impossible de charger les classements. Vérifie ta connexion ou réessaie dans quelques instants.");
     } else if (data) {
       setLapTimes(data as unknown as LapTime[]);
     }
     setIsLoading(false);
-  }
+  }, [selectedTrackId, selectedClass, selectedDrivetrain]);
 
-  // Options de filtres dynamiques
-  const uniqueClasses = ["Toutes", ...Array.from(new Set(lapTimes.map(lap => lap.car_class)))].filter(Boolean);
-  const uniqueTracks = ["Tous", ...Array.from(new Set(lapTimes.map(lap => lap.tracks?.name ?? "Inconnu")))].sort();
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  // Application des filtres
+  // Remettre à la page 1 quand le filtre voiture change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCar]);
+
+  // Fermer le dropdown voiture au clic en dehors
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.car-dropdown-wrapper')) {
+        setShowCarDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // Options voiture dérivées des données chargées
+  const uniqueCars = Array.from(new Set(
+    lapTimes.map(lap => `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim())
+  )).filter(Boolean).sort();
+  const filteredCarOptions = uniqueCars.filter(car =>
+    car.toLowerCase().includes(carSearch.toLowerCase())
+  );
+
+  // Filtre voiture côté client
   const filteredLaps = lapTimes.filter((lap) => {
-    const matchClass = selectedClass === "Toutes" || lap.car_class === selectedClass;
-    const matchTrack = selectedTrack === "Tous" || lap.tracks?.name === selectedTrack;
-    const matchDrivetrain = selectedDrivetrain === "Tous" || lap.drivetrain === selectedDrivetrain;
-    return matchClass && matchTrack && matchDrivetrain;
+    if (selectedCar === 'Toutes') return true;
+    const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
+    return carLabel === selectedCar;
   });
 
-  // Calculs de pagination
+  // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredLaps.length / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
   const paginatedLaps = filteredLaps.slice(
     (safePage - 1) * ITEMS_PER_PAGE,
     safePage * ITEMS_PER_PAGE
   );
-  // L'index réel dans le classement global (pas remis à 1 à chaque page)
   const globalOffset = (safePage - 1) * ITEMS_PER_PAGE;
+
+  const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes';
 
   return (
     <main className="min-h-screen p-6">
@@ -131,11 +182,12 @@ export default function ClassementsClient() {
               <label className="text-sm text-neutral-400 font-bold mb-1">Circuit :</label>
               <select
                 className="bg-neutral-950 border border-neutral-700 text-white p-2 rounded-lg focus:outline-none focus:border-pink-500"
-                value={selectedTrack}
-                onChange={(e) => setSelectedTrack(e.target.value)}
+                value={selectedTrackId ?? ''}
+                onChange={(e) => setSelectedTrackId(e.target.value ? Number(e.target.value) : null)}
               >
-                {uniqueTracks.map((track, idx) => (
-                  <option key={idx} value={track}>{track}</option>
+                <option value="">Tous</option>
+                {allTracks.map((track) => (
+                  <option key={track.id} value={track.id}>{track.name}</option>
                 ))}
               </select>
             </div>
@@ -147,14 +199,60 @@ export default function ClassementsClient() {
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
               >
-                {uniqueClasses.map((carClass, idx) => (
-                  <option key={idx} value={carClass}>{carClass}</option>
+                {CAR_CLASSES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Ligne 2 : Transmission (boutons visuels) */}
+          {/* Ligne 1b : Voiture avec recherche */}
+          <div className="flex flex-col relative car-dropdown-wrapper">
+            <label className="text-sm text-neutral-400 font-bold mb-1">Voiture :</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={selectedCar === 'Toutes' ? carSearch : selectedCar}
+                onChange={e => {
+                  setCarSearch(e.target.value);
+                  setSelectedCar('Toutes');
+                  setShowCarDropdown(true);
+                }}
+                onFocus={() => setShowCarDropdown(true)}
+                placeholder="Toutes les voitures"
+                className="w-full bg-neutral-950 border border-neutral-700 text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+              />
+              {selectedCar !== 'Toutes' && (
+                <button
+                  onClick={() => { setSelectedCar('Toutes'); setCarSearch(''); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
+                >✕</button>
+              )}
+            </div>
+            {showCarDropdown && filteredCarOptions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-neutral-950 border border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                {filteredCarOptions.map((car, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setSelectedCar(car);
+                      setCarSearch('');
+                      setShowCarDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                      selectedCar === car
+                        ? 'bg-pink-500/20 text-pink-400'
+                        : 'text-neutral-300 hover:bg-neutral-800'
+                    }`}
+                  >
+                    {car}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Ligne 2 : Transmission */}
           <div className="flex flex-col">
             <label className="text-sm text-neutral-400 font-bold mb-2">Transmission :</label>
             <div className="flex flex-wrap gap-2">
@@ -189,9 +287,7 @@ export default function ClassementsClient() {
         {!isLoading && !error && (
           <p className="text-sm text-neutral-500 mb-3">
             {filteredLaps.length} résultat{filteredLaps.length !== 1 ? "s" : ""}
-            {selectedDrivetrain !== "Tous" || selectedClass !== "Toutes" || selectedTrack !== "Tous"
-              ? " avec les filtres actuels"
-              : " au total"}
+            {hasFilters ? " avec les filtres actuels" : " au total"}
             {totalPages > 1 && ` — page ${safePage} / ${totalPages}`}
           </p>
         )}
@@ -272,7 +368,6 @@ export default function ClassementsClient() {
         {!isLoading && !error && totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-6">
 
-            {/* Bouton Précédent */}
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={safePage === 1}
@@ -281,7 +376,6 @@ export default function ClassementsClient() {
               ← Précédent
             </button>
 
-            {/* Numéros de pages */}
             <div className="flex gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter(page =>
@@ -314,7 +408,6 @@ export default function ClassementsClient() {
               }
             </div>
 
-            {/* Bouton Suivant */}
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
