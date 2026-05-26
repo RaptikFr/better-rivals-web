@@ -202,7 +202,7 @@ export default function ProfilClient() {
 
   return (
     <main className="min-h-screen p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-screen-xl mx-auto">
 
         {/* ── EN-TÊTE PROFIL ── */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mb-8">

@@ -213,7 +213,7 @@ export default function ClassementsClient() {
   return (
     <main className="min-h-screen p-6">
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-screen-2xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
           Leaderboards
         </h1>

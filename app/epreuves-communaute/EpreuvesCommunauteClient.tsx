@@ -329,7 +329,7 @@ export default function EpreuvesCommunauteClient() {
     <main className="min-h-screen p-6">
       {showModal && <SoumissionModal onClose={() => setShowModal(false)} onSuccess={handleSuccess} />}
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-screen-xl mx-auto">
 
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>

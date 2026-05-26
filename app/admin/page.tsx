@@ -116,7 +116,7 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
 
         <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600 mb-6">
           Administration
