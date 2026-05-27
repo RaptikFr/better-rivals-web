@@ -403,11 +403,22 @@ export default function ClassementsClient() {
                     <td className="p-4 text-neutral-400">
                       {lap.tracks?.name ?? 'Inconnu'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
                     </td>
+                  <td className="p-4 text-right">
+                    {user && currentPlayerId !== lap.player_id && (
+                      <button
+                        onClick={() => setReportingLap(lap)}
+                        title="Signaler ce temps suspect"
+                        className="text-neutral-600 hover:text-red-500 transition-colors text-sm font-medium"
+                      >
+                        🚩 Signaler
+                      </button>
+                    )}
+                  </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-neutral-500 font-medium">
+                <td colSpan={9} className="p-12 text-center text-neutral-500 font-medium">
                     Aucun temps ne correspond à ces filtres.
                   </td>
                 </tr>
