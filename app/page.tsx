@@ -6,7 +6,7 @@ export default function Home() {
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-start p-6 pb-24">
 
       {/* --- SECTION HAUT (En-tête) --- */}
-      <div className="max-w-4xl text-center space-y-8 mt-2 md:mt-4">
+      <div className="max-w-4xl text-center space-y-8 mt-0">
 
         {/* Bannière */}
         <Image
