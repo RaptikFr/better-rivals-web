@@ -1,17 +1,23 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 pb-24">
-      
+
       {/* --- SECTION HAUT (En-tête) --- */}
       <div className="max-w-4xl text-center space-y-8 mt-12 md:mt-24">
-        
-        {/* Le Titre avec un effet de dégradé façon Forza */}
-        <h1 className="text-6xl md:text-8xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600 pb-4">
-          Better Rivals
-        </h1>
-        
+
+        {/* Bannière */}
+        <Image
+          src="/og-image.png"
+          alt="Better Rivals FH6"
+          width={1280}
+          height={480}
+          priority
+          className="w-full rounded-2xl"
+        />
+
         {/* Le sous-titre */}
         <p className="text-xl md:text-2xl text-neutral-400 font-medium max-w-2xl mx-auto">
           Battez-vous à armes égales. Le classement alternatif, équitable et par modèle de voiture pour Forza Horizon 6.
