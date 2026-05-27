@@ -8,6 +8,48 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+function formatTime(ms: number): string {
+  const minutes      = Math.floor(ms / 60000);
+  const seconds      = Math.floor((ms % 60000) / 1000);
+  const milliseconds = ms % 1000;
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+}
+
+async function notifierRecordBattu(opts: {
+  playerId:    number;
+  pseudo:      string;
+  newTimeMs:   number;
+  trackId:     number;
+  carOrdinal:  number;
+  carClass:    string;
+  drivetrain:  string;
+  trackName:   string;
+  carLabel:    string;
+}) {
+  const { data: best } = await supabaseAdmin
+    .from('lap_times')
+    .select('time_ms, player_id')
+    .eq('track_id',    opts.trackId)
+    .eq('car_ordinal', opts.carOrdinal)
+    .eq('car_class',   opts.carClass)
+    .eq('drivetrain',  opts.drivetrain)
+    .neq('player_id',  opts.playerId)
+    .order('time_ms', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!best || opts.newTimeMs >= best.time_ms) return;
+
+  const message =
+    `🏆 Ton record sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${opts.drivetrain} a été battu par ${opts.pseudo} (${formatTime(opts.newTimeMs)})`;
+
+  await supabaseAdmin.from('notifications').insert([{
+    player_id: best.player_id,
+    message,
+    read: false,
+  }]);
+}
+
 // Vitesse max ~360 km/h = 100 m/s, vitesse min ~72 km/h = 20 m/s
 // Marge de 20% pour absorber les imprécisions
 function validerTemps(lapTimeMs: number, lengthKm: number | null): boolean {
@@ -101,6 +143,19 @@ export async function POST(request: NextRequest) {
         .eq('manufacturer', 'Inconnu');
     }
 
+    const trackName = trackData?.name ?? `Circuit #${numTrackId}`;
+    const carLabel  = `${car_year ?? ''} ${car_manufacturer ?? ''} ${car_name ?? ''}`.trim() || `Voiture #${numCarOrdinal}`;
+    const notifOpts = {
+      playerId:   player.id,
+      pseudo:     player.pseudo,
+      trackId:    numTrackId,
+      carOrdinal: numCarOrdinal,
+      carClass:   car_class,
+      drivetrain,
+      trackName,
+      carLabel,
+    };
+
     // --- GESTION DU CLASSEMENT ---
     const { data: existingTime } = await supabaseAdmin
       .from('lap_times')
@@ -121,6 +176,7 @@ export async function POST(request: NextRequest) {
           .select();
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        await notifierRecordBattu({ ...notifOpts, newTimeMs });
         return NextResponse.json({ success: true, message: "Nouveau record ! 🏆", data }, { status: 200 });
       } else {
         return NextResponse.json({ success: true, message: "Ton record avec cette config est déjà meilleur." }, { status: 200 });
@@ -142,6 +198,7 @@ export async function POST(request: NextRequest) {
         .select();
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      await notifierRecordBattu({ ...notifOpts, newTimeMs });
       return NextResponse.json({ success: true, message: "Chrono enregistré !", data }, { status: 200 });
     }
 

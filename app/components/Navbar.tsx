@@ -2,8 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useRef, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotifications } from '@/hooks/useNotifications';
 import { isAdmin } from '@/lib/admins';
+
+function dateRelative(iso: string): string {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60)    return "à l'instant";
+  if (diff < 3600)  return `il y a ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
+  if (diff < 172800) return 'hier';
+  return `il y a ${Math.floor(diff / 86400)} jours`;
+}
 
 const navLinks = [
   { href: '/epreuves-officielles', label: 'Épreuves officielles' },
@@ -18,6 +29,19 @@ export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, loading, signOut } = useAuth();
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const [bellOpen, setBellOpen] = useState(false);
+  const bellRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setBellOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   async function handleSignOut() {
     await signOut();
@@ -54,6 +78,57 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          {/* Cloche notifications */}
+          {user && (
+            <div ref={bellRef} className="relative ml-2">
+              <button
+                onClick={() => setBellOpen(o => !o)}
+                className="relative p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800/50 transition-colors"
+              >
+                🔔
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {bellOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
+                    <p className="text-sm font-bold text-white">Notifications</p>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-xs text-neutral-400 hover:text-white transition-colors"
+                      >
+                        Tout marquer comme lu
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-[360px] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="text-sm text-neutral-500 text-center py-8">Aucune notification.</p>
+                    ) : (
+                      notifications.map(n => (
+                        <div
+                          key={n.id}
+                          className={`px-4 py-3 border-b border-neutral-800/50 last:border-0 ${
+                            n.read ? 'bg-transparent' : 'bg-neutral-800'
+                          }`}
+                        >
+                          <p className="text-sm text-white leading-snug">{n.message}</p>
+                          <p className="text-xs text-neutral-500 mt-1">{dateRelative(n.created_at)}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Zone auth */}
           {loading ? (
