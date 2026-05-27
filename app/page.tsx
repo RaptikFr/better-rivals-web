@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import DerniersChronos from './components/DerniersChronos';
 
 export default function Home() {
   return (
@@ -85,6 +86,8 @@ export default function Home() {
 
         </div>
       </div>
+
+      <DerniersChronos />
 
       {/* --- SECTION TÉLÉCHARGEMENT --- */}
       <div id="telecharger" className="mt-24 max-w-5xl mx-auto w-full border-t border-neutral-800 pt-16">
