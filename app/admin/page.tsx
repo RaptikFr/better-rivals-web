@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { isAdmin } from '@/lib/admins';
 
-const ADMIN_EMAIL = "codraptik@gmail.com";
 
 type AdminTab = 'epreuves' | 'messages';
 
@@ -47,17 +47,17 @@ export default function AdminPage() {
   const [messagesFetched, setMessagesFetched] = useState(false);
 
   useEffect(() => {
-    if (!loading && (!user || user.email !== ADMIN_EMAIL)) {
+    if (!loading && (!user || !isAdmin(user.email))) {
       router.push('/');
     }
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (user?.email === ADMIN_EMAIL) fetchPending();
+    if (isAdmin(user?.email)) fetchPending();
   }, [user]);
 
   useEffect(() => {
-    if (adminTab === 'messages' && user?.email === ADMIN_EMAIL && !messagesFetched) {
+    if (adminTab === 'messages' && isAdmin(user?.email) && !messagesFetched) {
       fetchMessages();
     }
   }, [adminTab, user, messagesFetched]);

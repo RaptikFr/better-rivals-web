@@ -149,3 +149,45 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
   }
 }
+
+export async function GET(request: NextRequest) {
+  try {
+    const trackId = request.nextUrl.searchParams.get('track_id');
+
+    if (!trackId) {
+      return NextResponse.json({ error: 'Paramètre track_id manquant.' }, { status: 400 });
+    }
+
+    // Récupère le meilleur temps par joueur sur ce circuit
+    // On groupe par player_id + car_class + drivetrain pour avoir
+    // les meilleurs temps par configuration
+    const { data, error } = await supabaseAdmin
+      .from('lap_times')
+      .select(`
+        id, time_ms, car_class, car_pi, drivetrain, car_ordinal,
+        players ( pseudo ),
+        cars ( manufacturer, name, year )
+      `)
+      .eq('track_id', parseInt(trackId))
+      .order('time_ms', { ascending: true })
+      .limit(100);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Garde uniquement le meilleur temps par joueur + classe + transmission
+    const seen = new Set<string>();
+    const best = (data ?? []).filter(lap => {
+      const key = `${(lap.players as { pseudo: string }[] | null)?.[0]?.pseudo}_${lap.car_class}_${lap.drivetrain}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return NextResponse.json({ times: best }, { status: 200 });
+
+  } catch {
+    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+  }
+}
