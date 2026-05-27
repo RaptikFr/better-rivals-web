@@ -9,6 +9,7 @@ const navLinks = [
   { href: '/epreuves-officielles', label: 'Épreuves officielles' },
   { href: '/epreuves-communaute',  label: 'Épreuves communauté' },
   { href: '/classements',          label: 'Classements'          },
+  { href: '/stats',                label: 'Stats'                },
   { href: '/#telecharger',         label: 'Télécharger'          },
   { href: '/contact',              label: 'Contact'              },
 ];
