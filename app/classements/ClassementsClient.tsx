@@ -33,6 +33,8 @@ interface Track {
   name: string;
 }
 
+type SortKey = 'time_ms' | 'pseudo' | 'car' | 'car_pi' | 'drivetrain' | 'track';
+
 const ITEMS_PER_PAGE = 20;
 const CAR_CLASSES: Array<"Toutes" | CarClass> = ["Toutes", "D", "C", "B", "A", "S1", "S2", "X"];
 
@@ -207,6 +209,20 @@ export default function ClassementsClient() {
   const [reportTarget,       setReportTarget]       = useState<LapTime | null>(null);
   const [reportSuccessMsg,   setReportSuccessMsg]   = useState<string | null>(null);
 
+  // Tri
+  const [sortKey, setSortKey] = useState<SortKey>('time_ms');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+    setCurrentPage(1);
+  }
+
   // Filtres serveur
   const [allTracks, setAllTracks] = useState<Track[]>([]);
   const [selectedTrackId, setSelectedTrackId] = useState<number | null>(null);
@@ -323,10 +339,24 @@ export default function ClassementsClient() {
     return carLabel === selectedCar;
   });
 
+  // Tri côté client (après filtre voiture, avant pagination)
+  const sortedLaps = [...filteredLaps].sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case 'time_ms':    cmp = a.time_ms - b.time_ms; break;
+      case 'pseudo':     cmp = (a.players?.pseudo ?? '').localeCompare(b.players?.pseudo ?? ''); break;
+      case 'car':        cmp = (`${a.cars?.manufacturer ?? ''} ${a.cars?.name ?? ''}`).localeCompare(`${b.cars?.manufacturer ?? ''} ${b.cars?.name ?? ''}`); break;
+      case 'car_pi':     cmp = a.car_pi - b.car_pi; break;
+      case 'drivetrain': cmp = (a.drivetrain ?? '').localeCompare(b.drivetrain ?? ''); break;
+      case 'track':      cmp = (a.tracks?.name ?? '').localeCompare(b.tracks?.name ?? ''); break;
+    }
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
   // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredLaps.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(sortedLaps.length / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
-  const paginatedLaps = filteredLaps.slice(
+  const paginatedLaps = sortedLaps.slice(
     (safePage - 1) * ITEMS_PER_PAGE,
     safePage * ITEMS_PER_PAGE
   );
@@ -469,15 +499,42 @@ export default function ClassementsClient() {
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
               <tr className="border-b border-neutral-800 bg-neutral-950">
-                <th className="p-4 font-bold text-neutral-400 tracking-wider">#</th>
-                <th className="p-4 font-bold text-neutral-400 tracking-wider">PILOTE</th>
-                <th className="p-4 font-bold text-neutral-400 tracking-wider">TEMPS</th>
-                <th className="p-4 font-bold text-neutral-400 tracking-wider">VOITURE</th>
-                <th className="p-4 font-bold text-neutral-400 tracking-wider">CLASSE / PI</th>
-                <th className="p-4 font-bold text-neutral-400 tracking-wider">TRANSMISSION</th>
+                {(
+                  [
+                    { label: '#',            key: 'time_ms'    },
+                    { label: 'PILOTE',       key: 'pseudo'     },
+                    { label: 'TEMPS',        key: 'time_ms'    },
+                    { label: 'VOITURE',      key: 'car'        },
+                    { label: 'CLASSE / PI',  key: 'car_pi'     },
+                    { label: 'TRANSMISSION', key: 'drivetrain' },
+                  ] as { label: string; key: SortKey }[]
+                ).map(({ label, key }) => (
+                  <th
+                    key={label}
+                    onClick={() => handleSort(key)}
+                    className={`p-4 font-bold tracking-wider cursor-pointer select-none transition-colors ${
+                      sortKey === key ? 'text-white' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40'
+                    }`}
+                  >
+                    {label}
+                    {sortKey === key && (
+                      <span className="text-pink-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </th>
+                ))}
                 <th className="p-4 font-bold text-neutral-400 tracking-wider">RÉGLAGES</th>
                 <th className="p-4 w-12"></th>
-                <th className="p-4 font-bold text-neutral-400 tracking-wider">CIRCUIT</th>
+                <th
+                  onClick={() => handleSort('track')}
+                  className={`p-4 font-bold tracking-wider cursor-pointer select-none transition-colors ${
+                    sortKey === 'track' ? 'text-white' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40'
+                  }`}
+                >
+                  CIRCUIT
+                  {sortKey === 'track' && (
+                    <span className="text-pink-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </th>
               </tr>
             </thead>
             <tbody>
