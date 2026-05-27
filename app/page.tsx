@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 pb-24">
+    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-start p-6 pb-24">
 
       {/* --- SECTION HAUT (En-tête) --- */}
       <div className="max-w-4xl text-center space-y-8 mt-4 md:mt-8">
