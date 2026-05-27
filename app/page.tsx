@@ -42,6 +42,8 @@ export default function Home() {
         </div>
       </div>
       
+      <DerniersChronos />
+
       {/* --- SECTION MODE D'EMPLOI --- */}
       <div className="mt-24 max-w-5xl mx-auto text-left w-full border-t border-neutral-800 pt-16">
         <h2 className="text-3xl font-bold text-center mb-12">Comment ça marche ?</h2>
@@ -86,8 +88,6 @@ export default function Home() {
 
         </div>
       </div>
-
-      <DerniersChronos />
 
       {/* --- SECTION TÉLÉCHARGEMENT --- */}
       <div id="telecharger" className="mt-24 max-w-5xl mx-auto w-full border-t border-neutral-800 pt-16">
