@@ -33,20 +33,19 @@ interface PlayerRanking {
 export default function ClassementGeneralClient() {
   const { user } = useAuth();
 
-  const [ranking,         setRanking]         = useState<PlayerRanking[]>([]);
-  const [currentPlayerId, setCurrentPlayerId] = useState<number | null>(null);
-  const [isLoading,       setIsLoading]       = useState(true);
-  const [error,           setError]           = useState<string | null>(null);
+  const [ranking,       setRanking]       = useState<PlayerRanking[]>([]);
+  const [currentPseudo, setCurrentPseudo] = useState<string | null>(null);
+  const [isLoading,     setIsLoading]     = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
 
-  // Récupère le player_id du joueur connecté pour mettre sa ligne en évidence
   useEffect(() => {
     if (!user) return;
     supabase
       .from('players')
-      .select('id')
+      .select('pseudo')
       .eq('user_id', user.id)
       .single()
-      .then(({ data }) => setCurrentPlayerId(data?.id ?? null));
+      .then(({ data }) => setCurrentPseudo(data?.pseudo ?? null));
   }, [user]);
 
   useEffect(() => {
@@ -188,14 +187,14 @@ export default function ClassementGeneralClient() {
               ) : (
                 ranking.map((player, index) => {
                   const pos = index + 1;
-                  const isMe = currentPlayerId !== null && player.player_id === currentPlayerId;
+                  const isMe = currentPseudo !== null && player.pseudo === currentPseudo;
 
                   return (
                     <tr
                       key={player.player_id}
                       className={`border-b border-neutral-200/50 dark:border-neutral-800/50 transition-colors ${
                         isMe
-                          ? 'bg-neutral-200 dark:bg-neutral-800'
+                          ? 'bg-pink-50 dark:bg-pink-500/10 border-l-2 border-pink-400 dark:border-pink-500'
                           : 'hover:bg-neutral-200 dark:hover:bg-neutral-800'
                       }`}
                     >
@@ -208,7 +207,9 @@ export default function ClassementGeneralClient() {
                       <td className="p-4 font-bold text-neutral-900 dark:text-white">
                         {player.pseudo}
                         {isMe && (
-                          <span className="ml-2 text-xs text-neutral-500 font-normal">(vous)</span>
+                          <span className="ml-2 px-1.5 py-0.5 bg-pink-500/20 border border-pink-500/40 text-pink-500 text-xs font-bold rounded">
+                            Toi
+                          </span>
                         )}
                       </td>
 
