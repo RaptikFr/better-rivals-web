@@ -23,6 +23,7 @@ const navLinks = [
   { href: '/classements',          label: 'Classements'          },
   { href: '/classement-general',   label: 'Classement général'   },
   { href: '/stats',                label: 'Stats'                },
+  { href: '/voitures',             label: 'Voitures'             },
   { href: '/#telecharger',         label: 'Télécharger'          },
   { href: '/contact',              label: 'Contact'              },
 ];
