@@ -31,6 +31,12 @@ interface Stats {
   bestRank: number | null;
 }
 
+interface Podiums {
+  gold:   number;
+  silver: number;
+  bronze: number;
+}
+
 interface TuneSetup {
   id: number;
   player_id: number;
@@ -97,6 +103,7 @@ export default function ProfilClient() {
   const [pseudo,    setPseudo]    = useState<string>('');
   const [playerId,  setPlayerId]  = useState<number | null>(null);
   const [laps,      setLaps]      = useState<ProfileLap[]>([]);
+  const [podiums,   setPodiums]   = useState<Podiums>({ gold: 0, silver: 0, bronze: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
 
@@ -127,8 +134,44 @@ export default function ProfilClient() {
       .eq('player_id', playerData?.id)
       .order('created_at', { ascending: false });
 
-    if (lapsError) setError("Impossible de charger tes données.");
-    else setLaps((lapsData ?? []) as unknown as ProfileLap[]);
+    if (lapsError) {
+      setError("Impossible de charger tes données.");
+      setIsLoading(false);
+      return;
+    }
+
+    const playerLaps = (lapsData ?? []) as unknown as ProfileLap[];
+    setLaps(playerLaps);
+
+    // Fetch all laps on the player's tracks in one query, then rank client-side
+    const trackIds = [...new Set(playerLaps.map(l => l.track_id))].filter(Boolean);
+    if (trackIds.length > 0) {
+      const { data: allLapsRaw } = await supabase
+        .from('lap_times')
+        .select('time_ms, car_ordinal, car_class, drivetrain, track_id')
+        .in('track_id', trackIds);
+
+      const allLaps = (allLapsRaw ?? []) as Array<{
+        time_ms: number; car_ordinal: number; car_class: string;
+        drivetrain: string; track_id: number;
+      }>;
+
+      let gold = 0, silver = 0, bronze = 0;
+      for (const lap of playerLaps) {
+        const betterCount = allLaps.filter(
+          l => l.track_id   === lap.track_id   &&
+               l.car_ordinal === lap.car_ordinal &&
+               l.car_class   === lap.car_class   &&
+               l.drivetrain  === lap.drivetrain   &&
+               l.time_ms < lap.time_ms
+        ).length;
+        if (betterCount === 0) gold++;
+        else if (betterCount === 1) silver++;
+        else if (betterCount === 2) bronze++;
+      }
+      setPodiums({ gold, silver, bronze });
+    }
+
     setIsLoading(false);
   }
 
@@ -193,6 +236,16 @@ export default function ProfilClient() {
                 { label: 'Circuits',  value: stats.totalCircuits },
                 { label: 'Chronos',   value: stats.totalLaps     },
                 { label: 'Voitures',  value: stats.totalVoitures },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg px-5 py-3 text-center">
+                  <p className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">{value}</p>
+                  <p className="text-xs text-neutral-500 font-medium">{label}</p>
+                </div>
+              ))}
+              {[
+                { label: '🥇', value: podiums.gold   },
+                { label: '🥈', value: podiums.silver },
+                { label: '🥉', value: podiums.bronze },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg px-5 py-3 text-center">
                   <p className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">{value}</p>
