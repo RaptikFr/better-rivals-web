@@ -52,33 +52,33 @@ export default function Home() {
 
           <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl hover:border-pink-500/50 transition-colors">
             <div className="text-pink-500 font-black text-4xl mb-4">01</div>
-            <h3 className="text-xl font-bold mb-2">Le Relais Télémétrique</h3>
+            <h3 className="text-xl font-bold mb-2">Crée ton compte</h3>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Téléchargez notre petit programme relais et lancez-le en arrière-plan. Assurez-vous d&apos;avoir activé la &quot;Sortie de données&quot; dans les paramètres HUD de Forza.
+              Inscris-toi sur Better Rivals avec ton Gamertag Xbox exact. Ton compte te permet de retrouver tous tes chronos, de figurer dans les classements et de suivre ta progression.
             </p>
           </div>
 
           <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl hover:border-violet-500/50 transition-colors">
             <div className="text-violet-500 font-black text-4xl mb-4">02</div>
-            <h3 className="text-xl font-bold mb-2">Le Code de Partage</h3>
+            <h3 className="text-xl font-bold mb-2">Télécharge le Relais</h3>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Trouvez un circuit qui vous plaît sur nos classements et notez son <strong>Code EventLab</strong>. Renseignez ce circuit dans le programme relais pour démarrer la session.
+              Lance BetterRivals.exe en arrière-plan, connecte-toi avec ton compte Better Rivals et choisis ton circuit. Le relais capte automatiquement les données télémétriques de Forza.
             </p>
           </div>
 
           <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl hover:border-pink-500/50 transition-colors">
             <div className="text-pink-500 font-black text-4xl mb-4">03</div>
-            <h3 className="text-xl font-bold mb-2">Roulez en Solo</h3>
+            <h3 className="text-xl font-bold mb-2">Configure Forza</h3>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Dans Forza, entrez le code EventLab et lancez l&apos;épreuve en mode <strong>Solo / Test Drive</strong>. Le jeu gère le chronomètre, notre relais s&apos;occupe du reste.
+              Active la &quot;Sortie de données&quot; dans les options HUD de Forza Horizon 6. Renseigne l&apos;adresse IP 127.0.0.1 et le port 5300. Lance ensuite l&apos;épreuve de ton choix en solo — circuit officiel ou épreuve EventLab de la communauté.
             </p>
           </div>
 
           <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 rounded-xl hover:border-violet-500/50 transition-colors">
             <div className="text-violet-500 font-black text-4xl mb-4">04</div>
-            <h3 className="text-xl font-bold mb-2">Pilotez Proprement</h3>
+            <h3 className="text-xl font-bold mb-2">Roule et bats des records</h3>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Ici, on joue &quot;Fair Play&quot;. Si vous utilisez la fonction <strong>Rembobiner</strong> ou si vous ratez un point de contrôle, votre tour sera invalidé par la télémétrie.
+              Fais le meilleur tour possible. Ton temps est automatiquement enregistré et comparé aux autres joueurs avec la même voiture, la même classe et la même transmission. Bats des records, grimpe dans le classement général et défie tes rivaux&nbsp;!
             </p>
           </div>
 
