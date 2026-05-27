@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 
 interface TuneSetup {
@@ -14,6 +15,7 @@ interface TuneSetup {
 }
 
 interface LapTime {
+  id: number;
   time_ms: number;
   car_class: CarClass;
   car_pi: number;
@@ -85,14 +87,125 @@ function TuneCell({ lap, setups }: { lap: LapTime; setups: TuneSetup[] }) {
   );
 }
 
+const RAISONS = ['Temps impossible', 'Mauvais circuit sélectionné', 'Autre'] as const;
+type Raison = typeof RAISONS[number];
+
+function ReportModal({
+  lap,
+  onClose,
+  onSuccess,
+}: {
+  lap: LapTime;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [raison, setRaison] = useState<Raison>(RAISONS[0]);
+  const [details, setDetails] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    setLoading(true);
+    setError(null);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/reports', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({
+        lap_time_id: lap.id,
+        raison,
+        details: details.trim() || null,
+      }),
+    });
+    const json = await res.json();
+    if (res.ok) {
+      onSuccess();
+    } else {
+      setError(json.error ?? 'Erreur lors du signalement.');
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-5">
+        <div>
+          <h2 className="text-lg font-extrabold text-white mb-1">🚩 Signaler un temps suspect</h2>
+          <p className="text-sm text-neutral-500">Ce signalement sera examiné par l&apos;équipe Better Rivals.</p>
+        </div>
+        <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-4 space-y-1.5 text-sm">
+          <p><span className="text-neutral-500">Pilote :</span> <span className="text-white font-bold ml-1">{lap.players?.pseudo ?? '—'}</span></p>
+          <p><span className="text-neutral-500">Voiture :</span> <span className="text-neutral-300 ml-1">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</span></p>
+          <p><span className="text-neutral-500">Circuit :</span> <span className="text-neutral-300 ml-1">{lap.tracks?.name ?? '—'}</span></p>
+          <p><span className="text-neutral-500">Temps :</span> <span className="font-mono font-bold text-pink-400 ml-1">{formatTime(lap.time_ms)}</span></p>
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-neutral-300 mb-2">Raison</label>
+          <select
+            value={raison}
+            onChange={e => setRaison(e.target.value as Raison)}
+            className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+          >
+            {RAISONS.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-neutral-300 mb-2">
+            Détails <span className="text-neutral-500 font-normal">(optionnel)</span>
+          </label>
+          <textarea
+            value={details}
+            onChange={e => setDetails(e.target.value)}
+            placeholder="Précise ce qui te semble suspect..."
+            rows={3}
+            className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors resize-none"
+          />
+        </div>
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+        <div className="flex gap-3 justify-end pt-1">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-400 text-sm font-bold rounded-lg hover:bg-red-500/30 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Envoi...' : '🚩 Signaler'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const DRIVETRAIN_OPTIONS: Array<"Tous" | Drivetrain> = ["Tous", "AWD", "RWD", "FWD"];
 
 export default function ClassementsClient() {
+
+  const { user } = useAuth();
 
   const [lapTimes,   setLapTimes]   = useState<LapTime[]>([]);
   const [tuneSetups, setTuneSetups] = useState<TuneSetup[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
+
+  const [currentPlayerId,    setCurrentPlayerId]    = useState<number | null>(null);
+  const [reportTarget,       setReportTarget]       = useState<LapTime | null>(null);
+  const [reportSuccessMsg,   setReportSuccessMsg]   = useState<string | null>(null);
 
   // Filtres serveur
   const [allTracks, setAllTracks] = useState<Track[]>([]);
@@ -120,6 +233,17 @@ export default function ClassementsClient() {
     fetchTracks();
   }, []);
 
+  // Charger le player_id courant si connecté
+  useEffect(() => {
+    if (!user) { setCurrentPlayerId(null); return; }
+    supabase
+      .from('players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+      .then(({ data }) => setCurrentPlayerId(data?.id ?? null));
+  }, [user]);
+
   // Requête Supabase — se redéclenche quand les filtres serveur changent
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -131,7 +255,7 @@ export default function ClassementsClient() {
     let query = supabase
       .from('lap_times')
       .select(`
-        time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id,
+        id, time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id,
         players ( pseudo ),
         cars ( manufacturer, name, year ),
         tracks ( name, length_km )
@@ -352,19 +476,20 @@ export default function ClassementsClient() {
                 <th className="p-4 font-bold text-neutral-400 tracking-wider">CLASSE / PI</th>
                 <th className="p-4 font-bold text-neutral-400 tracking-wider">TRANSMISSION</th>
                 <th className="p-4 font-bold text-neutral-400 tracking-wider">RÉGLAGES</th>
+                <th className="p-4 w-12"></th>
                 <th className="p-4 font-bold text-neutral-400 tracking-wider">CIRCUIT</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-neutral-500 font-medium animate-pulse">
+                  <td colSpan={9} className="p-12 text-center text-neutral-500 font-medium animate-pulse">
                     Chargement des données télémétriques...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center">
+                  <td colSpan={9} className="p-12 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <span className="text-3xl">⚠️</span>
                       <p className="text-neutral-400 font-medium">{error}</p>
@@ -400,20 +525,20 @@ export default function ClassementsClient() {
                     <td className="p-4">
                       <TuneCell lap={lap} setups={tuneSetups} />
                     </td>
+                    <td className="p-4 text-right">
+                      {user && currentPlayerId !== null && lap.player_id !== currentPlayerId && (
+                        <button
+                          onClick={() => setReportTarget(lap)}
+                          title="Signaler ce temps comme suspect"
+                          className="text-neutral-600 hover:text-red-400 transition-colors"
+                        >
+                          🚩
+                        </button>
+                      )}
+                    </td>
                     <td className="p-4 text-neutral-400">
                       {lap.tracks?.name ?? 'Inconnu'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
                     </td>
-                  <td className="p-4 text-right">
-                    {user && currentPlayerId !== lap.player_id && (
-                      <button
-                        onClick={() => setReportingLap(lap)}
-                        title="Signaler ce temps suspect"
-                        className="text-neutral-600 hover:text-red-500 transition-colors text-sm font-medium"
-                      >
-                        🚩 Signaler
-                      </button>
-                    )}
-                  </td>
                   </tr>
                 ))
               ) : (
@@ -483,6 +608,24 @@ export default function ClassementsClient() {
         )}
 
       </div>
+
+      {reportTarget && (
+        <ReportModal
+          lap={reportTarget}
+          onClose={() => setReportTarget(null)}
+          onSuccess={() => {
+            setReportTarget(null);
+            setReportSuccessMsg('✅ Signalement envoyé. Notre équipe va examiner ce temps.');
+            setTimeout(() => setReportSuccessMsg(null), 4000);
+          }}
+        />
+      )}
+
+      {reportSuccessMsg && (
+        <div className="fixed bottom-6 right-6 z-40 bg-green-500/20 border border-green-500/30 text-green-400 px-5 py-3 rounded-xl text-sm font-bold shadow-xl">
+          {reportSuccessMsg}
+        </div>
+      )}
     </main>
   );
 }
