@@ -51,7 +51,7 @@ function DrivetrainBadge({ drivetrain }: { drivetrain: Drivetrain | null }) {
     RWD: "bg-orange-500/20 border-orange-500/50 text-orange-400",
     FWD: "bg-green-500/20 border-green-500/50 text-green-400",
   };
-  const style = drivetrain ? colors[drivetrain] : "bg-neutral-800 border-neutral-700 text-neutral-400";
+  const style = drivetrain ? colors[drivetrain] : "bg-neutral-200 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400";
   return (
     <span className={`px-2 py-0.5 border rounded text-xs font-bold ${style}`}>
       {drivetrain ?? "—"}
@@ -81,7 +81,7 @@ function TuneCell({ lap, setups }: { lap: LapTime; setups: TuneSetup[] }) {
       <button
         onClick={handleCopy}
         title="Copier le code de réglage"
-        className="font-mono text-sm text-neutral-300 hover:text-pink-400 transition-colors"
+        className="font-mono text-sm text-neutral-700 dark:text-neutral-300 hover:text-pink-400 transition-colors"
       >
         {copied ? <span className="text-green-400 font-bold not-italic">Copié !</span> : tune.share_code}
       </button>
@@ -136,29 +136,29 @@ function ReportModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-5">
+      <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-5">
         <div>
-          <h2 className="text-lg font-extrabold text-white mb-1">🚩 Signaler un temps suspect</h2>
+          <h2 className="text-lg font-extrabold text-neutral-900 dark:text-white mb-1">🚩 Signaler un temps suspect</h2>
           <p className="text-sm text-neutral-500">Ce signalement sera examiné par l&apos;équipe Better Rivals.</p>
         </div>
-        <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-4 space-y-1.5 text-sm">
-          <p><span className="text-neutral-500">Pilote :</span> <span className="text-white font-bold ml-1">{lap.players?.pseudo ?? '—'}</span></p>
-          <p><span className="text-neutral-500">Voiture :</span> <span className="text-neutral-300 ml-1">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</span></p>
-          <p><span className="text-neutral-500">Circuit :</span> <span className="text-neutral-300 ml-1">{lap.tracks?.name ?? '—'}</span></p>
+        <div className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-1.5 text-sm">
+          <p><span className="text-neutral-500">Pilote :</span> <span className="text-neutral-900 dark:text-white font-bold ml-1">{lap.players?.pseudo ?? '—'}</span></p>
+          <p><span className="text-neutral-500">Voiture :</span> <span className="text-neutral-700 dark:text-neutral-300 ml-1">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</span></p>
+          <p><span className="text-neutral-500">Circuit :</span> <span className="text-neutral-700 dark:text-neutral-300 ml-1">{lap.tracks?.name ?? '—'}</span></p>
           <p><span className="text-neutral-500">Temps :</span> <span className="font-mono font-bold text-pink-400 ml-1">{formatTime(lap.time_ms)}</span></p>
         </div>
         <div>
-          <label className="block text-sm font-bold text-neutral-300 mb-2">Raison</label>
+          <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Raison</label>
           <select
             value={raison}
             onChange={e => setRaison(e.target.value as Raison)}
-            className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+            className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-pink-500 transition-colors"
           >
             {RAISONS.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-bold text-neutral-300 mb-2">
+          <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
             Détails <span className="text-neutral-500 font-normal">(optionnel)</span>
           </label>
           <textarea
@@ -166,7 +166,7 @@ function ReportModal({
             onChange={e => setDetails(e.target.value)}
             placeholder="Précise ce qui te semble suspect..."
             rows={3}
-            className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors resize-none"
+            className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors resize-none"
           />
         </div>
         {error && (
@@ -177,7 +177,7 @@ function ReportModal({
         <div className="flex gap-3 justify-end pt-1">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-bold text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
           >
             Annuler
           </button>
@@ -371,19 +371,19 @@ export default function ClassementsClient() {
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
           Leaderboards
         </h1>
-        <p className="text-neutral-400 mb-8 text-lg">
+        <p className="text-neutral-600 dark:text-neutral-400 mb-8 text-lg">
           Filtrez les résultats pour comparer ce qui est comparable.
         </p>
 
         {/* --- ZONE DES FILTRES --- */}
-        <div className="flex flex-col gap-4 mb-6 p-4 bg-neutral-900 border border-neutral-800 rounded-xl">
+        <div className="flex flex-col gap-4 mb-6 p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
 
           {/* Ligne 1 : Circuit + Classe */}
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex flex-col">
-              <label className="text-sm text-neutral-400 font-bold mb-1">Circuit :</label>
+              <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Circuit :</label>
               <select
-                className="bg-neutral-950 border border-neutral-700 text-white p-2 rounded-lg focus:outline-none focus:border-pink-500"
+                className="bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 rounded-lg focus:outline-none focus:border-pink-500"
                 value={selectedTrackId ?? ''}
                 onChange={(e) => setSelectedTrackId(e.target.value ? Number(e.target.value) : null)}
               >
@@ -395,9 +395,9 @@ export default function ClassementsClient() {
             </div>
 
             <div className="flex flex-col">
-              <label className="text-sm text-neutral-400 font-bold mb-1">Classe :</label>
+              <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Classe :</label>
               <select
-                className="bg-neutral-950 border border-neutral-700 text-white p-2 rounded-lg focus:outline-none focus:border-pink-500"
+                className="bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 rounded-lg focus:outline-none focus:border-pink-500"
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
               >
@@ -410,7 +410,7 @@ export default function ClassementsClient() {
 
           {/* Ligne 1b : Voiture avec recherche */}
           <div className="flex flex-col relative car-dropdown-wrapper">
-            <label className="text-sm text-neutral-400 font-bold mb-1">Voiture :</label>
+            <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Voiture :</label>
             <div className="relative">
               <input
                 type="text"
@@ -422,17 +422,17 @@ export default function ClassementsClient() {
                 }}
                 onFocus={() => setShowCarDropdown(true)}
                 placeholder="Toutes les voitures"
-                className="w-full bg-neutral-950 border border-neutral-700 text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+                className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
               />
               {selectedCar !== 'Toutes' && (
                 <button
                   onClick={() => { setSelectedCar('Toutes'); setCarSearch(''); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
                 >✕</button>
               )}
             </div>
             {showCarDropdown && filteredCarOptions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-neutral-950 border border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                 {filteredCarOptions.map((car, idx) => (
                   <button
                     key={idx}
@@ -444,7 +444,7 @@ export default function ClassementsClient() {
                     className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                       selectedCar === car
                         ? 'bg-pink-500/20 text-pink-400'
-                        : 'text-neutral-300 hover:bg-neutral-800'
+                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                     }`}
                   >
                     {car}
@@ -456,12 +456,12 @@ export default function ClassementsClient() {
 
           {/* Ligne 2 : Transmission */}
           <div className="flex flex-col">
-            <label className="text-sm text-neutral-400 font-bold mb-2">Transmission :</label>
+            <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-2">Transmission :</label>
             <div className="flex flex-wrap gap-2">
               {DRIVETRAIN_OPTIONS.map((dt) => {
                 const isActive = selectedDrivetrain === dt;
                 const activeColors: Record<typeof dt, string> = {
-                  Tous: "bg-white text-black border-white",
+                  Tous: "bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white",
                   AWD: "bg-blue-500 text-white border-blue-500",
                   RWD: "bg-orange-500 text-white border-orange-500",
                   FWD: "bg-green-500 text-white border-green-500",
@@ -473,7 +473,7 @@ export default function ClassementsClient() {
                     className={`px-4 py-1.5 rounded-full border text-sm font-bold transition-all ${
                       isActive
                         ? activeColors[dt]
-                        : "bg-neutral-950 border-neutral-700 text-neutral-400 hover:border-neutral-500"
+                        : "bg-white dark:bg-neutral-950 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-500"
                     }`}
                   >
                     {dt}
@@ -495,10 +495,10 @@ export default function ClassementsClient() {
         )}
 
         {/* Tableau des temps */}
-        <div className="overflow-x-auto bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl">
+        <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl">
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
-              <tr className="border-b border-neutral-800 bg-neutral-950">
+              <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
                 {(
                   [
                     { label: '#',            key: 'time_ms'    },
@@ -513,7 +513,9 @@ export default function ClassementsClient() {
                     key={label}
                     onClick={() => handleSort(key)}
                     className={`p-4 font-bold tracking-wider cursor-pointer select-none transition-colors ${
-                      sortKey === key ? 'text-white' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40'
+                      sortKey === key
+                        ? 'text-neutral-900 dark:text-white'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40'
                     }`}
                   >
                     {label}
@@ -522,12 +524,14 @@ export default function ClassementsClient() {
                     )}
                   </th>
                 ))}
-                <th className="p-4 font-bold text-neutral-400 tracking-wider">RÉGLAGES</th>
+                <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">RÉGLAGES</th>
                 <th className="p-4 w-12"></th>
                 <th
                   onClick={() => handleSort('track')}
                   className={`p-4 font-bold tracking-wider cursor-pointer select-none transition-colors ${
-                    sortKey === 'track' ? 'text-white' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40'
+                    sortKey === 'track'
+                      ? 'text-neutral-900 dark:text-white'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40'
                   }`}
                 >
                   CIRCUIT
@@ -549,10 +553,10 @@ export default function ClassementsClient() {
                   <td colSpan={9} className="p-12 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <span className="text-3xl">⚠️</span>
-                      <p className="text-neutral-400 font-medium">{error}</p>
+                      <p className="text-neutral-600 dark:text-neutral-400 font-medium">{error}</p>
                       <button
                         onClick={fetchData}
-                        className="mt-2 px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white hover:bg-neutral-700 transition-colors"
+                        className="mt-2 px-4 py-2 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
                       >
                         Réessayer
                       </button>
@@ -561,17 +565,17 @@ export default function ClassementsClient() {
                 </tr>
               ) : paginatedLaps.length > 0 ? (
                 paginatedLaps.map((lap, index) => (
-                  <tr key={index} className="border-b border-neutral-800/50 hover:bg-neutral-800 transition-colors">
-                    <td className="p-4 font-bold text-neutral-600">{globalOffset + index + 1}</td>
-                    <td className="p-4 font-bold text-white">{lap.players?.pseudo ?? 'Inconnu'}</td>
+                  <tr key={index} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
+                    <td className="p-4 font-bold text-neutral-500">{globalOffset + index + 1}</td>
+                    <td className="p-4 font-bold text-neutral-900 dark:text-white">{lap.players?.pseudo ?? 'Inconnu'}</td>
                     <td className="p-4 font-mono font-bold text-pink-400 text-lg">
                       {formatTime(lap.time_ms)}
                     </td>
-                    <td className="p-4 text-neutral-300">
+                    <td className="p-4 text-neutral-700 dark:text-neutral-300">
                       {lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}
                     </td>
                     <td className="p-4">
-                      <span className="px-2 py-1 bg-neutral-800 border border-neutral-700 rounded text-xs font-bold mr-2 text-white">
+                      <span className="px-2 py-1 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-xs font-bold mr-2 text-neutral-900 dark:text-white">
                         {lap.car_class}
                       </span>
                       <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi}</span>
@@ -587,13 +591,13 @@ export default function ClassementsClient() {
                         <button
                           onClick={() => setReportTarget(lap)}
                           title="Signaler ce temps comme suspect"
-                          className="text-neutral-600 hover:text-red-400 transition-colors"
+                          className="text-neutral-500 hover:text-red-400 transition-colors"
                         >
                           🚩
                         </button>
                       )}
                     </td>
-                    <td className="p-4 text-neutral-400">
+                    <td className="p-4 text-neutral-600 dark:text-neutral-400">
                       {lap.tracks?.name ?? 'Inconnu'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
                     </td>
                   </tr>
@@ -616,7 +620,7 @@ export default function ClassementsClient() {
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              className="px-4 py-2 rounded-lg border border-neutral-700 text-sm font-bold text-neutral-400 hover:text-white hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               ← Précédent
             </button>
@@ -635,7 +639,7 @@ export default function ClassementsClient() {
                 }, [])
                 .map((item, i) =>
                   item === "..." ? (
-                    <span key={`ellipsis-${i}`} className="px-2 py-2 text-neutral-600 text-sm">…</span>
+                    <span key={`ellipsis-${i}`} className="px-2 py-2 text-neutral-500 dark:text-neutral-600 text-sm">…</span>
                   ) : (
                     <button
                       key={item}
@@ -643,7 +647,7 @@ export default function ClassementsClient() {
                       className={`w-9 h-9 rounded-lg text-sm font-bold transition-all ${
                         safePage === item
                           ? "bg-pink-500 text-white border border-pink-500"
-                          : "border border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500"
+                          : "border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-500"
                       }`}
                     >
                       {item}
@@ -656,7 +660,7 @@ export default function ClassementsClient() {
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
-              className="px-4 py-2 rounded-lg border border-neutral-700 text-sm font-bold text-neutral-400 hover:text-white hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               Suivant →
             </button>

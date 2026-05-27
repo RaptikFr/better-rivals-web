@@ -31,7 +31,7 @@ function TypeBadge({ type }: { type: string }) {
     'Course de rue':      'bg-yellow-500/20 border-yellow-500/50 text-yellow-400',
     'Course de drag':     'bg-orange-500/20 border-orange-500/50 text-orange-400',
   };
-  const style = colors[type] ?? 'bg-neutral-800 border-neutral-700 text-neutral-400';
+  const style = colors[type] ?? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400';
   return (
     <span className={`px-2 py-0.5 border rounded text-xs font-bold ${style}`}>
       {type}
@@ -40,33 +40,25 @@ function TypeBadge({ type }: { type: string }) {
 }
 
 function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
-  const [voted,    setVoted]    = useState(false);
-  const [loading,  setLoading]  = useState(false);
+  const [voted,      setVoted]      = useState(false);
+  const [loading,    setLoading]    = useState(false);
   const [thumbsUp,   setThumbsUp]   = useState(track.votes.filter(v => v.vote).length);
   const [thumbsDown, setThumbsDown] = useState(track.votes.filter(v => !v.vote).length);
 
   useEffect(() => {
-    if (userId) {
-      setVoted(track.votes.some(v => v.user_id === userId));
-    }
+    if (userId) setVoted(track.votes.some(v => v.user_id === userId));
   }, [userId, track.votes]);
 
   async function handleVote(vote: boolean) {
     if (!userId || voted || loading) return;
     setLoading(true);
-
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setLoading(false); return; }
-
     const res = await fetch('/api/votes', {
       method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
       body: JSON.stringify({ track_id: track.id, vote }),
     });
-
     if (res.ok) {
       setVoted(true);
       if (vote) setThumbsUp(n => n + 1);
@@ -76,16 +68,15 @@ function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
   }
 
   return (
-    <div className={`bg-neutral-900 border rounded-xl p-5 transition-colors flex flex-col gap-3 ${
-      track.is_sprint ? 'border-neutral-800 opacity-60' : 'border-neutral-800 hover:border-neutral-600'
+    <div className={`bg-neutral-100 dark:bg-neutral-900 border rounded-xl p-5 transition-colors flex flex-col gap-3 ${
+      track.is_sprint ? 'border-neutral-200 dark:border-neutral-800 opacity-60' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
     }`}>
-      {/* En-tête */}
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-bold text-white text-lg leading-tight">{track.name}</h3>
+        <h3 className="font-bold text-lg leading-tight">{track.name}</h3>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <TypeBadge type={track.type} />
           {track.is_sprint && (
-            <span className="px-2 py-0.5 bg-neutral-800 border border-neutral-700 rounded text-xs font-bold text-neutral-500">
+            <span className="px-2 py-0.5 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-xs font-bold text-neutral-500">
               ⚠️ Sprint
             </span>
           )}
@@ -93,64 +84,42 @@ function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
       </div>
 
       {track.is_sprint && (
-        <p className="text-xs text-neutral-600 italic">Non supporté par la télémétrie UDP de Forza.</p>
+        <p className="text-xs text-neutral-500 italic">Non supporté par la télémétrie UDP de Forza.</p>
       )}
 
       {track.description && (
-        <p className="text-sm text-neutral-400">{track.description}</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">{track.description}</p>
       )}
 
-      {/* Infos */}
       <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500">
         {track.length_km && <span>📏 {track.length_km} km</span>}
         {track.event_lab_code && (
-          <span className="font-mono bg-neutral-800 px-2 py-0.5 rounded text-xs text-neutral-300">
+          <span className="font-mono bg-neutral-200 dark:bg-neutral-800 px-2 py-0.5 rounded text-xs text-neutral-700 dark:text-neutral-300">
             🔑 {track.event_lab_code}
           </span>
         )}
       </div>
 
-      {/* Votes */}
-      <div className="flex items-center gap-3 pt-1 border-t border-neutral-800">
-        {/* Pouce haut */}
-        <button
-          onClick={() => handleVote(true)}
-          disabled={!userId || voted || loading}
+      <div className="flex items-center gap-3 pt-1 border-t border-neutral-200 dark:border-neutral-800">
+        <button onClick={() => handleVote(true)} disabled={!userId || voted || loading}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-            voted
-              ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
-              : userId
-                ? 'bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 cursor-pointer'
-                : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
-          }`}
-        >
+            voted ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
+            : userId ? 'bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 cursor-pointer'
+            : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
+          }`}>
           👍 <span>{thumbsUp}</span>
         </button>
-
-        {/* Pouce bas */}
-        <button
-          onClick={() => handleVote(false)}
-          disabled={!userId || voted || loading}
+        <button onClick={() => handleVote(false)} disabled={!userId || voted || loading}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-            voted
-              ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
-              : userId
-                ? 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 cursor-pointer'
-                : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
-          }`}
-        >
+            voted ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
+            : userId ? 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 cursor-pointer'
+            : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
+          }`}>
           👎 <span>{thumbsDown}</span>
         </button>
-
-        {/* Message selon état */}
-        {!userId && (
-          <span className="text-xs text-neutral-600 ml-1">Connecte-toi pour voter</span>
-        )}
-        {voted && (
-          <span className="text-xs text-neutral-600 ml-1">Vote enregistré ✓</span>
-        )}
+        {!userId && <span className="text-xs text-neutral-500 ml-1">Connecte-toi pour voter</span>}
+        {voted  && <span className="text-xs text-neutral-500 ml-1">Vote enregistré ✓</span>}
       </div>
-
     </div>
   );
 }
@@ -161,7 +130,7 @@ function SoumissionModal({ onClose, onSuccess }: { onClose: () => void; onSucces
     length_km: '', description: '', is_sprint: false
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+  const [error,   setError]   = useState<string | null>(null);
 
   async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -181,90 +150,85 @@ function SoumissionModal({ onClose, onSuccess }: { onClose: () => void; onSucces
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-800">
-          <h2 className="text-xl font-bold text-white">Proposer une épreuve</h2>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white text-xl">✕</button>
+      <div className="w-full max-w-lg bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl">
+        <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-800">
+          <h2 className="text-xl font-bold">Proposer une épreuve</h2>
+          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white text-xl">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
 
-          {/* Critères complets dans le formulaire */}
-          <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-sm text-neutral-400 space-y-2">
-            <p className="font-bold text-neutral-300">Pour être éligible, ton épreuve doit :</p>
+          <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 text-sm text-neutral-600 dark:text-neutral-400 space-y-2">
+            <p className="font-bold text-neutral-800 dark:text-neutral-300">Pour être éligible, ton épreuve doit :</p>
             <ul className="space-y-1.5 pl-1">
-              <li>🏁 Être un <strong className="text-neutral-200">circuit bouclé</strong> (pas un sprint point A → B)</li>
-              <li>🔄 Avoir au moins <strong className="text-neutral-200">3 tours</strong> configurés dans les paramètres de l&apos;épreuve</li>
-              <li>🚫 Ne pas avoir d&apos;<strong className="text-neutral-200">adversaire</strong> — mode solo uniquement, équivalent au mode Rivaux</li>
-              <li>🔑 Avoir un <strong className="text-neutral-200">code EventLab valide</strong> et accessible</li>
+              <li>🏁 Être un <strong className="text-neutral-900 dark:text-neutral-200">circuit bouclé</strong> (pas un sprint point A → B)</li>
+              <li>🔄 Avoir au moins <strong className="text-neutral-900 dark:text-neutral-200">3 tours</strong> configurés dans les paramètres de l&apos;épreuve</li>
+              <li>🚫 Ne pas avoir d&apos;<strong className="text-neutral-900 dark:text-neutral-200">adversaire</strong> — mode solo uniquement, équivalent au mode Rivaux</li>
+              <li>🔑 Avoir un <strong className="text-neutral-900 dark:text-neutral-200">code EventLab valide</strong> et accessible</li>
             </ul>
-            <p className="text-xs text-neutral-600 pt-1">
+            <p className="text-xs text-neutral-500 pt-1">
               Si ton épreuve remplit ces conditions, soumets-la ci-dessous. Un administrateur l&apos;approuvera ou non.
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-neutral-300 mb-2">Nom du circuit *</label>
+            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Nom du circuit *</label>
             <input type="text" required value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="Ex: Circuit de la montagne"
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 placeholder-neutral-400 focus:outline-none focus:border-pink-500 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-neutral-300 mb-2">Code EventLab *</label>
+            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Code EventLab *</label>
             <input type="text" required value={form.event_lab_code}
               onChange={e => setForm(f => ({ ...f, event_lab_code: e.target.value.toUpperCase() }))}
               placeholder="Ex: 123-456-789"
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 font-mono focus:outline-none focus:border-pink-500 transition-colors"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 placeholder-neutral-400 font-mono focus:outline-none focus:border-pink-500 transition-colors"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-neutral-300 mb-2">Type *</label>
+              <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Type *</label>
               <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-pink-500 transition-colors">
+                className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 focus:outline-none focus:border-pink-500 transition-colors">
                 {TRACK_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold text-neutral-300 mb-2">Longueur (km)</label>
+              <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Longueur (km)</label>
               <input type="number" step="0.1" min="0" value={form.length_km}
                 onChange={e => setForm(f => ({ ...f, length_km: e.target.value }))}
                 placeholder="Ex: 3.5"
-                className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
+                className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 placeholder-neutral-400 focus:outline-none focus:border-pink-500 transition-colors"
               />
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-neutral-950 border border-neutral-800 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg">
             <input type="checkbox" id="is_sprint" checked={form.is_sprint}
               onChange={e => setForm(f => ({ ...f, is_sprint: e.target.checked }))}
               className="w-4 h-4 accent-pink-500"
             />
-            <label htmlFor="is_sprint" className="text-sm text-neutral-300 cursor-pointer">
+            <label htmlFor="is_sprint" className="text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
               C&apos;est un sprint (point A → point B)
             </label>
           </div>
-          {form.is_sprint && (
-            <p className="text-xs text-amber-500">
-              ⚠️ Les sprints ne sont pas supportés par la télémétrie UDP de Forza.
-            </p>
-          )}
+          {form.is_sprint && <p className="text-xs text-amber-500">⚠️ Les sprints ne sont pas supportés par la télémétrie UDP de Forza.</p>}
           <div>
-            <label className="block text-sm font-bold text-neutral-300 mb-2">
+            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
               Description <span className="text-neutral-500 font-normal">(optionnel)</span>
             </label>
             <textarea value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Décris ton circuit en quelques mots..."
               rows={3}
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors resize-none"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 placeholder-neutral-400 focus:outline-none focus:border-pink-500 transition-colors resize-none"
             />
           </div>
           {error && <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">{error}</div>}
           <p className="text-xs text-neutral-500">⚠ Ton épreuve sera visible après validation par un administrateur.</p>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 py-3 bg-neutral-800 text-neutral-300 font-bold rounded-lg hover:bg-neutral-700 transition-colors">
+              className="flex-1 py-3 bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors">
               Annuler
             </button>
             <button type="submit" disabled={loading}
@@ -336,7 +300,7 @@ export default function EpreuvesCommunauteClient() {
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600 mb-2">
               Épreuves communauté
             </h1>
-            <p className="text-neutral-400 text-lg">Les circuits créés par la communauté Better Rivals.</p>
+            <p className="text-neutral-600 dark:text-neutral-400 text-lg">Les circuits créés par la communauté Better Rivals.</p>
           </div>
           {user && (
             <button onClick={() => setShowModal(true)}
@@ -352,20 +316,19 @@ export default function EpreuvesCommunauteClient() {
           </div>
         )}
 
-        {/* Bandeau critères d'éligibilité */}
-        <div className="mb-8 bg-neutral-900 border border-violet-500/30 rounded-xl p-5">
+        <div className="mb-8 bg-neutral-100 dark:bg-neutral-900 border border-violet-500/30 rounded-xl p-5">
           <div className="flex items-start gap-3">
             <span className="text-xl mt-0.5">📋</span>
             <div>
-              <h3 className="font-bold text-white mb-2">Critères d&apos;éligibilité</h3>
-              <ul className="text-sm text-neutral-400 space-y-1">
-                <li>✅ L&apos;épreuve doit être un <strong className="text-neutral-200">circuit bouclé</strong> (pas un sprint)</li>
-                <li>✅ Au moins <strong className="text-neutral-200">3 tours</strong> configurés</li>
-                <li>✅ <strong className="text-neutral-200">Aucun adversaire</strong> (équivalent au mode Rivaux)</li>
-                <li>✅ Un <strong className="text-neutral-200">code EventLab valide</strong></li>
+              <h3 className="font-bold mb-2">Critères d&apos;éligibilité</h3>
+              <ul className="text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
+                <li>✅ L&apos;épreuve doit être un <strong className="text-neutral-900 dark:text-neutral-200">circuit bouclé</strong> (pas un sprint)</li>
+                <li>✅ Au moins <strong className="text-neutral-900 dark:text-neutral-200">3 tours</strong> configurés</li>
+                <li>✅ <strong className="text-neutral-900 dark:text-neutral-200">Aucun adversaire</strong> (équivalent au mode Rivaux)</li>
+                <li>✅ Un <strong className="text-neutral-900 dark:text-neutral-200">code EventLab valide</strong></li>
               </ul>
               {!user && (
-                <p className="text-xs text-neutral-600 mt-3">Connecte-toi pour proposer une épreuve.</p>
+                <p className="text-xs text-neutral-500 mt-3">Connecte-toi pour proposer une épreuve.</p>
               )}
               <Link
                 href="/criteres-eligibilite"
@@ -383,8 +346,8 @@ export default function EpreuvesCommunauteClient() {
               <button key={type} onClick={() => setFilterType(type)}
                 className={`px-4 py-1.5 rounded-full border text-sm font-bold transition-all ${
                   filterType === type
-                    ? 'bg-white text-black border-white'
-                    : 'bg-neutral-950 border-neutral-700 text-neutral-400 hover:border-neutral-500'
+                    ? 'bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white'
+                    : 'bg-white dark:bg-neutral-950 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-500'
                 }`}>
                 {type}
               </button>
@@ -393,7 +356,7 @@ export default function EpreuvesCommunauteClient() {
         )}
 
         {filtered.length === 0 ? (
-          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-12 text-center">
+          <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-12 text-center">
             <p className="text-neutral-500 mb-4">
               {tracks.length === 0 ? "Aucune épreuve communauté pour l'instant." : "Aucune épreuve pour ce filtre."}
             </p>
@@ -404,7 +367,7 @@ export default function EpreuvesCommunauteClient() {
               </button>
             )}
             {!user && tracks.length === 0 && (
-              <p className="text-neutral-600 text-sm">Connecte-toi pour proposer une épreuve.</p>
+              <p className="text-neutral-500 text-sm">Connecte-toi pour proposer une épreuve.</p>
             )}
           </div>
         ) : (

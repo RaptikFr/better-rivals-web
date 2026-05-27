@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRef, useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { isAdmin } from '@/lib/admins';
@@ -30,8 +31,12 @@ export default function Navbar() {
   const router   = useRouter();
   const { user, loading, signOut } = useAuth();
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { theme, setTheme } = useTheme();
+  const [mounted,  setMounted]  = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -49,7 +54,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md">
       <div className="max-w-screen-2xl mx-auto px-6 h-16 flex items-center justify-between">
 
         {/* Logo */}
@@ -70,8 +75,8 @@ export default function Navbar() {
                 href={href}
                 className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   isActive
-                    ? 'bg-neutral-800 text-white'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                    ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
                 }`}
               >
                 {label}
@@ -79,12 +84,23 @@ export default function Navbar() {
             );
           })}
 
+          {/* Toggle thème */}
+          {mounted && (
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+              className="ml-1 p-2 rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors text-sm"
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+          )}
+
           {/* Cloche notifications */}
           {user && (
-            <div ref={bellRef} className="relative ml-2">
+            <div ref={bellRef} className="relative ml-1">
               <button
                 onClick={() => setBellOpen(o => !o)}
-                className="relative p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800/50 transition-colors"
+                className="relative p-2 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
               >
                 🔔
                 {unreadCount > 0 && (
@@ -95,13 +111,13 @@ export default function Navbar() {
               </button>
 
               {bellOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
-                    <p className="text-sm font-bold text-white">Notifications</p>
+                <div className="absolute right-0 top-full mt-2 w-80 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
+                    <p className="text-sm font-bold text-neutral-900 dark:text-white">Notifications</p>
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllAsRead}
-                        className="text-xs text-neutral-400 hover:text-white transition-colors"
+                        className="text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
                       >
                         Tout marquer comme lu
                       </button>
@@ -115,11 +131,11 @@ export default function Navbar() {
                       notifications.map(n => (
                         <div
                           key={n.id}
-                          className={`px-4 py-3 border-b border-neutral-800/50 last:border-0 ${
-                            n.read ? 'bg-transparent' : 'bg-neutral-800'
+                          className={`px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 ${
+                            n.read ? 'bg-transparent' : 'bg-neutral-200 dark:bg-neutral-800'
                           }`}
                         >
-                          <p className="text-sm text-white leading-snug">{n.message}</p>
+                          <p className="text-sm text-neutral-900 dark:text-white leading-snug">{n.message}</p>
                           <p className="text-xs text-neutral-500 mt-1">{dateRelative(n.created_at)}</p>
                         </div>
                       ))
@@ -132,15 +148,15 @@ export default function Navbar() {
 
           {/* Zone auth */}
           {loading ? (
-            <div className="w-24 h-8 bg-neutral-800 rounded-lg animate-pulse ml-2" />
+            <div className="w-24 h-8 bg-neutral-200 dark:bg-neutral-800 rounded-lg animate-pulse ml-2" />
           ) : user ? (
             <div className="flex items-center gap-2 ml-2">
               <Link
                 href="/profil"
                 className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   pathname === '/profil'
-                    ? 'bg-neutral-800 text-white'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                    ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
                 }`}
               >
                 Mon profil
@@ -150,8 +166,8 @@ export default function Navbar() {
                   href="/admin"
                   className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
                     pathname === '/admin'
-                      ? 'bg-neutral-800 text-white'
-                      : 'text-neutral-500 hover:text-white hover:bg-neutral-800/50'
+                      ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                      : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
                   }`}
                 >
                   Admin
@@ -159,7 +175,7 @@ export default function Navbar() {
               )}
               <button
                 onClick={handleSignOut}
-                className="px-3 py-2 rounded-lg text-sm font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/50 transition-colors"
+                className="px-3 py-2 rounded-lg text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
               >
                 Déconnexion
               </button>
@@ -168,7 +184,7 @@ export default function Navbar() {
             <div className="flex items-center gap-2 ml-2">
               <Link
                 href="/connexion"
-                className="px-3 py-2 rounded-lg text-sm font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/50 transition-colors"
+                className="px-3 py-2 rounded-lg text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
               >
                 Connexion
               </Link>

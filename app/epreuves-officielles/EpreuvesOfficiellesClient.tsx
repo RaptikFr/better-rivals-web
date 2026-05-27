@@ -25,7 +25,7 @@ function TypeBadge({ type }: { type: string }) {
     'Course de rue':      'bg-yellow-500/20 border-yellow-500/50 text-yellow-400',
     'Course de drag':     'bg-orange-500/20 border-orange-500/50 text-orange-400',
   };
-  const style = colors[type] ?? 'bg-neutral-800 border-neutral-700 text-neutral-400';
+  const style = colors[type] ?? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400';
   return (
     <span className={`px-2 py-0.5 border rounded text-xs font-bold ${style}`}>
       {type}
@@ -35,30 +35,30 @@ function TypeBadge({ type }: { type: string }) {
 
 function TrackCard({ track }: { track: Track }) {
   return (
-    <div className={`bg-neutral-900 border rounded-xl p-5 transition-colors ${
-      track.is_sprint ? 'border-neutral-800 opacity-60' : 'border-neutral-800 hover:border-neutral-600'
+    <div className={`bg-neutral-100 dark:bg-neutral-900 border rounded-xl p-5 transition-colors ${
+      track.is_sprint ? 'border-neutral-200 dark:border-neutral-800 opacity-60' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
     }`}>
       <div className="flex items-start justify-between gap-3 mb-3">
-        <h3 className="font-bold text-white text-lg leading-tight">{track.name}</h3>
+        <h3 className="font-bold text-lg leading-tight">{track.name}</h3>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <TypeBadge type={track.type} />
           {track.is_sprint && (
-            <span className="px-2 py-0.5 bg-neutral-800 border border-neutral-700 rounded text-xs font-bold text-neutral-500">
+            <span className="px-2 py-0.5 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-xs font-bold text-neutral-500">
               ⚠️ Sprint
             </span>
           )}
         </div>
       </div>
       {track.is_sprint && (
-        <p className="text-xs text-neutral-600 mb-3 italic">Non supporté par la télémétrie UDP de Forza.</p>
+        <p className="text-xs text-neutral-500 mb-3 italic">Non supporté par la télémétrie UDP de Forza.</p>
       )}
       {track.description && (
-        <p className="text-sm text-neutral-400 mb-3">{track.description}</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">{track.description}</p>
       )}
       <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500">
         {track.length_km && <span>📏 {track.length_km} km</span>}
         {track.event_lab_code && (
-          <span className="font-mono bg-neutral-800 px-2 py-0.5 rounded text-xs text-neutral-300">
+          <span className="font-mono bg-neutral-200 dark:bg-neutral-800 px-2 py-0.5 rounded text-xs text-neutral-700 dark:text-neutral-300">
             🔑 {track.event_lab_code}
           </span>
         )}
@@ -68,9 +68,9 @@ function TrackCard({ track }: { track: Track }) {
 }
 
 export default function EpreuvesOfficiellesClient() {
-  const [tracks,    setTracks]    = useState<Track[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error,     setError]     = useState<string | null>(null);
+  const [tracks,     setTracks]     = useState<Track[]>([]);
+  const [isLoading,  setIsLoading]  = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
   const [filterType, setFilterType] = useState('Tous');
 
   useEffect(() => { fetchData(); }, []);
@@ -116,27 +116,25 @@ export default function EpreuvesOfficiellesClient() {
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600 mb-2">
             Épreuves officielles
           </h1>
-          <p className="text-neutral-400 text-lg">Les circuits officiels de Forza Horizon 6.</p>
+          <p className="text-neutral-600 dark:text-neutral-400 text-lg">Les circuits officiels de Forza Horizon 6.</p>
         </div>
 
-        {/* Filtres */}
         <div className="flex flex-wrap gap-2 mb-8">
           {allTypes.map(type => (
             <button key={type} onClick={() => setFilterType(type)}
               className={`px-4 py-1.5 rounded-full border text-sm font-bold transition-all ${
                 filterType === type
-                  ? 'bg-white text-black border-white'
-                  : 'bg-neutral-950 border-neutral-700 text-neutral-400 hover:border-neutral-500'
+                  ? 'bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white'
+                  : 'bg-white dark:bg-neutral-950 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-500'
               }`}>
               {type}
             </button>
           ))}
         </div>
 
-        {/* Circuits bouclés */}
         <section className="mb-12">
           <div className="flex items-center gap-3 mb-5">
-            <h2 className="text-2xl font-extrabold text-white">🏁 Circuits</h2>
+            <h2 className="text-2xl font-extrabold">🏁 Circuits</h2>
             <span className="text-sm text-neutral-500 font-mono">
               {bouclees.length} supporté{bouclees.length !== 1 ? 's' : ''}
             </span>
@@ -150,12 +148,11 @@ export default function EpreuvesOfficiellesClient() {
           )}
         </section>
 
-        {/* Sprints — grisés en bas */}
         {sprints.length > 0 && (
           <section>
             <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-lg font-bold text-neutral-600">⚠️ Sprints non supportés</h2>
-              <span className="text-sm text-neutral-700 font-mono">{sprints.length}</span>
+              <h2 className="text-lg font-bold text-neutral-500">⚠️ Sprints non supportés</h2>
+              <span className="text-sm text-neutral-500 font-mono">{sprints.length}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sprints.map(track => <TrackCard key={track.id} track={track} />)}
