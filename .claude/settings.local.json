@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npx tsc *)",
       "Bash(.\\\\node_modules\\\\.bin\\\\tsc --noEmit)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(Test-Path \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\\\\app\\\\hooks\\\\useNotifications.ts\")",
+      "Bash(git check-ignore *)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
