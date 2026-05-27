@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface Notification {
   id:         number;
@@ -13,12 +13,16 @@ export interface Notification {
 
 export function useNotifications() {
   const { user } = useAuth();
-  const [playerId,      setPlayerId]      = useState<number | null>(null);
+  const [playerId,      setPlayerId]      = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     if (!user) { setPlayerId(null); setNotifications([]); return; }
-    supabase.from('players').select('id').eq('user_id', user.id).single()
+    supabase
+      .from('players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
       .then(({ data }) => setPlayerId(data?.id ?? null));
   }, [user]);
 
