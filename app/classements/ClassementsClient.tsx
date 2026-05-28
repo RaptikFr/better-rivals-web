@@ -262,6 +262,14 @@ export default function ClassementsClient({
 
   // Requête Supabase — se redéclenche quand les filtres serveur changent
   const fetchData = useCallback(async () => {
+    // Un circuit est obligatoire pour avoir un classement comparable
+    if (selectedTrackId === null) {
+      setLapTimes([]);
+      setTuneSetups([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setSelectedCar('Toutes');
@@ -276,16 +284,11 @@ export default function ClassementsClient({
         cars ( manufacturer, name, year ),
         tracks ( name, length_km )
       `)
+      .eq('track_id', selectedTrackId)
       .order('time_ms', { ascending: true });
 
-    if (selectedTrackId !== null) query = query.eq('track_id', selectedTrackId);
     if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
     if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
-
-    // Sans filtre : limite à 200 pour ne pas charger toute la table
-    if (selectedTrackId === null && selectedClass === 'Toutes' && selectedDrivetrain === 'Tous') {
-      query = query.limit(200);
-    }
 
     const [{ data, error }, { data: setupsData }] = await Promise.all([
       query,
@@ -532,8 +535,23 @@ export default function ClassementsClient({
 
         </div>
 
+        {/* Placeholder : aucun circuit sélectionné */}
+        {selectedTrackId === null && (
+          <div className="flex flex-col items-center justify-center gap-4 py-20 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-center">
+            <span className="text-5xl">🏁</span>
+            <div>
+              <p className="text-lg font-bold text-neutral-900 dark:text-white mb-1">
+                Sélectionne un circuit pour voir le classement
+              </p>
+              <p className="text-sm text-neutral-500 max-w-md">
+                Les temps ne sont comparables qu&apos;entre pilotes ayant roulé sur le même circuit, dans la même configuration.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Compteur de résultats */}
-        {!isLoading && !error && (
+        {selectedTrackId !== null && !isLoading && !error && (
           <p className="text-sm text-neutral-500 mb-3">
             {filteredLaps.length} résultat{filteredLaps.length !== 1 ? "s" : ""}
             {hasFilters ? " avec les filtres actuels" : " au total"}
@@ -542,6 +560,7 @@ export default function ClassementsClient({
         )}
 
         {/* Tableau des temps */}
+        {selectedTrackId !== null && (
         <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl">
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
@@ -669,8 +688,10 @@ export default function ClassementsClient({
           </table>
         </div>
 
+        )}
+
         {/* --- PAGINATION --- */}
-        {!isLoading && !error && totalPages > 1 && (
+        {selectedTrackId !== null && !isLoading && !error && totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-6">
 
             <button
