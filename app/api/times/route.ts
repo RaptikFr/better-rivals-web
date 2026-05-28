@@ -26,6 +26,16 @@ async function notifierRecordBattu(opts: {
   trackName:  string;
   carLabel:   string;
 }) {
+  // Nom de la voiture depuis la DB (source de vérité, car déjà insérée/mise à jour)
+  const { data: carData } = await supabaseAdmin
+    .from('cars')
+    .select('manufacturer, name, year')
+    .eq('car_ordinal', opts.carOrdinal)
+    .maybeSingle();
+  const carLabel = carData
+    ? `${carData.year ?? ''} ${carData.manufacturer ?? ''} ${carData.name ?? ''}`.trim()
+    : opts.carLabel;
+
   // Niveau 1 : même voiture + classe + transmission (config exacte)
   const { data: exact } = await supabaseAdmin
     .from('lap_times')
@@ -44,11 +54,11 @@ async function notifierRecordBattu(opts: {
       track_id:  String(opts.trackId),
       class:     opts.carClass,
       drivetrain: opts.drivetrain,
-      car:       opts.carLabel,
+      car:       carLabel,
     });
     await supabaseAdmin.from('notifications').insert([{
       player_id: exact.player_id,
-      message:   `🏆 Ton record sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${opts.drivetrain} a été battu par ${opts.pseudo} (${formatTime(opts.newTimeMs)})`,
+      message:   `🏆 Ton record sur ${opts.trackName} avec ${carLabel} en ${opts.carClass}/${opts.drivetrain} a été battu par ${opts.pseudo} (${formatTime(opts.newTimeMs)})`,
       type:      'exact',
       link:      `/classements?${params.toString()}`,
       read:      false,
@@ -73,11 +83,11 @@ async function notifierRecordBattu(opts: {
     const params = new URLSearchParams({
       track_id: String(opts.trackId),
       class:    opts.carClass,
-      car:      opts.carLabel,
+      car:      carLabel,
     });
     await supabaseAdmin.from('notifications').insert([{
       player_id: diffDrive.player_id,
-      message:   `🔄 Ton record sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${diffDrive.drivetrain} a été battu par ${opts.pseudo} en ${opts.drivetrain} (${formatTime(opts.newTimeMs)})`,
+      message:   `🔄 Ton record sur ${opts.trackName} avec ${carLabel} en ${opts.carClass}/${diffDrive.drivetrain} a été battu par ${opts.pseudo} en ${opts.drivetrain} (${formatTime(opts.newTimeMs)})`,
       type:      'drivetrain',
       link:      `/classements?${params.toString()}`,
       read:      false,
@@ -104,7 +114,7 @@ async function notifierRecordBattu(opts: {
     });
     await supabaseAdmin.from('notifications').insert([{
       player_id: diffCar.player_id,
-      message:   `⚡ Ton record en classe ${opts.carClass} sur ${opts.trackName} a été battu par ${opts.pseudo} avec ${opts.carLabel} (${formatTime(opts.newTimeMs)})`,
+      message:   `⚡ Ton record en classe ${opts.carClass} sur ${opts.trackName} a été battu par ${opts.pseudo} avec ${carLabel} (${formatTime(opts.newTimeMs)})`,
       type:      'class',
       link:      `/classements?${params.toString()}`,
       read:      false,
