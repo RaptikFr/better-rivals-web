@@ -124,10 +124,11 @@ async function notifierRecordBattu(opts: {
 
 // Vitesse max ~360 km/h = 100 m/s, vitesse min ~72 km/h = 20 m/s
 // Marge de 20% pour absorber les imprécisions
-function validerTemps(lapTimeMs: number, lengthKm: number | null): boolean {
-  if (!lengthKm || lengthKm <= 0) return true; // Pas de longueur connue → on accepte
-  const minMs = (lengthKm * 1000 / 100) * 1000 * 0.8;  // Temps min avec marge 20%
-  const maxMs = (lengthKm * 1000 / 20)  * 1000 * 1.2;  // Temps max avec marge 20%
+function validerTemps(lapTimeMs: number, lengthKm: number | null, isSprint: boolean): boolean {
+  if (isSprint) return true; // Pas de validation de borne pour les sprints
+  if (!lengthKm || lengthKm <= 0) return true;
+  const minMs = (lengthKm * 1000 / 100) * 1000 * 0.8;
+  const maxMs = (lengthKm * 1000 / 20)  * 1000 * 1.2;
   return lapTimeMs >= minMs && lapTimeMs <= maxMs;
 }
 
@@ -161,7 +162,8 @@ export async function POST(request: NextRequest) {
     const {
       car_id, track_id, lap_time, is_valid,
       drivetrain, car_class, car_pi, num_cylinders,
-      car_manufacturer, car_name, car_year
+      car_manufacturer, car_name, car_year,
+      is_sprint,
     } = body;
 
     if (!is_valid) {
@@ -183,7 +185,7 @@ export async function POST(request: NextRequest) {
       .eq('id', numTrackId)
       .maybeSingle();
 
-    if (trackData && !validerTemps(newTimeMs, trackData.length_km)) {
+    if (trackData && !validerTemps(newTimeMs, trackData.length_km, is_sprint ?? false)) {
       const minS = ((trackData.length_km * 1000 / 100) * 0.8).toFixed(0);
       const maxS = ((trackData.length_km * 1000 / 20)  * 1.2).toFixed(0);
       return NextResponse.json({
@@ -276,6 +278,7 @@ export async function POST(request: NextRequest) {
           car_class,
           car_pi,
           num_cylinders,
+          ...(is_sprint !== undefined && { is_sprint: !!is_sprint }),
         }])
         .select();
 
