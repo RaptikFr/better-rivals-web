@@ -15,27 +15,15 @@ interface Track {
   is_sprint: boolean | null;
 }
 
-const TYPES_SPRINT_ONLY = ['Course de rue', 'Toge', 'Course de drag'];
-
 function TrackCard({ track }: { track: Track }) {
   return (
-    <div className={`bg-neutral-100 dark:bg-neutral-900 border rounded-xl p-5 transition-colors ${
-      track.is_sprint ? 'border-neutral-200 dark:border-neutral-800 opacity-60' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
-    }`}>
+    <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 rounded-xl p-5 transition-colors">
       <div className="flex items-start justify-between gap-3 mb-3">
         <h3 className="font-bold text-lg leading-tight">{track.name}</h3>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <TypeBadge type={track.type} />
-          {track.is_sprint && (
-            <span className="px-2 py-0.5 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-xs font-bold text-neutral-500">
-              ⚠️ Sprint
-            </span>
-          )}
         </div>
       </div>
-      {track.is_sprint && (
-        <p className="text-xs text-neutral-500 mb-3 italic">Non supporté par la télémétrie UDP de Forza.</p>
-      )}
       {track.description && (
         <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">{track.description}</p>
       )}
@@ -67,7 +55,6 @@ export default function EpreuvesOfficiellesClient() {
       .select('id, name, type, length_km, event_lab_code, description, is_sprint')
       .eq('status', 'approved')
       .eq('is_official', true)
-      .not('type', 'in', `(${TYPES_SPRINT_ONLY.map(t => `"${t}"`).join(',')})`)
       .order('name', { ascending: true });
 
     if (error) setError("Impossible de charger les épreuves.");
@@ -77,8 +64,6 @@ export default function EpreuvesOfficiellesClient() {
 
   const allTypes = ['Tous', ...Array.from(new Set(tracks.map(t => t.type))).sort()];
   const filtered = tracks.filter(t => filterType === 'Tous' || t.type === filterType);
-  const bouclees = filtered.filter(t => !t.is_sprint);
-  const sprints  = filtered.filter(t => t.is_sprint);
 
   if (isLoading) return (
     <main className="min-h-screen flex items-center justify-center">
@@ -116,33 +101,21 @@ export default function EpreuvesOfficiellesClient() {
           ))}
         </div>
 
-        <section className="mb-12">
+        <section>
           <div className="flex items-center gap-3 mb-5">
-            <h2 className="text-2xl font-extrabold">🏁 Circuits</h2>
+            <h2 className="text-2xl font-extrabold">🏁 Épreuves</h2>
             <span className="text-sm text-neutral-500 font-mono">
-              {bouclees.length} supporté{bouclees.length !== 1 ? 's' : ''}
+              {filtered.length} épreuve{filtered.length !== 1 ? 's' : ''}
             </span>
           </div>
-          {bouclees.length === 0 ? (
-            <p className="text-neutral-500 text-sm">Aucun circuit pour ce filtre.</p>
+          {filtered.length === 0 ? (
+            <p className="text-neutral-500 text-sm">Aucune épreuve pour ce filtre.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {bouclees.map(track => <TrackCard key={track.id} track={track} />)}
+              {filtered.map(track => <TrackCard key={track.id} track={track} />)}
             </div>
           )}
         </section>
-
-        {sprints.length > 0 && (
-          <section>
-            <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-lg font-bold text-neutral-500">⚠️ Sprints non supportés</h2>
-              <span className="text-sm text-neutral-500 font-mono">{sprints.length}</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sprints.map(track => <TrackCard key={track.id} track={track} />)}
-            </div>
-          </section>
-        )}
 
       </div>
     </main>

@@ -47,7 +47,7 @@ export default function StatsClient() {
       ] = await Promise.all([
         supabase.from('lap_times').select('*', { count: 'exact', head: true }),
         supabase.from('players').select('*', { count: 'exact', head: true }),
-        supabase.from('tracks').select('*', { count: 'exact', head: true }).eq('status', 'approved').eq('is_sprint', false),
+        supabase.from('tracks').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
         supabase.from('lap_times').select('car_ordinal'),
         supabase.from('lap_times').select('players ( pseudo )'),
         supabase.from('lap_times').select('tracks ( name )'),

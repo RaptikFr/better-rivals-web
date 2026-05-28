@@ -52,24 +52,13 @@ function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
   }
 
   return (
-    <div className={`bg-neutral-100 dark:bg-neutral-900 border rounded-xl p-5 transition-colors flex flex-col gap-3 ${
-      track.is_sprint ? 'border-neutral-200 dark:border-neutral-800 opacity-60' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
-    }`}>
+    <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 rounded-xl p-5 transition-colors flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-bold text-lg leading-tight">{track.name}</h3>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <TypeBadge type={track.type} />
-          {track.is_sprint && (
-            <span className="px-2 py-0.5 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-xs font-bold text-neutral-500">
-              ⚠️ Sprint
-            </span>
-          )}
         </div>
       </div>
-
-      {track.is_sprint && (
-        <p className="text-xs text-neutral-500 italic">Non supporté par la télémétrie UDP de Forza.</p>
-      )}
 
       {track.description && (
         <p className="text-sm text-neutral-600 dark:text-neutral-400">{track.description}</p>
@@ -144,7 +133,6 @@ function SoumissionModal({ onClose, onSuccess }: { onClose: () => void; onSucces
           <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 text-sm text-neutral-600 dark:text-neutral-400 space-y-2">
             <p className="font-bold text-neutral-800 dark:text-neutral-300">Pour être éligible, ton épreuve doit :</p>
             <ul className="space-y-1.5 pl-1">
-              <li>🏁 Être un <strong className="text-neutral-900 dark:text-neutral-200">circuit bouclé</strong> (pas un sprint point A → B)</li>
               <li>🔄 Avoir au moins <strong className="text-neutral-900 dark:text-neutral-200">3 tours</strong> configurés dans les paramètres de l&apos;épreuve</li>
               <li>🚫 Ne pas avoir d&apos;<strong className="text-neutral-900 dark:text-neutral-200">adversaire</strong> — mode solo uniquement, équivalent au mode Rivaux</li>
               <li>🔑 Avoir un <strong className="text-neutral-900 dark:text-neutral-200">code EventLab valide</strong> et accessible</li>
@@ -196,7 +184,6 @@ function SoumissionModal({ onClose, onSuccess }: { onClose: () => void; onSucces
               C&apos;est un sprint (point A → point B)
             </label>
           </div>
-          {form.is_sprint && <p className="text-xs text-amber-500">⚠️ Les sprints ne sont pas supportés par la télémétrie UDP de Forza.</p>}
           <div>
             <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
               Description <span className="text-neutral-500 font-normal">(optionnel)</span>
@@ -306,7 +293,6 @@ export default function EpreuvesCommunauteClient() {
             <div>
               <h3 className="font-bold mb-2">Critères d&apos;éligibilité</h3>
               <ul className="text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
-                <li>✅ L&apos;épreuve doit être un <strong className="text-neutral-900 dark:text-neutral-200">circuit bouclé</strong> (pas un sprint)</li>
                 <li>✅ Au moins <strong className="text-neutral-900 dark:text-neutral-200">3 tours</strong> configurés</li>
                 <li>✅ <strong className="text-neutral-900 dark:text-neutral-200">Aucun adversaire</strong> (équivalent au mode Rivaux)</li>
                 <li>✅ Un <strong className="text-neutral-900 dark:text-neutral-200">code EventLab valide</strong></li>

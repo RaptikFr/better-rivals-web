@@ -4,15 +4,6 @@ import Link from 'next/link';
 
 const CRITERES = [
   {
-    icon: '🏁',
-    titre: 'Circuit bouclé — pas de sprint',
-    obligatoire: true,
-    description:
-      "L'épreuve doit être un circuit fermé où le départ et l'arrivée sont au même endroit. Les sprints (point A → point B) ne sont pas compatibles avec la télémétrie UDP de Forza Horizon 6 : le jeu ne transmet pas correctement le comptage de tours pour ce type d'épreuve, ce qui rend la mesure du temps impossible côté relais.",
-    exemple: 'Un circuit de montagne en boucle, un tracé urbain revenant au point de départ.',
-    contreExemple: 'Une descente de montagne d\'un point A à un point B.',
-  },
-  {
     icon: '🔄',
     titre: 'Au moins 3 tours configurés',
     obligatoire: true,
@@ -58,7 +49,7 @@ export default function CriteresEligibiliteClient() {
             Critères d&apos;éligibilité
           </h1>
           <p className="text-neutral-400 text-lg">
-            Pour garantir des classements fiables et comparables, toute épreuve soumise par la communauté doit respecter ces quatre critères.
+            Pour garantir des classements fiables et comparables, toute épreuve soumise par la communauté doit respecter ces trois critères.
           </p>
         </div>
 
