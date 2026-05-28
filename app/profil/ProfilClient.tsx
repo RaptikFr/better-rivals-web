@@ -502,7 +502,7 @@ function StatsTab({ stats, laps }: { stats: Stats; laps: ProfileLap[] }) {
   );
 }
 
-function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: number }) {
+function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: string }) {
   const [setups,        setSetups]        = useState<TuneSetup[]>([]);
   const [tracks,        setTracks]        = useState<TrackOption[]>([]);
   const [loading,       setLoading]       = useState(true);
