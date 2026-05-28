@@ -73,14 +73,12 @@ export default function Navbar() {
         </Link>
 
         {/* Navigation */}
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-3">
 
           {/* Dropdown Classements */}
           <div
             ref={classementsRef}
             className="relative"
-            onMouseEnter={() => setClassementsOpen(true)}
-            onMouseLeave={() => setClassementsOpen(false)}
           >
             <button
               onClick={() => setClassementsOpen(o => !o)}
