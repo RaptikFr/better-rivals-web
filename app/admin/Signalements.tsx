@@ -53,12 +53,12 @@ export default function Signalements() {
     fetchReports();
   }, []);
 
-  async function marquerCommeLu(id: number) {
+  async function marquerCommeLu(id: string) {
     await supabase.from('reports').update({ status: 'lu' }).eq('id', id);
     fetchReports();
   }
 
-  async function supprimerTemps(lapTimeId: number) {
+  async function supprimerTemps(lapTimeId: string) {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer définitivement ce temps ? Cela effacera aussi le signalement.")) return;
     
     await supabase.from('lap_times').delete().eq('id', lapTimeId);
