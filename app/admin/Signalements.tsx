@@ -2,16 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { formatTime } from '@/components/formatTime';
 
-function formatTime(ms: number): string {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  const milliseconds = ms % 1000;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+interface Report {
+  id: number;
+  raison: string;
+  details: string | null;
+  status: 'non_lu' | 'lu';
+  created_at: string;
+  reporter: { pseudo: string } | null;
+  lap_time: {
+    id: number;
+    time_ms: number;
+    players: { pseudo: string } | null;
+    cars: { manufacturer: string; name: string; year: number } | null;
+    tracks: { name: string } | null;
+  } | null;
 }
 
 export default function Signalements() {
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function fetchReports() {
@@ -28,10 +38,14 @@ export default function Signalements() {
           tracks ( name )
         )
       `)
-      .order('status', { ascending: true }) // Met les "non_lu" en premier
+      .order('status', { ascending: true })
       .order('created_at', { ascending: false });
 
-    if (data) setReports(data);
+    if (error) {
+      console.error('Erreur chargement signalements:', error.message);
+    } else if (data) {
+      setReports(data as Report[]);
+    }
     setLoading(false);
   }
 

@@ -3,23 +3,18 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { formatTime } from '@/components/formatTime';
+import { CLASS_STYLES } from '@/components/ClassStyles';
 
 interface Chrono {
-  id:         number;
+  id:         string;
   time_ms:    number;
   car_class:  string;
   drivetrain: string | null;
   created_at: string;
   players:    { pseudo: string } | null;
-  cars:       { manufacturer: string; name: string; year: number } | null;
+  cars:       { manufacturer: string | null; name: string; year: number | null } | null;
   tracks:     { name: string } | null;
-}
-
-function formatTime(ms: number): string {
-  const minutes      = Math.floor(ms / 60000);
-  const seconds      = Math.floor((ms % 60000) / 1000);
-  const milliseconds = ms % 1000;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 }
 
 function dateRelative(iso: string): string {
@@ -48,7 +43,7 @@ export default function DerniersChronos() {
       .order('created_at', { ascending: false })
       .limit(5)
       .then(({ data, error }) => {
-        if (!error && data) setChronos(data as unknown as Chrono[]);
+        if (!error && data) setChronos(data as Chrono[]);
         setReady(true);
       });
   }, []);
@@ -82,7 +77,7 @@ export default function DerniersChronos() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="px-2 py-0.5 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-xs font-bold">
+              <span className="px-2 py-0.5 rounded text-xs font-bold" style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>
                 {lap.car_class}
               </span>
               {lap.drivetrain && (

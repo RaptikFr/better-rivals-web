@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-
-function formatTime(ms: number): string {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  const milliseconds = ms % 1000;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
-}
+import { formatTime } from '@/components/formatTime';
 
 interface Stats {
   totalChronos:  number;
@@ -63,24 +57,26 @@ export default function StatsClient() {
           .order('created_at', { ascending: false }).limit(5),
       ]);
 
-      const distinctCars = new Set((carOrdinalsData ?? []).map((r: any) => r.car_ordinal));
+      const distinctCars = new Set(
+        (carOrdinalsData ?? [] as { car_ordinal: number }[]).map(r => r.car_ordinal)
+      );
 
       const piloteCount: Record<string, number> = {};
-      for (const row of (pilotesData ?? []) as any[]) {
+      for (const row of (pilotesData ?? []) as { players: { pseudo: string } | null }[]) {
         const pseudo = row.players?.pseudo ?? 'Inconnu';
         piloteCount[pseudo] = (piloteCount[pseudo] ?? 0) + 1;
       }
       const top3Pilotes = Object.entries(piloteCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([pseudo, count]) => ({ pseudo, count }));
 
       const circuitCount: Record<string, number> = {};
-      for (const row of (circuitsData ?? []) as any[]) {
+      for (const row of (circuitsData ?? []) as { tracks: { name: string } | null }[]) {
         const name = row.tracks?.name ?? 'Inconnu';
         circuitCount[name] = (circuitCount[name] ?? 0) + 1;
       }
       const top5Circuits = Object.entries(circuitCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
 
       const voitureCount: Record<string, number> = {};
-      for (const row of (voituresData ?? []) as any[]) {
+      for (const row of (voituresData ?? []) as { cars: { manufacturer: string; name: string; year: number } | null }[]) {
         const c = row.cars;
         const name = c ? `${c.year} ${c.manufacturer} ${c.name}` : 'Inconnue';
         voitureCount[name] = (voitureCount[name] ?? 0) + 1;
@@ -91,7 +87,7 @@ export default function StatsClient() {
       setTopPilotes(top3Pilotes);
       setTopCircuits(top5Circuits);
       setTopVoitures(top5Voitures);
-      setLastChronos((lastData ?? []) as unknown as LastChrono[]);
+      setLastChronos((lastData ?? []) as LastChrono[]);
       setLoading(false);
     }
     fetchAll();

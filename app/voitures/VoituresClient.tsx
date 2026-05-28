@@ -1,22 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { CLASS_STYLES } from '@/components/ClassStyles';
 
 const ITEMS_PER_PAGE = 50;
 
 const ALL_CLASSES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R', 'X'] as const;
-
-const CLASS_COLORS: Record<string, { bg: string; color: string }> = {
-  D:  { bg: '#42BDF4', color: '#000' },
-  C:  { bg: '#FCC534', color: '#000' },
-  B:  { bg: '#FF632C', color: '#fff' },
-  A:  { bg: '#F43156', color: '#fff' },
-  S1: { bg: '#B960E8', color: '#fff' },
-  S2: { bg: '#165EDB', color: '#fff' },
-  R:  { bg: '#D61A9C', color: '#fff' },
-  X:  { bg: '#19D858', color: '#fff' },
-};
 
 interface Car {
   id: number;
@@ -54,19 +44,23 @@ export default function VoituresClient() {
     load();
   }, []);
 
-  const uniqueTypes = ['Tous', ...Array.from(
-    new Set(cars.map(c => c.car_type ?? '').filter(Boolean))
-  ).sort()];
+  const uniqueTypes = useMemo(() =>
+    ['Tous', ...Array.from(new Set(cars.map(c => c.car_type ?? '').filter(Boolean))).sort()],
+    [cars]
+  );
 
-  const filtered = cars.filter(car => {
-    const q = search.toLowerCase();
-    const matchSearch = !search ||
-      car.manufacturer.toLowerCase().includes(q) ||
-      car.name.toLowerCase().includes(q);
-    const matchClass = filterClass === 'Toutes' || car.initial_class === filterClass;
-    const matchType  = filterType  === 'Tous'   || car.car_type      === filterType;
-    return matchSearch && matchClass && matchType;
-  });
+  const filtered = useMemo(() =>
+    cars.filter(car => {
+      const q = search.toLowerCase();
+      const matchSearch = !search ||
+        car.manufacturer.toLowerCase().includes(q) ||
+        car.name.toLowerCase().includes(q);
+      const matchClass = filterClass === 'Toutes' || car.initial_class === filterClass;
+      const matchType  = filterType  === 'Tous'   || car.car_type      === filterType;
+      return matchSearch && matchClass && matchType;
+    }),
+    [cars, search, filterClass, filterType]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const safePage   = Math.min(currentPage, totalPages);
@@ -121,12 +115,12 @@ export default function VoituresClient() {
             </button>
             {ALL_CLASSES.map(cls => {
               const active = filterClass === cls;
-              const c = CLASS_COLORS[cls];
+              const c = CLASS_STYLES[cls];
               return (
                 <button
                   key={cls}
                   onClick={() => setFilterClass(cls)}
-                  style={active ? { backgroundColor: c.bg, color: c.color } : undefined}
+                  style={active ? c : undefined}
                   className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
                     active
                       ? ''
@@ -184,7 +178,7 @@ export default function VoituresClient() {
                     </td>
                   </tr>
                 ) : paginated.map(car => {
-                  const c = car.initial_class ? CLASS_COLORS[car.initial_class] : null;
+                  const c = car.initial_class ? CLASS_STYLES[car.initial_class] : null;
                   return (
                     <tr
                       key={car.id}
@@ -203,7 +197,7 @@ export default function VoituresClient() {
                         {car.initial_class && c ? (
                           <span
                             className="px-2 py-0.5 rounded text-xs font-bold"
-                            style={{ backgroundColor: c.bg, color: c.color }}
+                            style={c}
                           >
                             {car.initial_class}
                           </span>

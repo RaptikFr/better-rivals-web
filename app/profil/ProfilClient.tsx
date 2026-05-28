@@ -1,27 +1,17 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import type { Drivetrain } from '@/types/supabase';
-
-type CarClass = "D" | "C" | "B" | "A" | "S1" | "S2" | "R" | "X";
-
-const CLASS_STYLES: Record<string, { backgroundColor: string; color: string }> = {
-  D:  { backgroundColor: '#42BDF4', color: '#000' },
-  C:  { backgroundColor: '#FCC534', color: '#000' },
-  B:  { backgroundColor: '#FF632C', color: '#fff' },
-  A:  { backgroundColor: '#F43156', color: '#fff' },
-  S1: { backgroundColor: '#B960E8', color: '#fff' },
-  S2: { backgroundColor: '#165EDB', color: '#fff' },
-  R:  { backgroundColor: '#D61A9C', color: '#fff' },
-  X:  { backgroundColor: '#19D858', color: '#000' },
-};
+import type { Drivetrain, CarClass } from '@/types/supabase';
+import { formatTime } from '@/components/formatTime';
+import { DrivetrainBadge } from '@/components/DrivetrainBadge';
+import { CLASS_STYLES } from '@/components/ClassStyles';
 
 interface ProfileLap {
-  id: number;
+  id: string;
   time_ms: number;
   car_class: CarClass;
   car_pi: number;
@@ -29,7 +19,7 @@ interface ProfileLap {
   car_ordinal: number;
   track_id: number;
   created_at: string;
-  cars: { manufacturer: string; name: string; year: number } | null;
+  cars: { manufacturer: string | null; name: string; year: number | null } | null;
   tracks: { name: string; length_km: number | null } | null;
 }
 
@@ -68,32 +58,11 @@ const TRACK_TYPE_LABELS: Record<string, string> = {
 
 interface TrackOption { id: number; name: string; }
 
-function formatTime(ms: number): string {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  const milliseconds = ms % 1000;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
-}
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   });
-}
-
-function DrivetrainBadge({ drivetrain }: { drivetrain: Drivetrain | null }) {
-  const colors: Record<Drivetrain, string> = {
-    AWD: "bg-blue-500/20 border-blue-500/50 text-blue-400",
-    RWD: "bg-orange-500/20 border-orange-500/50 text-orange-400",
-    FWD: "bg-green-500/20 border-green-500/50 text-green-400",
-  };
-  const style = drivetrain ? colors[drivetrain] : "bg-neutral-200 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400";
-  return (
-    <span className={`px-2 py-0.5 border rounded text-xs font-bold ${style}`}>
-      {drivetrain ?? "—"}
-    </span>
-  );
 }
 
 type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'reglages';
@@ -112,7 +81,7 @@ export default function ProfilClient() {
 
   const [activeTab, setActiveTab] = useState<Tab>('recents');
   const [pseudo,    setPseudo]    = useState<string>('');
-  const [playerId,  setPlayerId]  = useState<number | null>(null);
+  const [playerId,  setPlayerId]  = useState<string | null>(null);
   const [laps,      setLaps]      = useState<ProfileLap[]>([]);
   const [podiums,   setPodiums]   = useState<Podiums>({ gold: 0, silver: 0, bronze: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -151,7 +120,7 @@ export default function ProfilClient() {
       return;
     }
 
-    const playerLaps = (lapsData ?? []) as unknown as ProfileLap[];
+    const playerLaps = (lapsData ?? []) as ProfileLap[];
     setLaps(playerLaps);
 
     // Fetch all laps on the player's tracks in one query, then rank client-side
@@ -186,18 +155,28 @@ export default function ProfilClient() {
     setIsLoading(false);
   }
 
-  const recentLaps   = laps.slice(0, 20);
-  const filteredLaps = laps.filter(lap => {
-    const matchClass      = filterClass      === 'Toutes' || lap.car_class    === filterClass;
-    const matchTrack      = filterTrack      === 'Tous'   || lap.tracks?.name === filterTrack;
-    const matchDrivetrain = filterDrivetrain === 'Tous'   || lap.drivetrain   === filterDrivetrain;
-    return matchClass && matchTrack && matchDrivetrain;
-  });
+  const recentLaps = useMemo(() => laps.slice(0, 20), [laps]);
 
-  const uniqueClasses = ['Toutes', ...Array.from(new Set(laps.map(l => l.car_class))).filter(Boolean)];
-  const uniqueTracks  = ['Tous',   ...Array.from(new Set(laps.map(l => l.tracks?.name ?? ''))).filter(Boolean).sort()];
+  const filteredLaps = useMemo(() =>
+    laps.filter(lap => {
+      const matchClass      = filterClass      === 'Toutes' || lap.car_class    === filterClass;
+      const matchTrack      = filterTrack      === 'Tous'   || lap.tracks?.name === filterTrack;
+      const matchDrivetrain = filterDrivetrain === 'Tous'   || lap.drivetrain   === filterDrivetrain;
+      return matchClass && matchTrack && matchDrivetrain;
+    }),
+    [laps, filterClass, filterTrack, filterDrivetrain]
+  );
 
-  const stats: Stats = {
+  const uniqueClasses = useMemo(() =>
+    ['Toutes', ...Array.from(new Set(laps.map(l => l.car_class))).filter(Boolean)],
+    [laps]
+  );
+  const uniqueTracks = useMemo(() =>
+    ['Tous', ...Array.from(new Set(laps.map(l => l.tracks?.name ?? ''))).filter(Boolean).sort()],
+    [laps]
+  );
+
+  const stats = useMemo((): Stats => ({
     totalLaps:     laps.length,
     totalCircuits: new Set(laps.map(l => l.tracks?.name)).size,
     totalVoitures: new Set(laps.map(l => l.car_ordinal)).size,
@@ -212,7 +191,7 @@ export default function ProfilClient() {
       return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
     })(),
     bestRank: null,
-  };
+  }), [laps]);
 
   if (authLoading || isLoading) return (
     <main className="min-h-screen flex items-center justify-center">

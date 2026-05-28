@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
+import { formatTime } from '@/components/formatTime';
+import { DrivetrainBadge } from '@/components/DrivetrainBadge';
+import { CLASS_STYLES } from '@/components/ClassStyles';
 
 interface TuneSetup {
   player_id: number;
@@ -15,16 +18,16 @@ interface TuneSetup {
 }
 
 interface LapTime {
-  id: number;
+  id: string;
   time_ms: number;
   car_class: CarClass;
   car_pi: number;
   car_ordinal: number;
-  player_id: number;
+  player_id: string;
   track_id: number;
   drivetrain: Drivetrain;
   players: { pseudo: string } | null;
-  cars: { manufacturer: string; name: string; year: number } | null;
+  cars: { manufacturer: string | null; name: string; year: number | null } | null;
   tracks: { name: string; length_km: number | null } | null;
 }
 
@@ -37,38 +40,6 @@ type SortKey = 'time_ms' | 'pseudo' | 'car' | 'car_pi' | 'drivetrain' | 'track';
 
 const ITEMS_PER_PAGE = 20;
 const CAR_CLASSES: Array<"Toutes" | CarClass> = ["Toutes", "D", "C", "B", "A", "S1", "S2", "X"];
-
-const CLASS_STYLES: Record<string, { backgroundColor: string; color: string }> = {
-  D:  { backgroundColor: '#42BDF4', color: '#000' },
-  C:  { backgroundColor: '#FCC534', color: '#000' },
-  B:  { backgroundColor: '#FF632C', color: '#fff' },
-  A:  { backgroundColor: '#F43156', color: '#fff' },
-  S1: { backgroundColor: '#B960E8', color: '#fff' },
-  S2: { backgroundColor: '#165EDB', color: '#fff' },
-  R:  { backgroundColor: '#D61A9C', color: '#fff' },
-  X:  { backgroundColor: '#19D858', color: '#000' },
-};
-
-function formatTime(ms: number): string {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  const milliseconds = ms % 1000;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
-}
-
-function DrivetrainBadge({ drivetrain }: { drivetrain: Drivetrain | null }) {
-  const colors: Record<Drivetrain, string> = {
-    AWD: "bg-blue-500/20 border-blue-500/50 text-blue-400",
-    RWD: "bg-orange-500/20 border-orange-500/50 text-orange-400",
-    FWD: "bg-green-500/20 border-green-500/50 text-green-400",
-  };
-  const style = drivetrain ? colors[drivetrain] : "bg-neutral-200 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400";
-  return (
-    <span className={`px-2 py-0.5 border rounded text-xs font-bold ${style}`}>
-      {drivetrain ?? "—"}
-    </span>
-  );
-}
 
 function TuneCell({ lap, setups }: { lap: LapTime; setups: TuneSetup[] }) {
   const [copied, setCopied] = useState(false);
@@ -216,7 +187,7 @@ export default function ClassementsClient() {
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
 
-  const [currentPlayerId,    setCurrentPlayerId]    = useState<number | null>(null);
+  const [currentPlayerId,    setCurrentPlayerId]    = useState<string | null>(null);
   const [reportTarget,       setReportTarget]       = useState<LapTime | null>(null);
   const [reportSuccessMsg,   setReportSuccessMsg]   = useState<string | null>(null);
 
@@ -308,7 +279,7 @@ export default function ClassementsClient() {
     if (error) {
       setError("Impossible de charger les classements. Vérifie ta connexion ou réessaie dans quelques instants.");
     } else if (data) {
-      setLapTimes(data as unknown as LapTime[]);
+      setLapTimes(data as LapTime[]);
       setTuneSetups((setupsData ?? []) as TuneSetup[]);
     }
     setIsLoading(false);
@@ -335,34 +306,41 @@ export default function ClassementsClient() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Options voiture dérivées des données chargées
-  const uniqueCars = Array.from(new Set(
-    lapTimes.map(lap => `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim())
-  )).filter(Boolean).sort();
-  const filteredCarOptions = uniqueCars.filter(car =>
-    car.toLowerCase().includes(carSearch.toLowerCase())
+  const uniqueCars = useMemo(() =>
+    Array.from(new Set(
+      lapTimes.map(lap => `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim())
+    )).filter(Boolean).sort(),
+    [lapTimes]
+  );
+  const filteredCarOptions = useMemo(() =>
+    uniqueCars.filter(car => car.toLowerCase().includes(carSearch.toLowerCase())),
+    [uniqueCars, carSearch]
   );
 
-  // Filtre voiture côté client
-  const filteredLaps = lapTimes.filter((lap) => {
-    if (selectedCar === 'Toutes') return true;
-    const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
-    return carLabel === selectedCar;
-  });
+  const filteredLaps = useMemo(() =>
+    lapTimes.filter((lap) => {
+      if (selectedCar === 'Toutes') return true;
+      const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
+      return carLabel === selectedCar;
+    }),
+    [lapTimes, selectedCar]
+  );
 
-  // Tri côté client (après filtre voiture, avant pagination)
-  const sortedLaps = [...filteredLaps].sort((a, b) => {
-    let cmp = 0;
-    switch (sortKey) {
-      case 'time_ms':    cmp = a.time_ms - b.time_ms; break;
-      case 'pseudo':     cmp = (a.players?.pseudo ?? '').localeCompare(b.players?.pseudo ?? ''); break;
-      case 'car':        cmp = (`${a.cars?.manufacturer ?? ''} ${a.cars?.name ?? ''}`).localeCompare(`${b.cars?.manufacturer ?? ''} ${b.cars?.name ?? ''}`); break;
-      case 'car_pi':     cmp = a.car_pi - b.car_pi; break;
-      case 'drivetrain': cmp = (a.drivetrain ?? '').localeCompare(b.drivetrain ?? ''); break;
-      case 'track':      cmp = (a.tracks?.name ?? '').localeCompare(b.tracks?.name ?? ''); break;
-    }
-    return sortDir === 'asc' ? cmp : -cmp;
-  });
+  const sortedLaps = useMemo(() =>
+    [...filteredLaps].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'time_ms':    cmp = a.time_ms - b.time_ms; break;
+        case 'pseudo':     cmp = (a.players?.pseudo ?? '').localeCompare(b.players?.pseudo ?? ''); break;
+        case 'car':        cmp = (`${a.cars?.manufacturer ?? ''} ${a.cars?.name ?? ''}`).localeCompare(`${b.cars?.manufacturer ?? ''} ${b.cars?.name ?? ''}`); break;
+        case 'car_pi':     cmp = a.car_pi - b.car_pi; break;
+        case 'drivetrain': cmp = (a.drivetrain ?? '').localeCompare(b.drivetrain ?? ''); break;
+        case 'track':      cmp = (a.tracks?.name ?? '').localeCompare(b.tracks?.name ?? ''); break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    }),
+    [filteredLaps, sortKey, sortDir]
+  );
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(sortedLaps.length / ITEMS_PER_PAGE));

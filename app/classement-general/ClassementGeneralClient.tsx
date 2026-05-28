@@ -11,17 +11,17 @@ function getPoints(zeroBasedIndex: number): number {
 }
 
 interface RawLap {
-  time_ms:    number;
+  time_ms:     number;
   car_ordinal: number;
-  car_class:  string;
-  drivetrain: string;
-  track_id:   number;
-  player_id:  number;
-  players:    { pseudo: string } | null;
+  car_class:   string;
+  drivetrain:  string;
+  track_id:    number;
+  player_id:   string;
+  players:     { pseudo: string } | null;
 }
 
 interface PlayerRanking {
-  player_id: number;
+  player_id: string;
   pseudo:    string;
   points:    number;
   gold:      number;
@@ -63,7 +63,7 @@ export default function ClassementGeneralClient() {
         return;
       }
 
-      const allLaps = data as unknown as RawLap[];
+      const allLaps = data as RawLap[];
 
       // Étape 1 : meilleur temps par (config × joueur)
       // config key = track_id-car_ordinal-car_class-drivetrain
@@ -83,7 +83,7 @@ export default function ClassementGeneralClient() {
       }
 
       // Étape 2 : attribution des points pour chaque config
-      const playerScores = new Map<number, PlayerRanking>();
+      const playerScores = new Map<string, PlayerRanking>();
 
       for (const [, playerMap] of configs) {
         const sorted = [...playerMap.entries()].sort((a, b) => a[1].time_ms - b[1].time_ms);
