@@ -106,12 +106,14 @@ export default function ProfilClient() {
     const { data: playerData } = await supabase
       .from('players').select('id, pseudo').eq('user_id', user!.id).single();
 
-    if (playerData) { setPseudo(playerData.pseudo); setPlayerId(playerData.id); }
+    if (!playerData) { setIsLoading(false); return; }
+    setPseudo(playerData.pseudo);
+    setPlayerId(playerData.id);
 
     const { data: lapsData, error: lapsError } = await supabase
       .from('lap_times')
       .select('id, time_ms, car_class, car_pi, drivetrain, car_ordinal, track_id, created_at, cars ( manufacturer, name, year ), tracks ( name, length_km )')
-      .eq('player_id', playerData?.id)
+      .eq('player_id', playerData.id)
       .order('created_at', { ascending: false });
 
     if (lapsError) {
