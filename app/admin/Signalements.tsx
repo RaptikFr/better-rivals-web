@@ -126,7 +126,7 @@ export default function Signalements() {
 
               <div className="flex flex-col gap-2 min-w-[200px] justify-center border-t lg:border-t-0 lg:border-l border-neutral-800 pt-4 lg:pt-0 lg:pl-6">
                 {report.status === 'non_lu' && <button onClick={() => marquerCommeLu(report.id)} className="px-4 py-2 bg-neutral-800 text-white font-bold rounded-lg hover:bg-neutral-700 transition-colors w-full">Marquer comme lu</button>}
-                {report.lap_time && <button onClick={() => supprimerTemps(report.lap_time.id)} className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/50 font-bold rounded-lg hover:bg-red-500/30 transition-colors w-full">Supprimer le temps</button>}
+                {report.lap_time && <button onClick={() => supprimerTemps(report.lap_time!.id)} className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/50 font-bold rounded-lg hover:bg-red-500/30 transition-colors w-full">Supprimer le temps</button>}
               </div>
             </div>
           ))}
