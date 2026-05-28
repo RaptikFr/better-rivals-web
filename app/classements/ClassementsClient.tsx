@@ -224,6 +224,10 @@ export default function ClassementsClient({
     (initialDrivetrain as Drivetrain | undefined) ?? "Tous"
   );
 
+  // Filtre circuit avec recherche
+  const [trackSearch, setTrackSearch] = useState('');
+  const [showTrackDropdown, setShowTrackDropdown] = useState(false);
+
   // Filtre voiture (client-side)
   const [selectedCar, setSelectedCar] = useState(initialCar ?? 'Toutes');
   const [carSearch, setCarSearch] = useState('');
@@ -307,17 +311,26 @@ export default function ClassementsClient({
     setCurrentPage(1);
   }, [selectedCar]);
 
-  // Fermer le dropdown voiture au clic en dehors
+  // Fermer les dropdowns au clic en dehors
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
-      if (!target.closest('.car-dropdown-wrapper')) {
-        setShowCarDropdown(false);
-      }
+      if (!target.closest('.car-dropdown-wrapper'))   setShowCarDropdown(false);
+      if (!target.closest('.track-dropdown-wrapper')) setShowTrackDropdown(false);
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  const filteredTrackOptions = useMemo(() =>
+    allTracks.filter(t => t.name.toLowerCase().includes(trackSearch.toLowerCase())),
+    [allTracks, trackSearch]
+  );
+
+  const selectedTrackName = useMemo(() =>
+    allTracks.find(t => t.id === selectedTrackId)?.name ?? '',
+    [allTracks, selectedTrackId]
+  );
 
   const uniqueCars = useMemo(() =>
     Array.from(new Set(
@@ -382,18 +395,49 @@ export default function ClassementsClient({
 
           {/* Ligne 1 : Circuit + Classe */}
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex flex-col">
+            <div className="flex flex-col relative track-dropdown-wrapper">
               <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Circuit :</label>
-              <select
-                className="bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 rounded-lg focus:outline-none focus:border-pink-500"
-                value={selectedTrackId ?? ''}
-                onChange={(e) => setSelectedTrackId(e.target.value ? Number(e.target.value) : null)}
-              >
-                <option value="">Tous</option>
-                {allTracks.map((track) => (
-                  <option key={track.id} value={track.id}>{track.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={selectedTrackId !== null ? selectedTrackName : trackSearch}
+                  onChange={e => {
+                    setTrackSearch(e.target.value);
+                    setSelectedTrackId(null);
+                    setShowTrackDropdown(true);
+                  }}
+                  onFocus={() => setShowTrackDropdown(true)}
+                  placeholder="Tous les circuits"
+                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+                />
+                {selectedTrackId !== null && (
+                  <button
+                    onClick={() => { setSelectedTrackId(null); setTrackSearch(''); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+                  >✕</button>
+                )}
+              </div>
+              {showTrackDropdown && filteredTrackOptions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                  {filteredTrackOptions.map(track => (
+                    <button
+                      key={track.id}
+                      onClick={() => {
+                        setSelectedTrackId(track.id);
+                        setTrackSearch('');
+                        setShowTrackDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                        selectedTrackId === track.id
+                          ? 'bg-pink-500/20 text-pink-400'
+                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                      }`}
+                    >
+                      {track.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col">
