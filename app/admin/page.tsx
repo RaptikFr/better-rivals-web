@@ -17,7 +17,6 @@ interface PendingTrack {
   event_lab_code: string | null;
   description: string | null;
   submitted_by: string | null;
-  created_at: string;
 }
 
 interface ContactMessage {
@@ -66,9 +65,9 @@ export default function AdminPage() {
     setTracksLoading(true);
     const { data } = await supabase
       .from('tracks')
-      .select('id, name, type, length_km, event_lab_code, description, submitted_by, created_at')
+      .select('id, name, type, length_km, event_lab_code, description, submitted_by')
       .eq('status', 'pending')
-      .order('created_at', { ascending: true });
+      .order('id', { ascending: true });
     setTracks(data ?? []);
     setTracksLoading(false);
   }
@@ -204,9 +203,7 @@ export default function AdminPage() {
                         <p className="text-sm text-neutral-500 italic">{track.description}</p>
                       )}
                       <p className="text-xs text-neutral-600">
-                        Soumis le {new Date(track.created_at).toLocaleDateString('fr-FR', {
-                          day: '2-digit', month: 'long', year: 'numeric'
-                        })}
+                        Soumis par {track.submitted_by ?? '—'}
                       </p>
                     </div>
                     <div className="flex gap-3 flex-shrink-0">
