@@ -179,7 +179,17 @@ function ReportModal({
 
 const DRIVETRAIN_OPTIONS: Array<"Tous" | Drivetrain> = ["Tous", "AWD", "RWD", "FWD"];
 
-export default function ClassementsClient() {
+export default function ClassementsClient({
+  initialTrackId,
+  initialClass,
+  initialDrivetrain,
+  initialCar,
+}: {
+  initialTrackId?:    number | null;
+  initialClass?:      string;
+  initialDrivetrain?: string;
+  initialCar?:        string;
+} = {}) {
 
   const { user } = useAuth();
 
@@ -208,12 +218,14 @@ export default function ClassementsClient() {
 
   // Filtres serveur
   const [allTracks, setAllTracks] = useState<Track[]>([]);
-  const [selectedTrackId, setSelectedTrackId] = useState<number | null>(null);
-  const [selectedClass, setSelectedClass] = useState("Toutes");
-  const [selectedDrivetrain, setSelectedDrivetrain] = useState<"Tous" | Drivetrain>("Tous");
+  const [selectedTrackId, setSelectedTrackId] = useState<number | null>(initialTrackId ?? null);
+  const [selectedClass, setSelectedClass] = useState(initialClass ?? "Toutes");
+  const [selectedDrivetrain, setSelectedDrivetrain] = useState<"Tous" | Drivetrain>(
+    (initialDrivetrain as Drivetrain | undefined) ?? "Tous"
+  );
 
   // Filtre voiture (client-side)
-  const [selectedCar, setSelectedCar] = useState('Toutes');
+  const [selectedCar, setSelectedCar] = useState(initialCar ?? 'Toutes');
   const [carSearch, setCarSearch] = useState('');
   const [showCarDropdown, setShowCarDropdown] = useState(false);
 

@@ -32,7 +32,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, loading, signOut } = useAuth();
-  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, markOneAsRead } = useNotifications();
   const { theme, setTheme } = useTheme();
   const [mounted,  setMounted]  = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
@@ -152,9 +152,15 @@ export default function Navbar() {
                             notifications.map(n => (
                               <div
                                 key={n.id}
+                                onClick={async () => {
+                                  if (!n.read) await markOneAsRead(n.id);
+                                  if (n.link) { setBellOpen(false); router.push(n.link); }
+                                }}
                                 className={`px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 ${
                                   n.read ? 'bg-transparent' : 'bg-neutral-200 dark:bg-neutral-800'
-                                } ${!n.read ? (typeBorder[n.type] ?? '') : ''}`}
+                                } ${!n.read ? (typeBorder[n.type] ?? '') : ''} ${
+                                  n.link ? 'cursor-pointer hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors' : ''
+                                }`}
                               >
                                 <p className="text-sm text-neutral-900 dark:text-white leading-snug">{n.message}</p>
                                 <p className="text-xs text-neutral-500 mt-1">{dateRelative(n.created_at)}</p>

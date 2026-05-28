@@ -40,10 +40,17 @@ async function notifierRecordBattu(opts: {
     .maybeSingle();
 
   if (exact && opts.newTimeMs < exact.time_ms) {
+    const params = new URLSearchParams({
+      track_id:  String(opts.trackId),
+      class:     opts.carClass,
+      drivetrain: opts.drivetrain,
+      car:       opts.carLabel,
+    });
     await supabaseAdmin.from('notifications').insert([{
       player_id: exact.player_id,
       message:   `🏆 Ton record sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${opts.drivetrain} a été battu par ${opts.pseudo} (${formatTime(opts.newTimeMs)})`,
       type:      'exact',
+      link:      `/classements?${params.toString()}`,
       read:      false,
     }]);
     return;
@@ -63,10 +70,16 @@ async function notifierRecordBattu(opts: {
     .maybeSingle();
 
   if (diffDrive && opts.newTimeMs < diffDrive.time_ms) {
+    const params = new URLSearchParams({
+      track_id: String(opts.trackId),
+      class:    opts.carClass,
+      car:      opts.carLabel,
+    });
     await supabaseAdmin.from('notifications').insert([{
       player_id: diffDrive.player_id,
       message:   `🔄 Ton record sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${diffDrive.drivetrain} a été battu par ${opts.pseudo} en ${opts.drivetrain} (${formatTime(opts.newTimeMs)})`,
       type:      'drivetrain',
+      link:      `/classements?${params.toString()}`,
       read:      false,
     }]);
     return;
@@ -85,10 +98,15 @@ async function notifierRecordBattu(opts: {
     .maybeSingle();
 
   if (diffCar && opts.newTimeMs < diffCar.time_ms) {
+    const params = new URLSearchParams({
+      track_id: String(opts.trackId),
+      class:    opts.carClass,
+    });
     await supabaseAdmin.from('notifications').insert([{
       player_id: diffCar.player_id,
       message:   `⚡ Ton record en classe ${opts.carClass} sur ${opts.trackName} a été battu par ${opts.pseudo} avec ${opts.carLabel} (${formatTime(opts.newTimeMs)})`,
       type:      'class',
+      link:      `/classements?${params.toString()}`,
       read:      false,
     }]);
   }

@@ -10,6 +10,7 @@ export interface Notification {
   read:       boolean;
   created_at: string;
   type:       'exact' | 'drivetrain' | 'class';
+  link:       string | null;
 }
 
 export function useNotifications() {
@@ -62,5 +63,10 @@ export function useNotifications() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   }
 
-  return { notifications, unreadCount, markAllAsRead };
+  async function markOneAsRead(id: number) {
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  }
+
+  return { notifications, unreadCount, markAllAsRead, markOneAsRead };
 }
