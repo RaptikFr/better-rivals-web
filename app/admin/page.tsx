@@ -249,14 +249,14 @@ export default function AdminPage() {
                   traité: 'bg-green-500/10 border-green-500/30 text-green-600',
                 };
                 return (
-                  <div key={msg.id} className={`border rounded-xl p-6 transition-all ${statusColors[msg.status] ?? statusColors.non_lu}`}>
+                  <div key={msg.id} className={`border rounded-xl p-6 transition-all ${statusColors[msg.status ?? 'non_lu'] ?? statusColors.non_lu}`}>
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                       <div className="flex-1 space-y-2 min-w-0">
                         <div className="flex flex-wrap items-center gap-3">
                           <span className="font-bold text-white">{msg.gamertag}</span>
                           <span className="text-sm text-neutral-500">{msg.email}</span>
-                          <span className={`px-2 py-0.5 border rounded text-xs font-bold ${statusBadge[msg.status] ?? statusBadge.non_lu}`}>
-                            {msg.status.replace('_', ' ')}
+                          <span className={`px-2 py-0.5 border rounded text-xs font-bold ${statusBadge[msg.status ?? 'non_lu'] ?? statusBadge.non_lu}`}>
+                            {(msg.status ?? 'non_lu').replace('_', ' ')}
                           </span>
                           <span className="px-2 py-0.5 bg-neutral-800 border border-neutral-700 rounded text-xs text-neutral-400">
                             {msg.sujet}
