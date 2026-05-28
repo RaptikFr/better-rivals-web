@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { formatTime } from '@/components/formatTime';
 import { CLASS_STYLES } from '@/components/ClassStyles';
+import { DiscordTag } from '@/components/DiscordTag';
 
 interface Chrono {
   id:         string;
@@ -12,7 +13,7 @@ interface Chrono {
   car_class:  string;
   drivetrain: string | null;
   created_at: string;
-  players:    { pseudo: string } | null;
+  players:    { pseudo: string; discord_tag: string | null } | null;
   cars:       { manufacturer: string | null; name: string; year: number | null } | null;
   tracks:     { name: string } | null;
 }
@@ -39,7 +40,7 @@ export default function DerniersChronos() {
   useEffect(() => {
     supabase
       .from('lap_times')
-      .select('id, time_ms, car_class, drivetrain, created_at, players ( pseudo ), cars ( manufacturer, name, year ), tracks ( name )')
+      .select('id, time_ms, car_class, drivetrain, created_at, players ( pseudo, discord_tag ), cars ( manufacturer, name, year ), tracks ( name )')
       .order('created_at', { ascending: false })
       .limit(5)
       .then(({ data, error }) => {
@@ -69,7 +70,10 @@ export default function DerniersChronos() {
             </span>
 
             <div className="flex-1 min-w-0">
-              <p className="font-bold truncate">{lap.players?.pseudo ?? '—'}</p>
+              <p className="font-bold truncate">
+                {lap.players?.pseudo ?? '—'}
+                <DiscordTag tag={lap.players?.discord_tag} />
+              </p>
               <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">
                 {lap.cars ? `${lap.cars.year} ${lap.cars.manufacturer} ${lap.cars.name}` : '—'}
                 {lap.tracks?.name ? ` · ${lap.tracks.name}` : ''}

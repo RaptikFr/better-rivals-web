@@ -182,6 +182,7 @@ export type Database = {
       players: {
         Row: {
           created_at: string
+          discord_tag: string | null
           id: string
           pin_code: string | null
           pseudo: string
@@ -189,6 +190,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          discord_tag?: string | null
           id?: string
           pin_code?: string | null
           pseudo: string
@@ -196,6 +198,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          discord_tag?: string | null
           id?: string
           pin_code?: string | null
           pseudo?: string

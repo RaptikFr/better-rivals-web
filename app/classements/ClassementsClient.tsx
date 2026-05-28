@@ -7,6 +7,7 @@ import type { Drivetrain, CarClass } from '@/types/supabase';
 import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
+import { DiscordTag } from '@/components/DiscordTag';
 
 interface TuneSetup {
   player_id: string;
@@ -26,7 +27,7 @@ interface LapTime {
   player_id: string;
   track_id: number;
   drivetrain: Drivetrain;
-  players: { pseudo: string } | null;
+  players: { pseudo: string; discord_tag: string | null } | null;
   cars: { manufacturer: string | null; name: string; year: number | null } | null;
   tracks: { name: string; length_km: number | null } | null;
 }
@@ -254,7 +255,7 @@ export default function ClassementsClient() {
       .from('lap_times')
       .select(`
         id, time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id,
-        players ( pseudo ),
+        players ( pseudo, discord_tag ),
         cars ( manufacturer, name, year ),
         tracks ( name, length_km )
       `)
@@ -556,7 +557,10 @@ export default function ClassementsClient() {
                 paginatedLaps.map((lap, index) => (
                   <tr key={index} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
                     <td className="p-4 font-bold text-neutral-500">{globalOffset + index + 1}</td>
-                    <td className="p-4 font-bold text-neutral-900 dark:text-white">{lap.players?.pseudo ?? 'Inconnu'}</td>
+                    <td className="p-4 font-bold text-neutral-900 dark:text-white">
+                      {lap.players?.pseudo ?? 'Inconnu'}
+                      <DiscordTag tag={lap.players?.discord_tag} />
+                    </td>
                     <td className="p-4 font-mono font-bold text-pink-400 text-lg">
                       {formatTime(lap.time_ms)}
                     </td>
