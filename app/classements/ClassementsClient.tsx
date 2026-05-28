@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
@@ -262,14 +262,6 @@ export default function ClassementsClient({
 
   // Requête Supabase — se redéclenche quand les filtres serveur changent
   const fetchData = useCallback(async () => {
-    // Un circuit est obligatoire pour avoir un classement comparable
-    if (selectedTrackId === null) {
-      setLapTimes([]);
-      setTuneSetups([]);
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     setSelectedCar('Toutes');
@@ -284,11 +276,16 @@ export default function ClassementsClient({
         cars ( manufacturer, name, year ),
         tracks ( name, length_km )
       `)
-      .eq('track_id', selectedTrackId)
       .order('time_ms', { ascending: true });
 
+    if (selectedTrackId !== null)      query = query.eq('track_id', selectedTrackId);
     if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
     if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
+
+    // Sans filtre complet : limite pour ne pas charger toute la table
+    if (selectedTrackId === null && selectedClass === 'Toutes' && selectedDrivetrain === 'Tous') {
+      query = query.limit(200);
+    }
 
     const [{ data, error }, { data: setupsData }] = await Promise.all([
       query,
@@ -356,21 +353,41 @@ export default function ClassementsClient({
     [lapTimes, selectedCar]
   );
 
-  const sortedLaps = useMemo(() =>
-    [...filteredLaps].sort((a, b) => {
-      let cmp = 0;
-      switch (sortKey) {
-        case 'time_ms':    cmp = a.time_ms - b.time_ms; break;
-        case 'pseudo':     cmp = (a.players?.pseudo ?? '').localeCompare(b.players?.pseudo ?? ''); break;
-        case 'car':        cmp = (`${a.cars?.manufacturer ?? ''} ${a.cars?.name ?? ''}`).localeCompare(`${b.cars?.manufacturer ?? ''} ${b.cars?.name ?? ''}`); break;
-        case 'car_pi':     cmp = a.car_pi - b.car_pi; break;
-        case 'drivetrain': cmp = (a.drivetrain ?? '').localeCompare(b.drivetrain ?? ''); break;
-        case 'track':      cmp = (a.tracks?.name ?? '').localeCompare(b.tracks?.name ?? ''); break;
-      }
-      return sortDir === 'asc' ? cmp : -cmp;
-    }),
-    [filteredLaps, sortKey, sortDir]
-  );
+  // Clé de groupe : circuit + classe + transmission + voiture
+  const lapGroupKey = (lap: LapTime) =>
+    `${lap.track_id}__${lap.car_class}__${lap.drivetrain}__${lap.car_ordinal}`;
+
+  // Clé de tri des groupes (alphabétique : circuit → classe → transmission → voiture)
+  const lapGroupSortKey = (lap: LapTime) => {
+    const car = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
+    return `${lap.tracks?.name ?? ''}__${lap.car_class}__${lap.drivetrain ?? ''}__${car}`;
+  };
+
+  // Label affiché dans l'en-tête de groupe
+  const lapGroupLabel = (lap: LapTime) => {
+    const track = lap.tracks?.name ?? 'Circuit inconnu';
+    const car   = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim() || 'Voiture inconnue';
+    return `${track} · ${lap.car_class} · ${lap.drivetrain} · ${car}`;
+  };
+
+  // Tri par (groupe, temps) + calcul du rang dans chaque groupe
+  const { sortedLaps, lapGroupRank } = useMemo(() => {
+    const sorted = [...filteredLaps].sort((a, b) => {
+      const keyCmp = lapGroupSortKey(a).localeCompare(lapGroupSortKey(b));
+      if (keyCmp !== 0) return keyCmp;
+      return a.time_ms - b.time_ms;
+    });
+
+    const rankMap = new Map<string, number>();
+    const counters = new Map<string, number>();
+    for (const lap of sorted) {
+      const key = lapGroupKey(lap);
+      const n = (counters.get(key) ?? 0) + 1;
+      counters.set(key, n);
+      rankMap.set(lap.id, n);
+    }
+    return { sortedLaps: sorted, lapGroupRank: rankMap };
+  }, [filteredLaps]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(sortedLaps.length / ITEMS_PER_PAGE));
@@ -379,7 +396,6 @@ export default function ClassementsClient({
     (safePage - 1) * ITEMS_PER_PAGE,
     safePage * ITEMS_PER_PAGE
   );
-  const globalOffset = (safePage - 1) * ITEMS_PER_PAGE;
 
   const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes';
 
@@ -535,23 +551,8 @@ export default function ClassementsClient({
 
         </div>
 
-        {/* Placeholder : aucun circuit sélectionné */}
-        {selectedTrackId === null && (
-          <div className="flex flex-col items-center justify-center gap-4 py-20 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-center">
-            <span className="text-5xl">🏁</span>
-            <div>
-              <p className="text-lg font-bold text-neutral-900 dark:text-white mb-1">
-                Sélectionne un circuit pour voir le classement
-              </p>
-              <p className="text-sm text-neutral-500 max-w-md">
-                Les temps ne sont comparables qu&apos;entre pilotes ayant roulé sur le même circuit, dans la même configuration.
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Compteur de résultats */}
-        {selectedTrackId !== null && !isLoading && !error && (
+        {!isLoading && !error && (
           <p className="text-sm text-neutral-500 mb-3">
             {filteredLaps.length} résultat{filteredLaps.length !== 1 ? "s" : ""}
             {hasFilters ? " avec les filtres actuels" : " au total"}
@@ -560,7 +561,6 @@ export default function ClassementsClient({
         )}
 
         {/* Tableau des temps */}
-        {selectedTrackId !== null && (
         <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl">
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
@@ -630,9 +630,21 @@ export default function ClassementsClient({
                   </td>
                 </tr>
               ) : paginatedLaps.length > 0 ? (
-                paginatedLaps.map((lap, index) => (
-                  <tr key={index} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
-                    <td className="p-4 font-bold text-neutral-500">{globalOffset + index + 1}</td>
+                paginatedLaps.map((lap, index) => {
+                  const currentKey = lapGroupKey(lap);
+                  const prevKey    = index > 0 ? lapGroupKey(paginatedLaps[index - 1]) : null;
+                  const isNewGroup = currentKey !== prevKey;
+                  return (
+                  <Fragment key={lap.id}>
+                    {isNewGroup && (
+                      <tr className="bg-neutral-200/60 dark:bg-neutral-950">
+                        <td colSpan={9} className="px-4 py-2 text-xs font-bold text-neutral-500 dark:text-neutral-400 tracking-wider border-t-2 border-neutral-300 dark:border-neutral-700">
+                          {lapGroupLabel(lap)}
+                        </td>
+                      </tr>
+                    )}
+                  <tr className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
+                    <td className="p-4 font-bold text-neutral-500">{lapGroupRank.get(lap.id) ?? (index + 1)}</td>
                     <td className="p-4 font-bold text-neutral-900 dark:text-white">
                       {lap.players?.pseudo ?? 'Inconnu'}
                       <DiscordTag tag={lap.players?.discord_tag} />
@@ -676,7 +688,9 @@ export default function ClassementsClient({
                       {lap.tracks?.name ?? 'Inconnu'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
                     </td>
                   </tr>
-                ))
+                  </Fragment>
+                  );
+                })
               ) : (
                 <tr>
                 <td colSpan={9} className="p-12 text-center text-neutral-500 font-medium">
@@ -688,10 +702,8 @@ export default function ClassementsClient({
           </table>
         </div>
 
-        )}
-
         {/* --- PAGINATION --- */}
-        {selectedTrackId !== null && !isLoading && !error && totalPages > 1 && (
+        {!isLoading && !error && totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-6">
 
             <button
