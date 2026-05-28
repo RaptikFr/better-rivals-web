@@ -73,7 +73,7 @@ export default function Navbar() {
         </Link>
 
         {/* Navigation */}
-        <nav className="flex items-center gap-3">
+        <nav className="flex items-center gap-1 lg:gap-2 xl:gap-3 2xl:gap-5">
 
           {/* Dropdown Classements */}
           <div
