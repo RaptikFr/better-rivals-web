@@ -67,7 +67,7 @@ export default function ClassementGeneralClient() {
 
       // Étape 1 : meilleur temps par (config × joueur)
       // config key = track_id-car_ordinal-car_class-drivetrain
-      const configs = new Map<string, Map<number, { pseudo: string; time_ms: number }>>();
+      const configs = new Map<string, Map<string, { pseudo: string; time_ms: number }>>();
 
       for (const lap of allLaps) {
         const key = `${lap.track_id}-${lap.car_ordinal}-${lap.car_class}-${lap.drivetrain}`;
