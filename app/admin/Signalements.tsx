@@ -5,17 +5,17 @@ import { supabase } from '@/lib/supabase';
 import { formatTime } from '@/components/formatTime';
 
 interface Report {
-  id: number;
+  id: string;
   raison: string;
   details: string | null;
-  status: 'non_lu' | 'lu';
-  created_at: string;
+  status: string | null;
+  created_at: string | null;
   reporter: { pseudo: string } | null;
   lap_time: {
-    id: number;
+    id: string;
     time_ms: number;
     players: { pseudo: string } | null;
-    cars: { manufacturer: string; name: string; year: number } | null;
+    cars: { manufacturer: string | null; name: string; year: number | null } | null;
     tracks: { name: string } | null;
   } | null;
 }
@@ -30,7 +30,7 @@ export default function Signalements() {
       .from('reports')
       .select(`
         id, raison, details, status, created_at,
-        reporter:reporter_player_id ( pseudo ),
+        reporter:reporter_id ( pseudo ),
         lap_time:lap_time_id (
           id, time_ms,
           players ( pseudo ),
