@@ -259,13 +259,16 @@ export default function ProfilClient() {
                 <div className="flex items-center gap-2 mt-1.5">
                   {editDiscord ? (
                     <>
-                      <input
-                        type="text"
-                        value={discordTag}
-                        onChange={e => setDiscordTag(e.target.value)}
-                        placeholder="Ton pseudo Discord"
-                        className="text-sm bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded px-2 py-0.5 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-indigo-400 w-44"
-                      />
+                      <div className="flex flex-col gap-1">
+                        <input
+                          type="text"
+                          value={discordTag}
+                          onChange={e => setDiscordTag(e.target.value)}
+                          placeholder="Ton ID Discord (ex: 123456789)"
+                          className="text-sm bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded px-2 py-0.5 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-indigo-400 w-56"
+                        />
+                        <span className="text-xs text-neutral-500">Discord → Paramètres → Mode développeur → clic droit sur ton profil → Copier l&apos;identifiant</span>
+                      </div>
                       <button onClick={saveDiscordTag} disabled={savingDiscord} className="text-xs font-bold text-indigo-400 hover:text-indigo-300 disabled:opacity-50">
                         {savingDiscord ? '…' : 'Sauvegarder'}
                       </button>
@@ -278,7 +281,7 @@ export default function ProfilClient() {
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
                       </svg>
-                      {discordTag ? <span className="text-indigo-400">{discordTag}</span> : 'Ajouter Discord'}
+                      {discordTag ? <span className="text-indigo-400">Discord lié</span> : 'Lier Discord'}
                     </button>
                   )}
                 </div>
@@ -503,8 +506,9 @@ interface HistoryEntry {
 }
 
 function SuiviTab({ playerId }: { playerId: string }) {
-  const [history,     setHistory]     = useState<HistoryEntry[]>([]);
-  const [loading,     setLoading]     = useState(true);
+  const [history,      setHistory]      = useState<HistoryEntry[]>([]);
+  const [currentBests, setCurrentBests] = useState<Map<string, number>>(new Map());
+  const [loading,      setLoading]      = useState(true);
   const [trackSearch, setTrackSearch] = useState('');
   const [selectedTrack, setSelectedTrack] = useState('Tous');
   const [showTrackDrop, setShowTrackDrop] = useState(false);
@@ -513,15 +517,25 @@ function SuiviTab({ playerId }: { playerId: string }) {
   const [showCarDrop, setShowCarDrop] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from('lap_times_history')
-      .select('id, time_ms, car_class, car_ordinal, drivetrain, car_pi, track_id, recorded_at, cars(manufacturer, name, year), tracks(name)')
-      .eq('player_id', playerId)
-      .order('recorded_at', { ascending: false })
-      .then(({ data }) => {
-        setHistory((data ?? []) as HistoryEntry[]);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase
+        .from('lap_times_history')
+        .select('id, time_ms, car_class, car_ordinal, drivetrain, car_pi, track_id, recorded_at, cars(manufacturer, name, year), tracks(name)')
+        .eq('player_id', playerId)
+        .order('recorded_at', { ascending: false }),
+      supabase
+        .from('lap_times')
+        .select('track_id, car_ordinal, car_class, drivetrain, time_ms')
+        .eq('player_id', playerId),
+    ]).then(([histRes, bestRes]) => {
+      setHistory((histRes.data ?? []) as HistoryEntry[]);
+      const bestMap = new Map<string, number>();
+      for (const b of (bestRes.data ?? [])) {
+        bestMap.set(`${b.track_id}-${b.car_ordinal}-${b.car_class}-${b.drivetrain}`, b.time_ms);
+      }
+      setCurrentBests(bestMap);
+      setLoading(false);
+    });
   }, [playerId]);
 
   const uniqueTracks = useMemo(() =>
@@ -551,7 +565,6 @@ function SuiviTab({ playerId }: { playerId: string }) {
   );
 
   const filteredWithDiffs = useMemo(() => {
-    // Regroupe par config, trie chaque groupe par time_ms desc (pire en premier)
     const groups = new Map<string, HistoryEntry[]>();
     for (const h of filtered) {
       const key = `${h.track_id}-${h.car_ordinal}-${h.car_class}-${h.drivetrain}`;
@@ -559,16 +572,21 @@ function SuiviTab({ playerId }: { playerId: string }) {
       groups.get(key)!.push(h);
     }
     for (const entries of groups.values()) {
-      entries.sort((a, b) => b.time_ms - a.time_ms);
+      entries.sort((a, b) => b.time_ms - a.time_ms); // pire en premier
     }
     return filtered.map(h => {
-      const key   = `${h.track_id}-${h.car_ordinal}-${h.car_class}-${h.drivetrain}`;
-      const group = groups.get(key)!;
-      const idx   = group.findIndex(e => e.id === h.id);
-      const next  = idx < group.length - 1 ? group[idx + 1] : null;
-      return { ...h, diffMs: next ? h.time_ms - next.time_ms : null };
+      const key      = `${h.track_id}-${h.car_ordinal}-${h.car_class}-${h.drivetrain}`;
+      const group    = groups.get(key)!;
+      const idx      = group.findIndex(e => e.id === h.id);
+      const next     = idx < group.length - 1 ? group[idx + 1] : null;
+      const best     = currentBests.get(key) ?? null;
+      return {
+        ...h,
+        diffVsBest: best !== null ? h.time_ms - best : null,
+        diffVsNext: next ? h.time_ms - next.time_ms : null,
+      };
     });
-  }, [filtered]);
+  }, [filtered, currentBests]);
 
   if (loading) return <p className="text-neutral-500 animate-pulse p-4">Chargement de l&apos;historique...</p>;
   if (history.length === 0) return <EmptyState message="Aucun historique disponible — il se remplit à chaque fois que tu bats ton propre record." />;
@@ -650,9 +668,12 @@ function SuiviTab({ playerId }: { playerId: string }) {
                 <td className="p-4 text-xs text-neutral-500">{formatDate(h.recorded_at)}</td>
                 <td className="p-4 font-mono">
                   <span className="font-bold text-neutral-400 dark:text-neutral-500">{formatTime(h.time_ms)}</span>
-                  {h.diffMs !== null && (
+                  {h.diffVsBest !== null && (
                     <span className="ml-2 text-xs text-orange-400">
-                      +{(h.diffMs / 1000).toFixed(3).replace('.', ',')}s
+                      +{(h.diffVsBest / 1000).toFixed(3).replace('.', ',')}s
+                      {h.diffVsNext !== null && (
+                        <span className="text-neutral-500 ml-1">(+{(h.diffVsNext / 1000).toFixed(3).replace('.', ',')}s)</span>
+                      )}
                     </span>
                   )}
                 </td>
