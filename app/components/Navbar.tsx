@@ -100,51 +100,73 @@ export default function Navbar() {
           {/* Cloche notifications */}
           {user && (
             <div ref={bellRef} className="relative ml-1">
-              <button
-                onClick={() => setBellOpen(o => !o)}
-                className="relative p-2 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
-              >
-                🔔
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
+              {(() => {
+                const latestUnread = notifications.find(n => !n.read);
+                const bellColor = !latestUnread
+                  ? 'text-neutral-600 dark:text-neutral-400'
+                  : latestUnread.type === 'exact'      ? 'text-red-500'
+                  : latestUnread.type === 'drivetrain'  ? 'text-orange-400'
+                  : 'text-blue-400';
+                const badgeBg = !latestUnread
+                  ? 'bg-neutral-400'
+                  : latestUnread.type === 'exact'      ? 'bg-red-500'
+                  : latestUnread.type === 'drivetrain'  ? 'bg-orange-400'
+                  : 'bg-blue-400';
+                const typeBorder: Record<string, string> = {
+                  exact:      'border-l-2 border-l-red-500',
+                  drivetrain: 'border-l-2 border-l-orange-400',
+                  class:      'border-l-2 border-l-blue-400',
+                };
+                return (
+                  <>
+                    <button
+                      onClick={() => setBellOpen(o => !o)}
+                      className={`relative p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors ${bellColor}`}
+                    >
+                      🔔
+                      {unreadCount > 0 && (
+                        <span className={`absolute -bottom-0.5 -right-0.5 ${badgeBg} text-white text-xs font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1`}>
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </button>
 
-              {bellOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
-                    <p className="text-sm font-bold text-neutral-900 dark:text-white">Notifications</p>
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={markAllAsRead}
-                        className="text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
-                      >
-                        Tout marquer comme lu
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="max-h-[360px] overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <p className="text-sm text-neutral-500 text-center py-8">Aucune notification.</p>
-                    ) : (
-                      notifications.map(n => (
-                        <div
-                          key={n.id}
-                          className={`px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 ${
-                            n.read ? 'bg-transparent' : 'bg-neutral-200 dark:bg-neutral-800'
-                          }`}
-                        >
-                          <p className="text-sm text-neutral-900 dark:text-white leading-snug">{n.message}</p>
-                          <p className="text-xs text-neutral-500 mt-1">{dateRelative(n.created_at)}</p>
+                    {bellOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-80 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
+                          <p className="text-sm font-bold text-neutral-900 dark:text-white">Notifications</p>
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={markAllAsRead}
+                              className="text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                            >
+                              Tout marquer comme lu
+                            </button>
+                          )}
                         </div>
-                      ))
+
+                        <div className="max-h-[360px] overflow-y-auto">
+                          {notifications.length === 0 ? (
+                            <p className="text-sm text-neutral-500 text-center py-8">Aucune notification.</p>
+                          ) : (
+                            notifications.map(n => (
+                              <div
+                                key={n.id}
+                                className={`px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 ${
+                                  n.read ? 'bg-transparent' : 'bg-neutral-200 dark:bg-neutral-800'
+                                } ${!n.read ? (typeBorder[n.type] ?? '') : ''}`}
+                              >
+                                <p className="text-sm text-neutral-900 dark:text-white leading-snug">{n.message}</p>
+                                <p className="text-xs text-neutral-500 mt-1">{dateRelative(n.created_at)}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </div>
-              )}
+                  </>
+                );
+              })()}
             </div>
           )}
 

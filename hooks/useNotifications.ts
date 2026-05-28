@@ -9,6 +9,7 @@ export interface Notification {
   message:    string;
   read:       boolean;
   created_at: string;
+  type:       'exact' | 'drivetrain' | 'class';
 }
 
 export function useNotifications() {

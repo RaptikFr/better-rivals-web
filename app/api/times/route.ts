@@ -16,17 +16,18 @@ function formatTime(ms: number): string {
 }
 
 async function notifierRecordBattu(opts: {
-  playerId:    number;
-  pseudo:      string;
-  newTimeMs:   number;
-  trackId:     number;
-  carOrdinal:  number;
-  carClass:    string;
-  drivetrain:  string;
-  trackName:   string;
-  carLabel:    string;
+  playerId:   string;
+  pseudo:     string;
+  newTimeMs:  number;
+  trackId:    number;
+  carOrdinal: number;
+  carClass:   string;
+  drivetrain: string;
+  trackName:  string;
+  carLabel:   string;
 }) {
-  const { data: best } = await supabaseAdmin
+  // Niveau 1 : même voiture + classe + transmission (config exacte)
+  const { data: exact } = await supabaseAdmin
     .from('lap_times')
     .select('time_ms, player_id')
     .eq('track_id',    opts.trackId)
@@ -38,16 +39,59 @@ async function notifierRecordBattu(opts: {
     .limit(1)
     .maybeSingle();
 
-  if (!best || opts.newTimeMs >= best.time_ms) return;
+  if (exact && opts.newTimeMs < exact.time_ms) {
+    await supabaseAdmin.from('notifications').insert([{
+      player_id: exact.player_id,
+      message:   `🏆 Ton record sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${opts.drivetrain} a été battu par ${opts.pseudo} (${formatTime(opts.newTimeMs)})`,
+      type:      'exact',
+      read:      false,
+    }]);
+    return;
+  }
 
-  const message =
-    `🏆 Ton record sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${opts.drivetrain} a été battu par ${opts.pseudo} (${formatTime(opts.newTimeMs)})`;
+  // Niveau 2 : même voiture + classe, transmission différente
+  const { data: diffDrive } = await supabaseAdmin
+    .from('lap_times')
+    .select('time_ms, player_id, drivetrain')
+    .eq('track_id',    opts.trackId)
+    .eq('car_ordinal', opts.carOrdinal)
+    .eq('car_class',   opts.carClass)
+    .neq('drivetrain', opts.drivetrain)
+    .neq('player_id',  opts.playerId)
+    .order('time_ms', { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
-  await supabaseAdmin.from('notifications').insert([{
-    player_id: best.player_id,
-    message,
-    read: false,
-  }]);
+  if (diffDrive && opts.newTimeMs < diffDrive.time_ms) {
+    await supabaseAdmin.from('notifications').insert([{
+      player_id: diffDrive.player_id,
+      message:   `🔄 Ton record sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${diffDrive.drivetrain} a été battu par ${opts.pseudo} en ${opts.drivetrain} (${formatTime(opts.newTimeMs)})`,
+      type:      'drivetrain',
+      read:      false,
+    }]);
+    return;
+  }
+
+  // Niveau 3 : même classe, voiture différente
+  const { data: diffCar } = await supabaseAdmin
+    .from('lap_times')
+    .select('time_ms, player_id')
+    .eq('track_id',   opts.trackId)
+    .eq('car_class',  opts.carClass)
+    .neq('car_ordinal', opts.carOrdinal)
+    .neq('player_id', opts.playerId)
+    .order('time_ms', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (diffCar && opts.newTimeMs < diffCar.time_ms) {
+    await supabaseAdmin.from('notifications').insert([{
+      player_id: diffCar.player_id,
+      message:   `⚡ Ton record en classe ${opts.carClass} sur ${opts.trackName} a été battu par ${opts.pseudo} avec ${opts.carLabel} (${formatTime(opts.newTimeMs)})`,
+      type:      'class',
+      read:      false,
+    }]);
+  }
 }
 
 // Vitesse max ~360 km/h = 100 m/s, vitesse min ~72 km/h = 20 m/s
