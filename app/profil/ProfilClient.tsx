@@ -493,8 +493,10 @@ interface HistoryEntry {
   id: string;
   time_ms: number;
   car_class: string;
+  car_ordinal: number;
   drivetrain: string;
   car_pi: number | null;
+  track_id: number;
   recorded_at: string;
   cars: { manufacturer: string | null; name: string; year: number | null } | null;
   tracks: { name: string } | null;
@@ -513,7 +515,7 @@ function SuiviTab({ playerId }: { playerId: string }) {
   useEffect(() => {
     supabase
       .from('lap_times_history')
-      .select('id, time_ms, car_class, drivetrain, car_pi, recorded_at, cars(manufacturer, name, year), tracks(name)')
+      .select('id, time_ms, car_class, car_ordinal, drivetrain, car_pi, track_id, recorded_at, cars(manufacturer, name, year), tracks(name)')
       .eq('player_id', playerId)
       .order('recorded_at', { ascending: false })
       .then(({ data }) => {
@@ -547,6 +549,26 @@ function SuiviTab({ playerId }: { playerId: string }) {
     }),
     [history, selectedTrack, selectedCar]
   );
+
+  const filteredWithDiffs = useMemo(() => {
+    // Regroupe par config, trie chaque groupe par time_ms desc (pire en premier)
+    const groups = new Map<string, HistoryEntry[]>();
+    for (const h of filtered) {
+      const key = `${h.track_id}-${h.car_ordinal}-${h.car_class}-${h.drivetrain}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(h);
+    }
+    for (const entries of groups.values()) {
+      entries.sort((a, b) => b.time_ms - a.time_ms);
+    }
+    return filtered.map(h => {
+      const key   = `${h.track_id}-${h.car_ordinal}-${h.car_class}-${h.drivetrain}`;
+      const group = groups.get(key)!;
+      const idx   = group.findIndex(e => e.id === h.id);
+      const next  = idx < group.length - 1 ? group[idx + 1] : null;
+      return { ...h, diffMs: next ? h.time_ms - next.time_ms : null };
+    });
+  }, [filtered]);
 
   if (loading) return <p className="text-neutral-500 animate-pulse p-4">Chargement de l&apos;historique...</p>;
   if (history.length === 0) return <EmptyState message="Aucun historique disponible — il se remplit à chaque fois que tu bats ton propre record." />;
@@ -623,10 +645,17 @@ function SuiviTab({ playerId }: { playerId: string }) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(h => (
+            {filteredWithDiffs.map(h => (
               <tr key={h.id} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
                 <td className="p-4 text-xs text-neutral-500">{formatDate(h.recorded_at)}</td>
-                <td className="p-4 font-mono font-bold text-neutral-400 dark:text-neutral-500">{formatTime(h.time_ms)}</td>
+                <td className="p-4 font-mono">
+                  <span className="font-bold text-neutral-400 dark:text-neutral-500">{formatTime(h.time_ms)}</span>
+                  {h.diffMs !== null && (
+                    <span className="ml-2 text-xs text-orange-400">
+                      +{(h.diffMs / 1000).toFixed(3).replace('.', ',')}s
+                    </span>
+                  )}
+                </td>
                 <td className="p-4 text-neutral-700 dark:text-neutral-300">{h.cars?.year} {h.cars?.manufacturer} {h.cars?.name}</td>
                 <td className="p-4">
                   <span className="px-2 py-1 rounded text-xs font-bold mr-2" style={CLASS_STYLES[h.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>{h.car_class}</span>

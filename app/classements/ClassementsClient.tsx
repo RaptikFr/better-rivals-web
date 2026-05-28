@@ -621,8 +621,9 @@ export default function ClassementsClient({
                     <td className="p-4">
                       <span className="font-mono font-bold text-pink-400 text-lg">{formatTime(lap.time_ms)}</span>
                       {lap.previous_time_ms && (
-                        <div className="text-xs text-neutral-500 font-mono mt-0.5">
+                        <div className="text-xs font-mono mt-0.5 flex items-center gap-1.5 text-neutral-500">
                           ↑ {formatTime(lap.previous_time_ms)}
+                          <span className="text-orange-400">+{((lap.previous_time_ms - lap.time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
                         </div>
                       )}
                     </td>
