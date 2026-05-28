@@ -9,10 +9,10 @@ import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 
 interface TuneSetup {
-  player_id: number;
+  player_id: string;
   car_ordinal: number;
   share_code: string;
-  is_original: boolean;
+  is_original: boolean | null;
   label: string | null;
   track_id: number | null;
 }

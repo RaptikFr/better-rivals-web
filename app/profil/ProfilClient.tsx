@@ -39,14 +39,14 @@ interface Podiums {
 }
 
 interface TuneSetup {
-  id: number;
-  player_id: number;
+  id: string;
+  player_id: string;
   car_ordinal: number;
   track_id: number | null;
   track_type: string | null;
   share_code: string;
   label: string | null;
-  is_original: boolean;
+  is_original: boolean | null;
   updated_at: string;
 }
 
