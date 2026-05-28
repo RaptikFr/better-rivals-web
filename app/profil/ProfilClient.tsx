@@ -528,7 +528,7 @@ function SuiviTab({ playerId }: { playerId: string }) {
         .select('track_id, car_ordinal, car_class, drivetrain, time_ms')
         .eq('player_id', playerId),
     ]).then(([histRes, bestRes]) => {
-      setHistory((histRes.data ?? []) as HistoryEntry[]);
+      setHistory((histRes.data ?? []) as unknown as HistoryEntry[]);
       const bestMap = new Map<string, number>();
       for (const b of (bestRes.data ?? [])) {
         bestMap.set(`${b.track_id}-${b.car_ordinal}-${b.car_class}-${b.drivetrain}`, b.time_ms);

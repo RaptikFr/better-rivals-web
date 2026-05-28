@@ -181,7 +181,29 @@ export type Database = {
           time_ms?: number
           track_id?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lap_times_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lap_times_history_car_ordinal_fkey"
+            columns: ["car_ordinal"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["car_ordinal"]
+          },
+          {
+            foreignKeyName: "lap_times_history_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
