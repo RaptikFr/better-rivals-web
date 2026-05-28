@@ -27,6 +27,7 @@ interface LapTime {
   player_id: string;
   track_id: number;
   drivetrain: Drivetrain;
+  previous_time_ms: number | null;
   players: { pseudo: string; discord_tag: string | null } | null;
   cars: { manufacturer: string | null; name: string; year: number | null } | null;
   tracks: { name: string; length_km: number | null } | null;
@@ -270,7 +271,7 @@ export default function ClassementsClient({
     let query = supabase
       .from('lap_times')
       .select(`
-        id, time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id,
+        id, time_ms, previous_time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id,
         players ( pseudo, discord_tag ),
         cars ( manufacturer, name, year ),
         tracks ( name, length_km )
@@ -617,8 +618,13 @@ export default function ClassementsClient({
                       {lap.players?.pseudo ?? 'Inconnu'}
                       <DiscordTag tag={lap.players?.discord_tag} />
                     </td>
-                    <td className="p-4 font-mono font-bold text-pink-400 text-lg">
-                      {formatTime(lap.time_ms)}
+                    <td className="p-4">
+                      <span className="font-mono font-bold text-pink-400 text-lg">{formatTime(lap.time_ms)}</span>
+                      {lap.previous_time_ms && (
+                        <div className="text-xs text-neutral-500 font-mono mt-0.5">
+                          ↑ {formatTime(lap.previous_time_ms)}
+                        </div>
+                      )}
                     </td>
                     <td className="p-4 text-neutral-700 dark:text-neutral-300">
                       {lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}

@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
     // --- GESTION DU CLASSEMENT ---
     const { data: existingTime } = await supabaseAdmin
       .from('lap_times')
-      .select('id, time_ms')
+      .select('id, time_ms, car_pi')
       .eq('player_id',   player.id)
       .eq('track_id',    numTrackId)
       .eq('car_ordinal', numCarOrdinal)
@@ -241,9 +241,19 @@ export async function POST(request: NextRequest) {
 
     if (existingTime) {
       if (newTimeMs < existingTime.time_ms) {
+        await supabaseAdmin.from('lap_times_history').insert([{
+          player_id:   player.id,
+          car_ordinal: numCarOrdinal,
+          car_class,
+          drivetrain,
+          track_id:    numTrackId,
+          time_ms:     existingTime.time_ms,
+          car_pi:      existingTime.car_pi,
+        }]);
+
         const { data, error } = await supabaseAdmin
           .from('lap_times')
-          .update({ time_ms: newTimeMs, verified: is_valid, car_pi, num_cylinders })
+          .update({ time_ms: newTimeMs, verified: is_valid, car_pi, num_cylinders, previous_time_ms: existingTime.time_ms })
           .eq('id', existingTime.id)
           .select();
 

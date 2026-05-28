@@ -66,11 +66,12 @@ function formatDate(iso: string): string {
   });
 }
 
-type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'reglages';
+type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'reglages' | 'suivi';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'recents',     label: 'Récents',        icon: '🕐' },
   { id: 'tous',        label: 'Tous mes temps',  icon: '📋' },
+  { id: 'suivi',       label: 'Suivi',           icon: '📈' },
   { id: 'classements', label: 'Mes classements', icon: '🏆' },
   { id: 'stats',       label: 'Statistiques',    icon: '📊' },
   { id: 'reglages',    label: 'Mes réglages',    icon: '⚙️' },
@@ -94,6 +95,11 @@ export default function ProfilClient() {
   const [filterClass,      setFilterClass]      = useState('Toutes');
   const [filterTrack,      setFilterTrack]      = useState('Tous');
   const [filterDrivetrain, setFilterDrivetrain] = useState<'Tous' | Drivetrain>('Tous');
+  const [filterCar,        setFilterCar]        = useState('Toutes');
+  const [filterCarSearch,  setFilterCarSearch]  = useState('');
+  const [showCarFilter,    setShowCarFilter]     = useState(false);
+  const [filterTrackSearch,  setFilterTrackSearch]  = useState('');
+  const [showTrackFilter,    setShowTrackFilter]    = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/connexion');
@@ -177,9 +183,11 @@ export default function ProfilClient() {
       const matchClass      = filterClass      === 'Toutes' || lap.car_class    === filterClass;
       const matchTrack      = filterTrack      === 'Tous'   || lap.tracks?.name === filterTrack;
       const matchDrivetrain = filterDrivetrain === 'Tous'   || lap.drivetrain   === filterDrivetrain;
-      return matchClass && matchTrack && matchDrivetrain;
+      const carLabel        = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
+      const matchCar        = filterCar        === 'Toutes' || carLabel === filterCar;
+      return matchClass && matchTrack && matchDrivetrain && matchCar;
     }),
-    [laps, filterClass, filterTrack, filterDrivetrain]
+    [laps, filterClass, filterTrack, filterDrivetrain, filterCar]
   );
 
   const uniqueClasses = useMemo(() =>
@@ -187,8 +195,22 @@ export default function ProfilClient() {
     [laps]
   );
   const uniqueTracks = useMemo(() =>
-    ['Tous', ...Array.from(new Set(laps.map(l => l.tracks?.name ?? ''))).filter(Boolean).sort()],
+    Array.from(new Set(laps.map(l => l.tracks?.name ?? ''))).filter(Boolean).sort(),
     [laps]
+  );
+  const uniqueProfileCars = useMemo(() =>
+    Array.from(new Set(
+      laps.map(l => `${l.cars?.year ?? ''} ${l.cars?.manufacturer ?? ''} ${l.cars?.name ?? ''}`.trim())
+    )).filter(Boolean).sort(),
+    [laps]
+  );
+  const filteredTrackOptions = useMemo(() =>
+    uniqueTracks.filter(t => t.toLowerCase().includes(filterTrackSearch.toLowerCase())),
+    [uniqueTracks, filterTrackSearch]
+  );
+  const filteredCarOptions = useMemo(() =>
+    uniqueProfileCars.filter(c => c.toLowerCase().includes(filterCarSearch.toLowerCase())),
+    [uniqueProfileCars, filterCarSearch]
   );
 
   const stats = useMemo((): Stats => ({
@@ -316,12 +338,33 @@ export default function ProfilClient() {
           <div>
             <div className="flex flex-col gap-4 mb-5 p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
               <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex flex-col">
+                {/* Circuit avec recherche */}
+                <div className="flex flex-col relative">
                   <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Circuit :</label>
-                  <select value={filterTrack} onChange={e => setFilterTrack(e.target.value)}
-                    className="bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 p-2 rounded-lg focus:outline-none focus:border-pink-500">
-                    {uniqueTracks.map((t, i) => <option key={i} value={t}>{t}</option>)}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={filterTrack !== 'Tous' ? filterTrack : filterTrackSearch}
+                      onChange={e => { setFilterTrackSearch(e.target.value); setFilterTrack('Tous'); setShowTrackFilter(true); }}
+                      onFocus={() => setShowTrackFilter(true)}
+                      onBlur={() => setTimeout(() => setShowTrackFilter(false), 150)}
+                      placeholder="Tous les circuits"
+                      className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+                    />
+                    {filterTrack !== 'Tous' && (
+                      <button onClick={() => { setFilterTrack('Tous'); setFilterTrackSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
+                    )}
+                  </div>
+                  {showTrackFilter && filteredTrackOptions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                      {filteredTrackOptions.map(t => (
+                        <button key={t} onMouseDown={() => { setFilterTrack(t); setFilterTrackSearch(''); setShowTrackFilter(false); }}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${filterTrack === t ? 'bg-pink-500/20 text-pink-400' : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col">
                   <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Classe :</label>
@@ -330,6 +373,34 @@ export default function ProfilClient() {
                     {uniqueClasses.map((c, i) => <option key={i} value={c}>{c}</option>)}
                   </select>
                 </div>
+              </div>
+              {/* Voiture avec recherche */}
+              <div className="flex flex-col relative">
+                <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Voiture :</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={filterCar !== 'Toutes' ? filterCar : filterCarSearch}
+                    onChange={e => { setFilterCarSearch(e.target.value); setFilterCar('Toutes'); setShowCarFilter(true); }}
+                    onFocus={() => setShowCarFilter(true)}
+                    onBlur={() => setTimeout(() => setShowCarFilter(false), 150)}
+                    placeholder="Toutes les voitures"
+                    className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+                  />
+                  {filterCar !== 'Toutes' && (
+                    <button onClick={() => { setFilterCar('Toutes'); setFilterCarSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
+                  )}
+                </div>
+                {showCarFilter && filteredCarOptions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    {filteredCarOptions.map(c => (
+                      <button key={c} onMouseDown={() => { setFilterCar(c); setFilterCarSearch(''); setShowCarFilter(false); }}
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${filterCar === c ? 'bg-pink-500/20 text-pink-400' : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex flex-col">
                 <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-2">Transmission :</label>
@@ -363,8 +434,9 @@ export default function ProfilClient() {
         )}
 
         {activeTab === 'classements' && <ClassementsTab laps={laps} />}
-        {activeTab === 'stats' && <StatsTab stats={stats} laps={laps} />}
-        {activeTab === 'reglages' && playerId !== null && <ReglagesTab laps={laps} playerId={playerId} />}
+        {activeTab === 'suivi'       && playerId !== null && <SuiviTab playerId={playerId} />}
+        {activeTab === 'stats'       && <StatsTab stats={stats} laps={laps} />}
+        {activeTab === 'reglages'    && playerId !== null && <ReglagesTab laps={laps} playerId={playerId} />}
 
       </div>
     </main>
@@ -413,6 +485,160 @@ function LapTable({ laps, showDate }: { laps: ProfileLap[]; showDate?: boolean }
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+interface HistoryEntry {
+  id: string;
+  time_ms: number;
+  car_class: string;
+  drivetrain: string;
+  car_pi: number | null;
+  recorded_at: string;
+  cars: { manufacturer: string | null; name: string; year: number | null } | null;
+  tracks: { name: string } | null;
+}
+
+function SuiviTab({ playerId }: { playerId: string }) {
+  const [history,     setHistory]     = useState<HistoryEntry[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [trackSearch, setTrackSearch] = useState('');
+  const [selectedTrack, setSelectedTrack] = useState('Tous');
+  const [showTrackDrop, setShowTrackDrop] = useState(false);
+  const [carSearch,   setCarSearch]   = useState('');
+  const [selectedCar, setSelectedCar] = useState('Toutes');
+  const [showCarDrop, setShowCarDrop] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from('lap_times_history')
+      .select('id, time_ms, car_class, drivetrain, car_pi, recorded_at, cars(manufacturer, name, year), tracks(name)')
+      .eq('player_id', playerId)
+      .order('recorded_at', { ascending: false })
+      .then(({ data }) => {
+        setHistory((data ?? []) as HistoryEntry[]);
+        setLoading(false);
+      });
+  }, [playerId]);
+
+  const uniqueTracks = useMemo(() =>
+    Array.from(new Set(history.map(h => h.tracks?.name ?? ''))).filter(Boolean).sort(),
+    [history]
+  );
+  const uniqueCars = useMemo(() =>
+    Array.from(new Set(history.map(h => `${h.cars?.year ?? ''} ${h.cars?.manufacturer ?? ''} ${h.cars?.name ?? ''}`.trim()))).filter(Boolean).sort(),
+    [history]
+  );
+  const filteredTracks = useMemo(() =>
+    uniqueTracks.filter(t => t.toLowerCase().includes(trackSearch.toLowerCase())),
+    [uniqueTracks, trackSearch]
+  );
+  const filteredCars = useMemo(() =>
+    uniqueCars.filter(c => c.toLowerCase().includes(carSearch.toLowerCase())),
+    [uniqueCars, carSearch]
+  );
+  const filtered = useMemo(() =>
+    history.filter(h => {
+      const matchTrack = selectedTrack === 'Tous' || h.tracks?.name === selectedTrack;
+      const carLabel   = `${h.cars?.year ?? ''} ${h.cars?.manufacturer ?? ''} ${h.cars?.name ?? ''}`.trim();
+      const matchCar   = selectedCar === 'Toutes' || carLabel === selectedCar;
+      return matchTrack && matchCar;
+    }),
+    [history, selectedTrack, selectedCar]
+  );
+
+  if (loading) return <p className="text-neutral-500 animate-pulse p-4">Chargement de l&apos;historique...</p>;
+  if (history.length === 0) return <EmptyState message="Aucun historique disponible — il se remplit à chaque fois que tu bats ton propre record." />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row gap-3 p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+        <div className="flex flex-col relative flex-1">
+          <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Circuit :</label>
+          <div className="relative">
+            <input type="text"
+              value={selectedTrack !== 'Tous' ? selectedTrack : trackSearch}
+              onChange={e => { setTrackSearch(e.target.value); setSelectedTrack('Tous'); setShowTrackDrop(true); }}
+              onFocus={() => setShowTrackDrop(true)}
+              onBlur={() => setTimeout(() => setShowTrackDrop(false), 150)}
+              placeholder="Tous les circuits"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+            />
+            {selectedTrack !== 'Tous' && (
+              <button onClick={() => { setSelectedTrack('Tous'); setTrackSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
+            )}
+          </div>
+          {showTrackDrop && filteredTracks.length > 0 && (
+            <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              {filteredTracks.map(t => (
+                <button key={t} onMouseDown={() => { setSelectedTrack(t); setTrackSearch(''); setShowTrackDrop(false); }}
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${selectedTrack === t ? 'bg-pink-500/20 text-pink-400' : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col relative flex-1">
+          <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Voiture :</label>
+          <div className="relative">
+            <input type="text"
+              value={selectedCar !== 'Toutes' ? selectedCar : carSearch}
+              onChange={e => { setCarSearch(e.target.value); setSelectedCar('Toutes'); setShowCarDrop(true); }}
+              onFocus={() => setShowCarDrop(true)}
+              onBlur={() => setTimeout(() => setShowCarDrop(false), 150)}
+              placeholder="Toutes les voitures"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+            />
+            {selectedCar !== 'Toutes' && (
+              <button onClick={() => { setSelectedCar('Toutes'); setCarSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
+            )}
+          </div>
+          {showCarDrop && filteredCars.length > 0 && (
+            <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              {filteredCars.map(c => (
+                <button key={c} onMouseDown={() => { setSelectedCar(c); setCarSearch(''); setShowCarDrop(false); }}
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${selectedCar === c ? 'bg-pink-500/20 text-pink-400' : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <p className="text-sm text-neutral-500">{filtered.length} entrée{filtered.length !== 1 ? 's' : ''} dans l&apos;historique</p>
+
+      <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+        <table className="w-full text-left border-collapse whitespace-nowrap">
+          <thead>
+            <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
+              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">DATE</th>
+              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TEMPS</th>
+              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">VOITURE</th>
+              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CLASSE / PI</th>
+              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TRANSMISSION</th>
+              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CIRCUIT</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(h => (
+              <tr key={h.id} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
+                <td className="p-4 text-xs text-neutral-500">{formatDate(h.recorded_at)}</td>
+                <td className="p-4 font-mono font-bold text-neutral-400 dark:text-neutral-500">{formatTime(h.time_ms)}</td>
+                <td className="p-4 text-neutral-700 dark:text-neutral-300">{h.cars?.year} {h.cars?.manufacturer} {h.cars?.name}</td>
+                <td className="p-4">
+                  <span className="px-2 py-1 rounded text-xs font-bold mr-2" style={CLASS_STYLES[h.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>{h.car_class}</span>
+                  <span className="text-sm text-neutral-500 font-mono">PI {h.car_pi ?? '—'}</span>
+                </td>
+                <td className="p-4"><DrivetrainBadge drivetrain={h.drivetrain as import('@/types/supabase').Drivetrain} /></td>
+                <td className="p-4 text-neutral-600 dark:text-neutral-400">{h.tracks?.name ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

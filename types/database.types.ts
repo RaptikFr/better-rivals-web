@@ -84,6 +84,7 @@ export type Database = {
           id: string
           num_cylinders: number | null
           player_id: string
+          previous_time_ms: number | null
           recorded_at: string
           share_code: string | null
           time_ms: number
@@ -99,6 +100,7 @@ export type Database = {
           id?: string
           num_cylinders?: number | null
           player_id: string
+          previous_time_ms?: number | null
           recorded_at?: string
           share_code?: string | null
           time_ms: number
@@ -114,6 +116,7 @@ export type Database = {
           id?: string
           num_cylinders?: number | null
           player_id?: string
+          previous_time_ms?: number | null
           recorded_at?: string
           share_code?: string | null
           time_ms?: number
@@ -143,6 +146,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lap_times_history: {
+        Row: {
+          car_class: string
+          car_ordinal: number
+          car_pi: number | null
+          drivetrain: string
+          id: string
+          player_id: string
+          recorded_at: string
+          time_ms: number
+          track_id: number
+        }
+        Insert: {
+          car_class: string
+          car_ordinal: number
+          car_pi?: number | null
+          drivetrain: string
+          id?: string
+          player_id: string
+          recorded_at?: string
+          time_ms: number
+          track_id: number
+        }
+        Update: {
+          car_class?: string
+          car_ordinal?: number
+          car_pi?: number | null
+          drivetrain?: string
+          id?: string
+          player_id?: string
+          recorded_at?: string
+          time_ms?: number
+          track_id?: number
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
