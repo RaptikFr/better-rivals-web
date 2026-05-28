@@ -565,7 +565,7 @@ function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: string 
     setSaving(s => ({ ...s, [car_ordinal]: false }));
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: string) {
     setError(null);
     const { error: deleteError } = await supabase.from('tune_setups').delete().eq('id', id).eq('player_id', playerId);
     if (deleteError) setError("Erreur lors de la suppression.");
