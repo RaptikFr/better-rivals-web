@@ -38,6 +38,17 @@ type SortKey = 'time_ms' | 'pseudo' | 'car' | 'car_pi' | 'drivetrain' | 'track';
 const ITEMS_PER_PAGE = 20;
 const CAR_CLASSES: Array<"Toutes" | CarClass> = ["Toutes", "D", "C", "B", "A", "S1", "S2", "X"];
 
+const CLASS_STYLES: Record<string, { backgroundColor: string; color: string }> = {
+  D:  { backgroundColor: '#42BDF4', color: '#000' },
+  C:  { backgroundColor: '#FCC534', color: '#000' },
+  B:  { backgroundColor: '#FF632C', color: '#fff' },
+  A:  { backgroundColor: '#F43156', color: '#fff' },
+  S1: { backgroundColor: '#B960E8', color: '#fff' },
+  S2: { backgroundColor: '#165EDB', color: '#fff' },
+  R:  { backgroundColor: '#D61A9C', color: '#fff' },
+  X:  { backgroundColor: '#19D858', color: '#000' },
+};
+
 function formatTime(ms: number): string {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
@@ -575,7 +586,7 @@ export default function ClassementsClient() {
                       {lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}
                     </td>
                     <td className="p-4">
-                      <span className="px-2 py-1 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-xs font-bold mr-2 text-neutral-900 dark:text-white">
+                      <span className="px-2 py-1 rounded text-xs font-bold mr-2" style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>
                         {lap.car_class}
                       </span>
                       <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi}</span>
