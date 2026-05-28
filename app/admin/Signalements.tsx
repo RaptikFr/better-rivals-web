@@ -101,7 +101,7 @@ export default function Signalements() {
                   <span className={`text-xs font-black px-2 py-1 rounded tracking-wider ${report.status === 'non_lu' ? 'bg-red-500 text-white' : 'bg-neutral-800 text-neutral-400'}`}>
                     {report.status === 'non_lu' ? 'NOUVEAU' : 'TRAITÉ'}
                   </span>
-                  <span className="text-sm text-neutral-400">Signalé par <strong className="text-white">{report.reporter?.pseudo}</strong> le {new Date(report.created_at).toLocaleDateString()}</span>
+                  <span className="text-sm text-neutral-400">Signalé par <strong className="text-white">{report.reporter?.pseudo}</strong> le {report.created_at ? new Date(report.created_at).toLocaleDateString() : '—'}</span>
                 </div>
 
                 <div className="bg-neutral-950 p-4 rounded-lg border border-neutral-800">
