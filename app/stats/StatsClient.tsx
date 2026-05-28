@@ -15,11 +15,11 @@ interface TopPilote { pseudo: string; count: number; }
 interface TopItem   { name: string;  count: number; }
 
 interface LastChrono {
-  id:         number;
+  id:         string;
   time_ms:    number;
   created_at: string;
   players:    { pseudo: string } | null;
-  cars:       { manufacturer: string; name: string; year: number } | null;
+  cars:       { manufacturer: string | null; name: string; year: number | null } | null;
   tracks:     { name: string } | null;
 }
 
