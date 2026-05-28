@@ -12,7 +12,7 @@ interface Track {
   length_km: number | null;
   event_lab_code: string | null;
   description: string | null;
-  is_sprint: boolean;
+  is_sprint: boolean | null;
 }
 
 const TYPES_SPRINT_ONLY = ['Course de rue', 'Toge', 'Course de drag'];
