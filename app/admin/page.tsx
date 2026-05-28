@@ -21,7 +21,7 @@ interface PendingTrack {
 }
 
 interface ContactMessage {
-  id: number;
+  id: string;
   gamertag: string;
   email: string;
   sujet: string;
@@ -99,12 +99,23 @@ export default function AdminPage() {
     }
   }
 
-  async function handleMessageStatus(id: number, status: 'lu' | 'traité') {
+  async function handleMessageStatus(id: string, status: 'lu' | 'traité') {
     const { error } = await supabase.from('contact_messages').update({ status }).eq('id', id);
     if (error) {
       notify(`Erreur : ${error.message}`, false);
     } else {
       setMessages(ms => ms.map(m => m.id === id ? { ...m, status } : m));
+    }
+  }
+
+  async function handleMessageDelete(id: string) {
+    if (!window.confirm('Supprimer définitivement ce message ?')) return;
+    const { error } = await supabase.from('contact_messages').delete().eq('id', id);
+    if (error) {
+      notify(`Erreur : ${error.message}`, false);
+    } else {
+      setMessages(ms => ms.filter(m => m.id !== id));
+      notify('Message supprimé.', true);
     }
   }
 
@@ -279,6 +290,12 @@ export default function AdminPage() {
                             Marquer traité
                           </button>
                         )}
+                        <button
+                          onClick={() => handleMessageDelete(msg.id)}
+                          className="px-3 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold rounded-lg hover:bg-red-500/20 transition-colors"
+                        >
+                          Supprimer
+                        </button>
                       </div>
                     </div>
                   </div>
