@@ -25,8 +25,8 @@ interface ContactMessage {
   email: string;
   sujet: string;
   message: string;
-  created_at: string;
-  status: string;
+  created_at: string | null;
+  status: string | null;
 }
 
 export default function AdminPage() {
@@ -264,10 +264,10 @@ export default function AdminPage() {
                         </div>
                         <p className="text-sm text-neutral-300 whitespace-pre-wrap">{msg.message}</p>
                         <p className="text-xs text-neutral-600">
-                          {new Date(msg.created_at).toLocaleDateString('fr-FR', {
+                          {msg.created_at ? new Date(msg.created_at).toLocaleDateString('fr-FR', {
                             day: '2-digit', month: 'long', year: 'numeric',
                             hour: '2-digit', minute: '2-digit'
-                          })}
+                          }) : '—'}
                         </p>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
