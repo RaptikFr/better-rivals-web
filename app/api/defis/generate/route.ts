@@ -13,10 +13,10 @@ const CAR_CLASSES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R'];
 function getWeekBounds() {
   const now = new Date();
 
-  // Calcule le décalage Europe/Paris dynamiquement (gère CEST +2 et CET +1)
-  const utcMs   = Date.parse(now.toLocaleString('en-US', { timeZone: 'UTC'           }));
-  const parisMs = Date.parse(now.toLocaleString('en-US', { timeZone: 'Europe/Paris'  }));
-  const offsetMs = parisMs - utcMs; // ex : +7 200 000 ms en été (CEST)
+  // sv-SE donne "YYYY-MM-DD HH:mm:ss" — format ISO fiable sur tous les environnements Node
+  const parisStr  = now.toLocaleString('sv-SE', { timeZone: 'Europe/Paris' });
+  const parisAsUtc = new Date(parisStr.replace(' ', 'T') + 'Z');
+  const offsetMs   = parisAsUtc.getTime() - now.getTime(); // ex : +7 200 000 ms (CEST)
 
   // Date actuelle vue depuis Paris (manipulée comme si c'était UTC)
   const nowParis   = new Date(now.getTime() + offsetMs);
