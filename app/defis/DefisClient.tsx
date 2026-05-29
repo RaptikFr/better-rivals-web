@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { formatTime } from '@/components/formatTime';
 import { CLASS_STYLES } from '@/components/ClassStyles';
@@ -250,7 +251,12 @@ export default function DefisClient() {
                   >
                     <td className="py-3 px-4 w-8 font-bold text-neutral-500 text-right tabular-nums">{i + 1}</td>
                     <td className="py-3 px-3 font-bold text-neutral-900 dark:text-white">
-                      {entry.pseudo}
+                      <Link
+                        href={`/joueurs/${encodeURIComponent(entry.pseudo)}`}
+                        className="hover:text-pink-400 transition-colors"
+                      >
+                        {entry.pseudo}
+                      </Link>
                       <DiscordTag tag={entry.discord_tag} />
                     </td>
                     <td className="py-3 px-3 font-mono font-bold text-pink-400">{formatTime(entry.time_ms)}</td>

@@ -71,7 +71,12 @@ export default function DerniersChronos() {
 
             <div className="flex-1 min-w-0">
               <p className="font-bold truncate">
-                {lap.players?.pseudo ?? '—'}
+                <Link
+                  href={`/joueurs/${encodeURIComponent(lap.players?.pseudo ?? '')}`}
+                  className="hover:text-pink-400 transition-colors"
+                >
+                  {lap.players?.pseudo ?? '—'}
+                </Link>
                 <DiscordTag tag={lap.players?.discord_tag} />
               </p>
               <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">
