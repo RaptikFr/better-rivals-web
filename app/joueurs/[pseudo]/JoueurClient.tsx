@@ -1,0 +1,232 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import { formatTime } from '@/components/formatTime';
+import { DrivetrainBadge } from '@/components/DrivetrainBadge';
+import { CLASS_STYLES } from '@/components/ClassStyles';
+import type { Drivetrain } from '@/types/supabase';
+
+interface Lap {
+  time_ms:     number;
+  car_class:   string;
+  car_pi:      number;
+  drivetrain:  string;
+  car_ordinal: number;
+  track_id:    number;
+  created_at:  string;
+  cars:   { manufacturer: string; name: string; year: number } | null;
+  tracks: { name: string; length_km: number | null } | null;
+}
+
+interface Circuit {
+  trackId:      number;
+  trackName:    string;
+  trackLengthKm: number | null;
+  laps:         Lap[];
+}
+
+export default function JoueurClient({ pseudo }: { pseudo: string }) {
+  const [laps,     setLaps]     = useState<Lap[]>([]);
+  const [podiums,  setPodiums]  = useState({ gold: 0, silver: 0, bronze: 0 });
+  const [loading,  setLoading]  = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const { data: player, error: playerError } = await supabase
+        .from('players')
+        .select('id, pseudo')
+        .eq('pseudo', pseudo)
+        .single();
+
+      if (playerError || !player) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      const { data: playerLaps } = await supabase
+        .from('lap_times')
+        .select('time_ms, car_class, car_pi, drivetrain, car_ordinal, track_id, created_at, cars(manufacturer, name, year), tracks(name, length_km)')
+        .eq('player_id', player.id)
+        .order('created_at', { ascending: false });
+
+      const lapsData = (playerLaps ?? []) as Lap[];
+      setLaps(lapsData);
+
+      // Podiums : compare avec tous les temps sur les mêmes circuits
+      const trackIds = [...new Set(lapsData.map(l => l.track_id))].filter(Boolean);
+      if (trackIds.length > 0) {
+        const { data: allLapsRaw } = await supabase
+          .from('lap_times')
+          .select('time_ms, car_ordinal, car_class, drivetrain, track_id')
+          .in('track_id', trackIds);
+
+        const allLaps = (allLapsRaw ?? []) as Pick<Lap, 'time_ms' | 'car_ordinal' | 'car_class' | 'drivetrain' | 'track_id'>[];
+
+        let gold = 0, silver = 0, bronze = 0;
+        for (const lap of lapsData) {
+          const betterCount = allLaps.filter(
+            l => l.track_id    === lap.track_id    &&
+                 l.car_ordinal === lap.car_ordinal  &&
+                 l.car_class   === lap.car_class    &&
+                 l.drivetrain  === lap.drivetrain   &&
+                 l.time_ms     <  lap.time_ms
+          ).length;
+          if (betterCount === 0) gold++;
+          else if (betterCount === 1) silver++;
+          else if (betterCount === 2) bronze++;
+        }
+        setPodiums({ gold, silver, bronze });
+      }
+
+      setLoading(false);
+    }
+    load();
+  }, [pseudo]);
+
+  if (loading) return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-neutral-500 animate-pulse">Chargement...</p>
+    </main>
+  );
+
+  if (notFound) return (
+    <main className="min-h-screen flex items-center justify-center p-6">
+      <div className="text-center space-y-4">
+        <p className="text-5xl">👤</p>
+        <h1 className="text-2xl font-extrabold text-neutral-900 dark:text-white">Joueur introuvable</h1>
+        <p className="text-neutral-500">Le joueur « {pseudo} » n&apos;existe pas sur Better Rivals.</p>
+        <Link
+          href="/classements"
+          className="inline-block px-6 py-3 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:opacity-90 transition-opacity"
+        >
+          Voir les classements
+        </Link>
+      </div>
+    </main>
+  );
+
+  const totalCircuits = new Set(laps.map(l => l.track_id)).size;
+  const totalCars     = new Set(laps.map(l => l.car_ordinal)).size;
+  const initial       = pseudo.charAt(0).toUpperCase();
+
+  // Groupement par circuit, trié par nom
+  const byTrack = new Map<number, Lap[]>();
+  for (const lap of laps) {
+    if (!byTrack.has(lap.track_id)) byTrack.set(lap.track_id, []);
+    byTrack.get(lap.track_id)!.push(lap);
+  }
+  const circuits: Circuit[] = [...byTrack.entries()]
+    .map(([trackId, trackLaps]) => ({
+      trackId,
+      trackName:     trackLaps[0].tracks?.name       ?? 'Circuit inconnu',
+      trackLengthKm: trackLaps[0].tracks?.length_km  ?? null,
+      laps:          [...trackLaps].sort((a, b) => a.time_ms - b.time_ms),
+    }))
+    .sort((a, b) => a.trackName.localeCompare(b.trackName));
+
+  return (
+    <main className="min-h-screen p-6">
+      <div className="max-w-screen-xl mx-auto">
+
+        {/* En-tête */}
+        <div className="flex items-center gap-6 mb-10">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center text-3xl font-extrabold text-white flex-shrink-0 select-none">
+            {initial}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600 mb-1 truncate">
+              {pseudo}
+            </h1>
+            <div className="flex flex-wrap gap-4 text-sm text-neutral-500 mb-2">
+              <span>{laps.length} chrono{laps.length !== 1 ? 's' : ''}</span>
+              <span>·</span>
+              <span>{totalCircuits} circuit{totalCircuits !== 1 ? 's' : ''}</span>
+              <span>·</span>
+              <span>{totalCars} voiture{totalCars !== 1 ? 's' : ''}</span>
+            </div>
+            {(podiums.gold > 0 || podiums.silver > 0 || podiums.bronze > 0) && (
+              <div className="flex gap-3">
+                {podiums.gold   > 0 && <span className="text-sm font-bold">🥇 {podiums.gold}</span>}
+                {podiums.silver > 0 && <span className="text-sm font-bold">🥈 {podiums.silver}</span>}
+                {podiums.bronze > 0 && <span className="text-sm font-bold">🥉 {podiums.bronze}</span>}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tableau des temps */}
+        {laps.length === 0 ? (
+          <p className="text-neutral-500 text-center py-16">Aucun chrono enregistré pour ce joueur.</p>
+        ) : (
+          <div className="space-y-4">
+            {circuits.map(circuit => (
+              <div
+                key={circuit.trackId}
+                className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden"
+              >
+                {/* En-tête circuit */}
+                <div className="px-5 py-3 bg-neutral-200/60 dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-3">
+                  <h2 className="font-extrabold text-neutral-900 dark:text-white">{circuit.trackName}</h2>
+                  {circuit.trackLengthKm && (
+                    <span className="text-sm text-neutral-500">· {circuit.trackLengthKm} km</span>
+                  )}
+                  <span className="ml-auto text-xs text-neutral-500 font-mono">
+                    {circuit.laps.length} config{circuit.laps.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                {/* Lignes */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm whitespace-nowrap">
+                    <tbody>
+                      {circuit.laps.map((lap, i) => {
+                        const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim() || '—';
+                        return (
+                          <tr
+                            key={i}
+                            className="border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40 transition-colors"
+                          >
+                            <td className="py-3 px-3 font-bold text-neutral-500 w-8 tabular-nums text-right">
+                              {i + 1}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className="font-mono font-bold text-pink-400 text-base">
+                                {formatTime(lap.time_ms)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <span
+                                className="px-2 py-0.5 rounded text-xs font-bold"
+                                style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}
+                              >
+                                {lap.car_class}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <DrivetrainBadge drivetrain={lap.drivetrain as Drivetrain} />
+                            </td>
+                            <td className="py-3 px-3 text-neutral-700 dark:text-neutral-300">
+                              {carLabel}
+                            </td>
+                            <td className="py-3 px-3 text-neutral-500 font-mono text-xs">
+                              PI {lap.car_pi}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+    </main>
+  );
+}

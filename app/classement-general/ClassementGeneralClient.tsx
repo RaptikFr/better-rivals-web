@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { DiscordTag } from '@/components/DiscordTag';
@@ -209,7 +210,12 @@ export default function ClassementGeneralClient() {
                       </td>
 
                       <td className="p-4 font-bold text-neutral-900 dark:text-white">
-                        {player.pseudo}
+                        <Link
+                          href={`/joueurs/${encodeURIComponent(player.pseudo)}`}
+                          className="hover:text-pink-400 transition-colors"
+                        >
+                          {player.pseudo}
+                        </Link>
                         {isMe && (
                           <span className="ml-2 px-1.5 py-0.5 bg-pink-500/20 border border-pink-500/40 text-pink-500 text-xs font-bold rounded">
                             Toi

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
@@ -765,7 +766,12 @@ export default function ClassementsClient({
                                   {lap.rank}
                                 </td>
                                 <td className="py-3 px-3 font-bold text-neutral-900 dark:text-white align-top">
-                                  {lap.players?.pseudo ?? 'Inconnu'}
+                                  <Link
+                                    href={`/joueurs/${encodeURIComponent(lap.players?.pseudo ?? '')}`}
+                                    className="hover:text-pink-400 transition-colors"
+                                  >
+                                    {lap.players?.pseudo ?? 'Inconnu'}
+                                  </Link>
                                   <DiscordTag tag={lap.players?.discord_tag} />
                                 </td>
                                 <td className="py-3 px-3 align-top">
