@@ -181,7 +181,15 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
 
                 {/* Lignes */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm whitespace-nowrap">
+                  <table className="w-full text-sm table-fixed">
+                    <colgroup>
+                      <col className="w-10" />
+                      <col className="w-32" />
+                      <col className="w-14" />
+                      <col className="w-20" />
+                      <col />
+                      <col className="w-16" />
+                    </colgroup>
                     <tbody>
                       {circuit.laps.map((lap, i) => {
                         const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim() || '—';
@@ -209,7 +217,7 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                             <td className="py-3 px-3">
                               <DrivetrainBadge drivetrain={lap.drivetrain as Drivetrain} />
                             </td>
-                            <td className="py-3 px-3 text-neutral-700 dark:text-neutral-300">
+                            <td className="py-3 px-3 text-neutral-700 dark:text-neutral-300 truncate max-w-0">
                               {carLabel}
                             </td>
                             <td className="py-3 px-3 text-neutral-500 font-mono text-xs">
