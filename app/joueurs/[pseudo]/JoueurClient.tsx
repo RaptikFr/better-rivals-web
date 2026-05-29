@@ -28,10 +28,20 @@ interface Circuit {
 }
 
 export default function JoueurClient({ pseudo }: { pseudo: string }) {
-  const [laps,     setLaps]     = useState<Lap[]>([]);
-  const [podiums,  setPodiums]  = useState({ gold: 0, silver: 0, bronze: 0 });
-  const [loading,  setLoading]  = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [laps,         setLaps]         = useState<Lap[]>([]);
+  const [podiums,      setPodiums]      = useState({ gold: 0, silver: 0, bronze: 0 });
+  const [loading,      setLoading]      = useState(true);
+  const [notFound,     setNotFound]     = useState(false);
+  const [openCircuits, setOpenCircuits] = useState<Set<number>>(new Set());
+
+  function toggleCircuit(trackId: number) {
+    setOpenCircuits(prev => {
+      const next = new Set(prev);
+      if (next.has(trackId)) next.delete(trackId);
+      else next.add(trackId);
+      return next;
+    });
+  }
 
   useEffect(() => {
     async function load() {
@@ -168,19 +178,29 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                 key={circuit.trackId}
                 className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden"
               >
-                {/* En-tête circuit */}
-                <div className="px-5 py-3 bg-neutral-200/60 dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-3">
+                {/* En-tête circuit cliquable */}
+                <button
+                  onClick={() => toggleCircuit(circuit.trackId)}
+                  className="w-full px-5 py-3 bg-neutral-200/60 dark:bg-neutral-950 flex items-center gap-3 hover:bg-neutral-300/50 dark:hover:bg-neutral-800/60 transition-colors text-left"
+                >
                   <h2 className="font-extrabold text-neutral-900 dark:text-white">{circuit.trackName}</h2>
                   {circuit.trackLengthKm && (
                     <span className="text-sm text-neutral-500">· {circuit.trackLengthKm} km</span>
                   )}
-                  <span className="ml-auto text-xs text-neutral-500 font-mono">
+                  <span className="ml-auto text-xs text-neutral-500 font-mono mr-1">
                     {circuit.laps.length} config{circuit.laps.length > 1 ? 's' : ''}
                   </span>
-                </div>
+                  <svg
+                    className={`w-4 h-4 flex-shrink-0 text-neutral-400 transition-transform ${openCircuits.has(circuit.trackId) ? 'rotate-180' : ''}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-                {/* Lignes */}
-                <div className="overflow-x-auto">
+                {/* Lignes — visibles si ouvert */}
+                {openCircuits.has(circuit.trackId) && (
+                <div className="overflow-x-auto border-t border-neutral-200 dark:border-neutral-800">
                   <table className="w-full text-sm table-fixed">
                     <colgroup>
                       <col className="w-10" />
@@ -229,6 +249,7 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                     </tbody>
                   </table>
                 </div>
+                )}
               </div>
             ))}
           </div>
