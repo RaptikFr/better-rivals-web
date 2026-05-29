@@ -195,6 +195,7 @@ export default function ProfilClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
 
+  const [openTrackGroups,  setOpenTrackGroups]  = useState<Set<string>>(new Set());
   const [filterClass,      setFilterClass]      = useState('Toutes');
   const [filterTrack,      setFilterTrack]      = useState('Tous');
   const [filterDrivetrain, setFilterDrivetrain] = useState<'Tous' | Drivetrain>('Tous');
@@ -535,10 +536,52 @@ export default function ProfilClient() {
               <ProgressionChart laps={laps} trackName={filterTrack} />
             )}
             <p className="text-sm text-neutral-500 mb-3">{filteredLaps.length} résultat{filteredLaps.length !== 1 ? 's' : ''}</p>
-            {filteredLaps.length === 0
-              ? <EmptyState message="Aucun temps ne correspond à ces filtres." />
-              : <LapTable laps={filteredLaps} showDate />
-            }
+            {filteredLaps.length === 0 ? (
+              <EmptyState message="Aucun temps ne correspond à ces filtres." />
+            ) : filterTrack !== 'Tous' ? (
+              <LapTable laps={filteredLaps} showDate hideCircuit />
+            ) : (
+              // Groupé par circuit avec accordéon
+              (() => {
+                const byTrack = new Map<string, ProfileLap[]>();
+                for (const lap of filteredLaps) {
+                  const key = lap.tracks?.name ?? 'Circuit inconnu';
+                  if (!byTrack.has(key)) byTrack.set(key, []);
+                  byTrack.get(key)!.push(lap);
+                }
+                const circuits = [...byTrack.entries()].sort(([a], [b]) => a.localeCompare(b));
+                return (
+                  <div className="space-y-2">
+                    {circuits.map(([trackName, trackLaps]) => {
+                      const isOpen = openTrackGroups.has(trackName);
+                      const lengthKm = trackLaps[0]?.tracks?.length_km;
+                      return (
+                        <div key={trackName} className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+                          <button
+                            onClick={() => setOpenTrackGroups(prev => { const next = new Set(prev); isOpen ? next.delete(trackName) : next.add(trackName); return next; })}
+                            className="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors text-left"
+                          >
+                            <span className="font-bold text-neutral-900 dark:text-white">{trackName}</span>
+                            {lengthKm && <span className="text-sm text-neutral-500">· {lengthKm} km</span>}
+                            <span className="ml-auto text-xs text-neutral-500 font-mono mr-1">
+                              {trackLaps.length} chrono{trackLaps.length > 1 ? 's' : ''}
+                            </span>
+                            <svg className={`w-4 h-4 flex-shrink-0 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          {isOpen && (
+                            <div className="border-t border-neutral-200 dark:border-neutral-800">
+                              <LapTable laps={trackLaps} showDate hideCircuit />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()
+            )}
           </div>
         )}
 
@@ -560,7 +603,7 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-function LapTable({ laps, showDate }: { laps: ProfileLap[]; showDate?: boolean }) {
+function LapTable({ laps, showDate, hideCircuit }: { laps: ProfileLap[]; showDate?: boolean; hideCircuit?: boolean }) {
   return (
     <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
       <table className="w-full text-left border-collapse whitespace-nowrap">
@@ -571,7 +614,7 @@ function LapTable({ laps, showDate }: { laps: ProfileLap[]; showDate?: boolean }
             <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">VOITURE</th>
             <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CLASSE / PI</th>
             <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TRANSMISSION</th>
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CIRCUIT</th>
+            {!hideCircuit && <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CIRCUIT</th>}
           </tr>
         </thead>
         <tbody>
@@ -587,9 +630,11 @@ function LapTable({ laps, showDate }: { laps: ProfileLap[]; showDate?: boolean }
                 <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi}</span>
               </td>
               <td className="p-4"><DrivetrainBadge drivetrain={lap.drivetrain} /></td>
-              <td className="p-4 text-neutral-600 dark:text-neutral-400">
-                {lap.tracks?.name ?? '—'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
-              </td>
+              {!hideCircuit && (
+                <td className="p-4 text-neutral-600 dark:text-neutral-400">
+                  {lap.tracks?.name ?? '—'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -931,6 +976,16 @@ function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: string 
   const [conflictError, setConflictError] = useState<string | null>(null);
   const [forms,         setForms]         = useState<Record<number, { share_code: string; label: string; track_id: string; is_original: boolean }>>({});
   const [saving,        setSaving]        = useState<Record<number, boolean>>({});
+  const [openCars,      setOpenCars]      = useState<Set<number>>(new Set());
+
+  function toggleCar(car_ordinal: number) {
+    setOpenCars(prev => {
+      const next = new Set(prev);
+      if (next.has(car_ordinal)) next.delete(car_ordinal);
+      else next.add(car_ordinal);
+      return next;
+    });
+  }
 
   const cars = Array.from(
     new Map(laps.map(l => [l.car_ordinal, {
@@ -1019,17 +1074,25 @@ function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: string 
         return (
           <div key={car_ordinal} className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
 
-            <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-3">
+            <button
+              onClick={() => toggleCar(car_ordinal)}
+              className="w-full px-5 py-4 flex items-center gap-3 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors text-left"
+            >
               <span className="text-lg">🚗</span>
-              <h3 className="font-bold">{carName}</h3>
-              {carSetups.length > 0 && (
-                <span className="ml-auto text-xs text-neutral-500 font-mono">
-                  {carSetups.length} réglage{carSetups.length > 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
+              <h3 className="font-bold text-neutral-900 dark:text-white">{carName}</h3>
+              <span className="ml-auto text-xs text-neutral-500 font-mono mr-1">
+                {carSetups.length > 0 ? `${carSetups.length} réglage${carSetups.length > 1 ? 's' : ''}` : 'aucun réglage'}
+              </span>
+              <svg
+                className={`w-4 h-4 flex-shrink-0 text-neutral-400 transition-transform ${openCars.has(car_ordinal) ? 'rotate-180' : ''}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
-            <div className="p-5 space-y-4">
+            {openCars.has(car_ordinal) && (
+            <div className="p-5 space-y-4 border-t border-neutral-200 dark:border-neutral-800">
               {carSetups.length > 0 && (
                 <div className="space-y-2">
                   {carSetups.map(setup => (
@@ -1092,6 +1155,7 @@ function ReglagesTab({ laps, playerId }: { laps: ProfileLap[]; playerId: string 
                 </div>
               </div>
             </div>
+            )}
           </div>
         );
       })}
