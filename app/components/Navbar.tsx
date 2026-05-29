@@ -19,6 +19,7 @@ function dateRelative(iso: string): string {
 
 const navLinks = [
   { href: '/classement-general', label: 'Classement général' },
+  { href: '/defis',              label: 'Défis'              },
   { href: '/stats',              label: 'Stats'              },
   { href: '/voitures',           label: 'Voitures'           },
   { href: '/#telecharger',       label: 'Télécharger'        },

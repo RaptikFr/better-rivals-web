@@ -1,0 +1,16 @@
+name: Défi Hebdomadaire
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Chaque lundi à 8h00 UTC
+  workflow_dispatch:       # Permet de déclencher manuellement
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Générer le défi de la semaine
+        run: |
+          curl -X POST https://better-rivals-fh6.vercel.app/api/defis/generate \
+            -H "Authorization: Bearer ${{ secrets.DEFI_SECRET_TOKEN }}" \
+            -H "Content-Type: application/json"
