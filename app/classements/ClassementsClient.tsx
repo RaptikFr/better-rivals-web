@@ -242,6 +242,9 @@ export default function ClassementsClient({
   // Filtre pseudo (client-side)
   const [pseudoSearch, setPseudoSearch] = useState('');
 
+  // Partage
+  const [linkCopied, setLinkCopied] = useState(false);
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -419,15 +422,38 @@ export default function ClassementsClient({
 
   const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes' || pseudoSearch !== '';
 
+  async function handleShare() {
+    const params = new URLSearchParams();
+    if (selectedTrackId !== null)    params.set('track_id',   String(selectedTrackId));
+    if (selectedClass !== 'Toutes')  params.set('class',       selectedClass);
+    if (selectedDrivetrain !== 'Tous') params.set('drivetrain', selectedDrivetrain);
+    if (selectedCar !== 'Toutes')    params.set('car',         encodeURIComponent(selectedCar));
+    const qs = params.toString();
+    const url = `${window.location.origin}/classements${qs ? '?' + qs : ''}`;
+    await navigator.clipboard.writeText(url);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  }
+
   return (
     <main className="min-h-screen p-6">
       <div className="max-w-screen-2xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
-          Leaderboards
-        </h1>
-        <p className="text-neutral-600 dark:text-neutral-400 mb-8 text-lg">
-          Filtrez les résultats pour comparer ce qui est comparable.
-        </p>
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
+              Leaderboards
+            </h1>
+            <p className="text-neutral-600 dark:text-neutral-400 text-lg">
+              Filtrez les résultats pour comparer ce qui est comparable.
+            </p>
+          </div>
+          <button
+            onClick={handleShare}
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors mt-1"
+          >
+            {linkCopied ? '✅ Lien copié !' : '🔗 Partager'}
+          </button>
+        </div>
 
         {/* --- ZONE DES FILTRES --- */}
         <div className="flex flex-col gap-4 mb-6 p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
