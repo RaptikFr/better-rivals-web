@@ -6,17 +6,18 @@ export const metadata: Metadata = {
   description: "Consultez les meilleurs temps par circuit, classe et transmission. Comparez ce qui est comparable sur Better Rivals.",
 };
 
-export default function ClassementsPage({
+export default async function ClassementsPage({
   searchParams,
 }: {
-  searchParams: { track_id?: string; class?: string; drivetrain?: string; car?: string };
+  searchParams: Promise<{ track_id?: string; class?: string; drivetrain?: string; car?: string }>;
 }) {
+  const params = await searchParams;
   return (
     <ClassementsClient
-      initialTrackId={searchParams.track_id ? Number(searchParams.track_id) : null}
-      initialClass={searchParams.class}
-      initialDrivetrain={searchParams.drivetrain}
-      initialCar={searchParams.car ? decodeURIComponent(searchParams.car) : undefined}
+      initialTrackId={params.track_id ? Number(params.track_id) : null}
+      initialClass={params.class}
+      initialDrivetrain={params.drivetrain}
+      initialCar={params.car ? decodeURIComponent(params.car) : undefined}
     />
   );
 }
