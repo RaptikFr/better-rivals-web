@@ -12,17 +12,15 @@ export default async function DefiBanner() {
   const now = new Date().toISOString();
   const { data: defi } = await supabaseAdmin
     .from('defis')
-    .select('id, track_id, car_class, week_end, tracks(name, type)')
-    .lte('week_start', now)
-    .gte('week_end',   now)
-    .order('week_start', { ascending: false })
-    .order('id',         { ascending: false })
+    .select('id, car_class, week_end, tracks(name, type), cars(manufacturer, name, year)')
+    .order('id', { ascending: false })
     .limit(1)
-    .maybeSingle();
+    .single();
 
   if (!defi) return null;
 
   const track = defi.tracks as unknown as { name: string; type: string } | null;
+  const car   = defi.cars   as unknown as { manufacturer: string; name: string; year: number } | null;
   const classStyle = CLASS_STYLES[defi.car_class] ?? { backgroundColor: '#555', color: '#fff' };
 
   return (
@@ -46,6 +44,11 @@ export default async function DefiBanner() {
             <p className="font-extrabold text-lg text-neutral-900 dark:text-white">
               {getTypeIcon(track?.type ?? '')} {track?.name ?? '—'}
             </p>
+            {car && (
+              <p className="text-sm text-neutral-400">
+                🚗 {car.year} {car.manufacturer} {car.name}
+              </p>
+            )}
             <p className="text-sm text-neutral-500">
               Jusqu&apos;au {new Date(defi.week_end).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
