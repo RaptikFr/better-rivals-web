@@ -78,6 +78,7 @@ export type Database = {
         Row: {
           id:         string
           track_id:   number
+          car_id:     number | null
           car_class:  string
           week_start: string
           week_end:   string
@@ -86,6 +87,7 @@ export type Database = {
         Insert: {
           id?:        string
           track_id:   number
+          car_id?:    number | null
           car_class:  string
           week_start: string
           week_end:   string
@@ -94,6 +96,7 @@ export type Database = {
         Update: {
           id?:        string
           track_id?:  number
+          car_id?:    number | null
           car_class?: string
           week_start?: string
           week_end?:   string

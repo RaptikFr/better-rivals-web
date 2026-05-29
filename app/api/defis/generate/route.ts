@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const CAR_CLASSES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R', 'X'];
+const CAR_CLASSES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R'];
 
 function getWeekBounds() {
   const now = new Date();
@@ -64,12 +64,25 @@ export async function POST(request: NextRequest) {
     const track = pool[Math.floor(Math.random() * pool.length)];
     const car_class = CAR_CLASSES[Math.floor(Math.random() * CAR_CLASSES.length)];
 
+    // Pioche une voiture aléatoire dans la classe choisie
+    const { data: cars, error: carsError } = await supabaseAdmin
+      .from('cars')
+      .select('id, manufacturer, name, year')
+      .eq('initial_class', car_class)
+      .not('car_ordinal', 'is', null);
+
+    if (carsError || !cars?.length) {
+      return NextResponse.json({ error: 'Aucune voiture disponible pour cette classe.' }, { status: 500 });
+    }
+
+    const car = cars[Math.floor(Math.random() * cars.length)];
+
     const { week_start, week_end } = getWeekBounds();
 
     const { data: defi, error: insertError } = await supabaseAdmin
       .from('defis')
-      .insert([{ track_id: track.id, car_class, week_start, week_end }])
-      .select('*, tracks(name)')
+      .insert([{ track_id: track.id, car_class, car_id: car.id, week_start, week_end }])
+      .select('*, tracks(name), cars(manufacturer, name, year)')
       .single();
 
     if (insertError) {

@@ -16,13 +16,23 @@ interface Track {
   is_sprint: boolean | null;
 }
 
+interface Car {
+  id: number;
+  car_ordinal: number | null;
+  manufacturer: string | null;
+  name: string;
+  year: number | null;
+}
+
 interface Defi {
   id: string;
   track_id: number;
+  car_id: number | null;
   car_class: string;
   week_start: string;
   week_end: string;
   tracks: Track;
+  cars: Car | null;
 }
 
 interface LapEntry {
@@ -76,13 +86,17 @@ export default function DefisClient() {
 
   const countdown = useCountdown(defi?.week_end ?? null);
 
-  const fetchLaps = useCallback(async (trackId: number, carClass: string) => {
-    const { data } = await supabase
+  const fetchLaps = useCallback(async (trackId: number, carClass: string, carOrdinal: number | null) => {
+    let query = supabase
       .from('lap_times')
       .select('player_id, time_ms, players(pseudo, discord_tag), cars(manufacturer, name, year)')
       .eq('track_id', trackId)
       .eq('car_class', carClass)
       .order('time_ms', { ascending: true });
+
+    if (carOrdinal !== null) query = query.eq('car_ordinal', carOrdinal);
+
+    const { data } = await query;
 
     if (!data) return;
 
@@ -111,7 +125,8 @@ export default function DefisClient() {
       const json = await res.json();
       if (!json.defi) { setNoDefi(true); setIsLoading(false); return; }
       setDefi(json.defi);
-      await fetchLaps(json.defi.track_id, json.defi.car_class);
+      const carOrdinal = json.defi.cars?.car_ordinal ?? null;
+      await fetchLaps(json.defi.track_id, json.defi.car_class, carOrdinal);
 
       // Défis passés
       const now = new Date().toISOString();
@@ -144,7 +159,9 @@ export default function DefisClient() {
     </main>
   );
 
-  const track = defi!.tracks;
+  const track     = defi!.tracks;
+  const car       = defi!.cars;
+  const carLabel  = car ? `${car.year ?? ''} ${car.manufacturer ?? ''} ${car.name}`.trim() : null;
   const classStyle = CLASS_STYLES[defi!.car_class] ?? { backgroundColor: '#555', color: '#fff' };
 
   return (
@@ -163,7 +180,7 @@ export default function DefisClient() {
         {/* Carte du défi */}
         <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 mb-6">
           <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Circuit</p>
               <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white">
                 {getTypeIcon(track.type)} {getSprintIcon(track.is_sprint ?? false)} {track.name}
@@ -182,6 +199,16 @@ export default function DefisClient() {
               </span>
             </div>
           </div>
+
+          {carLabel && (
+            <div className="mb-4 p-3 bg-neutral-200/60 dark:bg-neutral-800 rounded-xl flex items-center gap-3">
+              <span className="text-lg">🚗</span>
+              <div>
+                <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider">Voiture imposée</p>
+                <p className="font-bold text-neutral-900 dark:text-white">{carLabel}</p>
+              </div>
+            </div>
+          )}
 
           {/* Compte à rebours */}
           {countdown && (
