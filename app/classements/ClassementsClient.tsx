@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
@@ -39,10 +39,33 @@ interface Track {
   name: string;
 }
 
-type SortKey = 'time_ms' | 'pseudo' | 'car' | 'car_pi' | 'drivetrain' | 'track';
+interface RankedLap extends LapTime {
+  rank: number;
+}
 
-const ITEMS_PER_PAGE = 20;
+interface SubGroup {
+  key: string;
+  carClass: CarClass;
+  drivetrain: Drivetrain;
+  carLabel: string;
+  laps: RankedLap[];
+}
+
+interface CircuitGroup {
+  trackId: number;
+  trackName: string;
+  trackLengthKm: number | null;
+  trackType: string | null;
+  trackIsSprint: boolean | null;
+  subGroups: SubGroup[];
+}
+
+const CAR_CLASS_ORDER = ['D', 'C', 'B', 'A', 'S1', 'S2', 'X'];
+const CIRCUITS_PER_PAGE = 5;
 const CAR_CLASSES: Array<"Toutes" | CarClass> = ["Toutes", "D", "C", "B", "A", "S1", "S2", "X"];
+const DRIVETRAIN_OPTIONS: Array<"Tous" | Drivetrain> = ["Tous", "AWD", "RWD", "FWD"];
+const RAISONS = ['Temps impossible', 'Mauvais circuit sélectionné', 'Autre'] as const;
+type Raison = typeof RAISONS[number];
 
 function TuneCell({ lap, setups }: { lap: LapTime; setups: TuneSetup[] }) {
   const [copied, setCopied] = useState(false);
@@ -73,9 +96,6 @@ function TuneCell({ lap, setups }: { lap: LapTime; setups: TuneSetup[] }) {
     </div>
   );
 }
-
-const RAISONS = ['Temps impossible', 'Mauvais circuit sélectionné', 'Autre'] as const;
-type Raison = typeof RAISONS[number];
 
 function ReportModal({
   lap,
@@ -179,8 +199,6 @@ function ReportModal({
   );
 }
 
-const DRIVETRAIN_OPTIONS: Array<"Tous" | Drivetrain> = ["Tous", "AWD", "RWD", "FWD"];
-
 export default function ClassementsClient({
   initialTrackId,
   initialClass,
@@ -200,45 +218,30 @@ export default function ClassementsClient({
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
 
-  const [currentPlayerId,    setCurrentPlayerId]    = useState<string | null>(null);
-  const [reportTarget,       setReportTarget]       = useState<LapTime | null>(null);
-  const [reportSuccessMsg,   setReportSuccessMsg]   = useState<string | null>(null);
-
-  // Tri
-  const [sortKey, setSortKey] = useState<SortKey>('time_ms');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-
-  function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortKey(key);
-      setSortDir('asc');
-    }
-    setCurrentPage(1);
-  }
+  const [currentPlayerId,  setCurrentPlayerId]  = useState<string | null>(null);
+  const [reportTarget,     setReportTarget]     = useState<LapTime | null>(null);
+  const [reportSuccessMsg, setReportSuccessMsg] = useState<string | null>(null);
 
   // Filtres serveur
-  const [allTracks, setAllTracks] = useState<Track[]>([]);
-  const [selectedTrackId, setSelectedTrackId] = useState<number | null>(initialTrackId ?? null);
-  const [selectedClass, setSelectedClass] = useState(initialClass ?? "Toutes");
+  const [allTracks,          setAllTracks]          = useState<Track[]>([]);
+  const [selectedTrackId,    setSelectedTrackId]    = useState<number | null>(initialTrackId ?? null);
+  const [selectedClass,      setSelectedClass]      = useState(initialClass ?? "Toutes");
   const [selectedDrivetrain, setSelectedDrivetrain] = useState<"Tous" | Drivetrain>(
     (initialDrivetrain as Drivetrain | undefined) ?? "Tous"
   );
 
   // Filtre circuit avec recherche
-  const [trackSearch, setTrackSearch] = useState('');
+  const [trackSearch,       setTrackSearch]       = useState('');
   const [showTrackDropdown, setShowTrackDropdown] = useState(false);
 
   // Filtre voiture (client-side)
-  const [selectedCar, setSelectedCar] = useState(initialCar ?? 'Toutes');
-  const [carSearch, setCarSearch] = useState('');
+  const [selectedCar,    setSelectedCar]    = useState(initialCar ?? 'Toutes');
+  const [carSearch,      setCarSearch]      = useState('');
   const [showCarDropdown, setShowCarDropdown] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Charger la liste des circuits au montage
   useEffect(() => {
     async function fetchTracks() {
       const res = await fetch('/api/circuits');
@@ -250,7 +253,6 @@ export default function ClassementsClient({
     fetchTracks();
   }, []);
 
-  // Charger le player_id courant si connecté
   useEffect(() => {
     if (!user) { setCurrentPlayerId(null); return; }
     supabase
@@ -261,7 +263,6 @@ export default function ClassementsClient({
       .then(({ data }) => setCurrentPlayerId(data?.id ?? null));
   }, [user]);
 
-  // Requête Supabase — se redéclenche quand les filtres serveur changent
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -283,7 +284,6 @@ export default function ClassementsClient({
     if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
     if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
 
-    // Sans filtre complet : limite pour ne pas charger toute la table
     if (selectedTrackId === null && selectedClass === 'Toutes' && selectedDrivetrain === 'Tous') {
       query = query.limit(200);
     }
@@ -304,16 +304,10 @@ export default function ClassementsClient({
     setIsLoading(false);
   }, [selectedTrackId, selectedClass, selectedDrivetrain]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Remettre à la page 1 quand le filtre voiture change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCar]);
+  useEffect(() => { setCurrentPage(1); }, [selectedCar]);
 
-  // Fermer les dropdowns au clic en dehors
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
@@ -340,13 +334,14 @@ export default function ClassementsClient({
     )).filter(Boolean).sort(),
     [lapTimes]
   );
+
   const filteredCarOptions = useMemo(() =>
     uniqueCars.filter(car => car.toLowerCase().includes(carSearch.toLowerCase())),
     [uniqueCars, carSearch]
   );
 
   const filteredLaps = useMemo(() =>
-    lapTimes.filter((lap) => {
+    lapTimes.filter(lap => {
       if (selectedCar === 'Toutes') return true;
       const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
       return carLabel === selectedCar;
@@ -354,55 +349,69 @@ export default function ClassementsClient({
     [lapTimes, selectedCar]
   );
 
-  // Clé de groupe : circuit + classe + transmission + voiture
-  const lapGroupKey = (lap: LapTime) =>
-    `${lap.track_id}__${lap.car_class}__${lap.drivetrain}__${lap.car_ordinal}`;
-
-  // Clé de tri des groupes (alphabétique : circuit → classe → transmission → voiture)
-  const lapGroupSortKey = (lap: LapTime) => {
-    const car = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
-    return `${lap.tracks?.name ?? ''}__${lap.car_class}__${lap.drivetrain ?? ''}__${car}`;
-  };
-
-  // Label affiché dans l'en-tête de groupe
-  const lapGroupLabel = (lap: LapTime) => {
-    const track = lap.tracks?.name ?? 'Circuit inconnu';
-    const car   = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim() || 'Voiture inconnue';
-    return `${track} · ${lap.car_class} · ${lap.drivetrain} · ${car}`;
-  };
-
-  // Tri par (groupe, temps) + calcul du rang dans chaque groupe
-  const { sortedLaps, lapGroupRank } = useMemo(() => {
-    const sorted = [...filteredLaps].sort((a, b) => {
-      const keyCmp = lapGroupSortKey(a).localeCompare(lapGroupSortKey(b));
-      if (keyCmp !== 0) return keyCmp;
-      return a.time_ms - b.time_ms;
-    });
-
-    const rankMap = new Map<string, number>();
-    const counters = new Map<string, number>();
-    for (const lap of sorted) {
-      const key = lapGroupKey(lap);
-      const n = (counters.get(key) ?? 0) + 1;
-      counters.set(key, n);
-      rankMap.set(lap.id, n);
+  // Groupement hiérarchique : circuit → (classe × transmission × voiture)
+  const circuitGroups = useMemo((): CircuitGroup[] => {
+    const byTrack = new Map<number, LapTime[]>();
+    for (const lap of filteredLaps) {
+      if (!byTrack.has(lap.track_id)) byTrack.set(lap.track_id, []);
+      byTrack.get(lap.track_id)!.push(lap);
     }
-    return { sortedLaps: sorted, lapGroupRank: rankMap };
+
+    const groups: CircuitGroup[] = [];
+
+    for (const [trackId, laps] of byTrack) {
+      const sample = laps[0];
+      const bySubGroup = new Map<string, LapTime[]>();
+
+      for (const lap of laps) {
+        const key = `${lap.car_class}|${lap.drivetrain}|${lap.car_ordinal}`;
+        if (!bySubGroup.has(key)) bySubGroup.set(key, []);
+        bySubGroup.get(key)!.push(lap);
+      }
+
+      const subGroups: SubGroup[] = [...bySubGroup.entries()]
+        .sort(([keyA], [keyB]) => {
+          const [classA, driveA] = keyA.split('|');
+          const [classB, driveB] = keyB.split('|');
+          const ordA = CAR_CLASS_ORDER.indexOf(classA);
+          const ordB = CAR_CLASS_ORDER.indexOf(classB);
+          if (ordA !== ordB) return ordA - ordB;
+          return driveA.localeCompare(driveB);
+        })
+        .map(([key, subLaps]) => {
+          const [carClass, drivetrain] = key.split('|') as [CarClass, Drivetrain];
+          const s = subLaps[0];
+          const carLabel = `${s.cars?.year ?? ''} ${s.cars?.manufacturer ?? ''} ${s.cars?.name ?? ''}`.trim() || 'Voiture inconnue';
+          const sorted = [...subLaps].sort((a, b) => a.time_ms - b.time_ms);
+          const rankedLaps = sorted.map((lap, i) => ({ ...lap, rank: i + 1 })) as RankedLap[];
+          return { key, carClass, drivetrain, carLabel, laps: rankedLaps };
+        });
+
+      groups.push({
+        trackId,
+        trackName: sample.tracks?.name ?? 'Circuit inconnu',
+        trackLengthKm: sample.tracks?.length_km ?? null,
+        trackType: sample.tracks?.type ?? null,
+        trackIsSprint: sample.tracks?.is_sprint ?? null,
+        subGroups,
+      });
+    }
+
+    return groups.sort((a, b) => a.trackName.localeCompare(b.trackName));
   }, [filteredLaps]);
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(sortedLaps.length / ITEMS_PER_PAGE));
+  const totalSubGroups = circuitGroups.reduce((sum, g) => sum + g.subGroups.length, 0);
+  const totalPages = Math.max(1, Math.ceil(circuitGroups.length / CIRCUITS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
-  const paginatedLaps = sortedLaps.slice(
-    (safePage - 1) * ITEMS_PER_PAGE,
-    safePage * ITEMS_PER_PAGE
+  const paginatedGroups = circuitGroups.slice(
+    (safePage - 1) * CIRCUITS_PER_PAGE,
+    safePage * CIRCUITS_PER_PAGE
   );
 
   const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes';
 
   return (
     <main className="min-h-screen p-6">
-
       <div className="max-w-screen-2xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
           Leaderboards
@@ -414,7 +423,6 @@ export default function ClassementsClient({
         {/* --- ZONE DES FILTRES --- */}
         <div className="flex flex-col gap-4 mb-6 p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
 
-          {/* Ligne 1 : Circuit + Classe */}
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex flex-col relative track-dropdown-wrapper">
               <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Circuit :</label>
@@ -466,16 +474,13 @@ export default function ClassementsClient({
               <select
                 className="bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 rounded-lg focus:outline-none focus:border-pink-500"
                 value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
+                onChange={e => setSelectedClass(e.target.value)}
               >
-                {CAR_CLASSES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
+                {CAR_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Ligne 1b : Voiture avec recherche */}
           <div className="flex flex-col relative car-dropdown-wrapper">
             <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Voiture :</label>
             <div className="relative">
@@ -521,17 +526,16 @@ export default function ClassementsClient({
             )}
           </div>
 
-          {/* Ligne 2 : Transmission */}
           <div className="flex flex-col">
             <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-2">Transmission :</label>
             <div className="flex flex-wrap gap-2">
-              {DRIVETRAIN_OPTIONS.map((dt) => {
+              {DRIVETRAIN_OPTIONS.map(dt => {
                 const isActive = selectedDrivetrain === dt;
                 const activeColors: Record<typeof dt, string> = {
                   Tous: "bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white",
-                  AWD: "bg-blue-500 text-white border-blue-500",
-                  RWD: "bg-orange-500 text-white border-orange-500",
-                  FWD: "bg-green-500 text-white border-green-500",
+                  AWD:  "bg-blue-500 text-white border-blue-500",
+                  RWD:  "bg-orange-500 text-white border-orange-500",
+                  FWD:  "bg-green-500 text-white border-green-500",
                 };
                 return (
                   <button
@@ -549,164 +553,142 @@ export default function ClassementsClient({
               })}
             </div>
           </div>
-
         </div>
 
         {/* Compteur de résultats */}
         {!isLoading && !error && (
-          <p className="text-sm text-neutral-500 mb-3">
-            {filteredLaps.length} résultat{filteredLaps.length !== 1 ? "s" : ""}
-            {hasFilters ? " avec les filtres actuels" : " au total"}
+          <p className="text-sm text-neutral-500 mb-4">
+            {circuitGroups.length} circuit{circuitGroups.length !== 1 ? 's' : ''}
+            {' · '}{totalSubGroups} configuration{totalSubGroups !== 1 ? 's' : ''}
+            {hasFilters ? ' avec les filtres actuels' : ''}
             {totalPages > 1 && ` — page ${safePage} / ${totalPages}`}
           </p>
         )}
 
-        {/* Tableau des temps */}
-        <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl">
-          <table className="w-full text-left border-collapse whitespace-nowrap">
-            <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
-                {(
-                  [
-                    { label: '#',            key: 'time_ms'    },
-                    { label: 'PILOTE',       key: 'pseudo'     },
-                    { label: 'TEMPS',        key: 'time_ms'    },
-                    { label: 'VOITURE',      key: 'car'        },
-                    { label: 'CLASSE / PI',  key: 'car_pi'     },
-                    { label: 'TRANSMISSION', key: 'drivetrain' },
-                  ] as { label: string; key: SortKey }[]
-                ).map(({ label, key }) => (
-                  <th
-                    key={label}
-                    onClick={() => handleSort(key)}
-                    className={`p-4 font-bold tracking-wider cursor-pointer select-none transition-colors ${
-                      sortKey === key
-                        ? 'text-neutral-900 dark:text-white'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40'
-                    }`}
-                  >
-                    {label}
-                    {sortKey === key && (
-                      <span className="text-pink-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+        {/* --- CONTENU --- */}
+        {isLoading ? (
+          <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-12 text-center">
+            <p className="text-neutral-500 font-medium animate-pulse">Chargement des données télémétriques...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-12 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <span className="text-3xl">⚠️</span>
+              <p className="text-neutral-600 dark:text-neutral-400 font-medium">{error}</p>
+              <button
+                onClick={fetchData}
+                className="mt-2 px-4 py-2 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
+              >
+                Réessayer
+              </button>
+            </div>
+          </div>
+        ) : paginatedGroups.length === 0 ? (
+          <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-12 text-center">
+            <p className="text-neutral-500 font-medium">Aucun temps ne correspond à ces filtres.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {paginatedGroups.map(circuit => (
+              <div
+                key={circuit.trackId}
+                className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden"
+              >
+                {/* En-tête de circuit */}
+                <div className="px-5 py-4 bg-neutral-200/60 dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="font-extrabold text-lg text-neutral-900 dark:text-white">
+                      {getTypeIcon(circuit.trackType ?? '')} {getSprintIcon(circuit.trackIsSprint ?? false)} {circuit.trackName}
+                    </h2>
+                    {circuit.trackLengthKm && (
+                      <span className="text-sm text-neutral-500">· {circuit.trackLengthKm} km</span>
                     )}
-                  </th>
-                ))}
-                <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">RÉGLAGES</th>
-                <th className="p-4 w-12"></th>
-                <th
-                  onClick={() => handleSort('track')}
-                  className={`p-4 font-bold tracking-wider cursor-pointer select-none transition-colors ${
-                    sortKey === 'track'
-                      ? 'text-neutral-900 dark:text-white'
-                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40'
-                  }`}
-                >
-                  CIRCUIT
-                  {sortKey === 'track' && (
-                    <span className="text-pink-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={9} className="p-12 text-center text-neutral-500 font-medium animate-pulse">
-                    Chargement des données télémétriques...
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan={9} className="p-12 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <span className="text-3xl">⚠️</span>
-                      <p className="text-neutral-600 dark:text-neutral-400 font-medium">{error}</p>
-                      <button
-                        onClick={fetchData}
-                        className="mt-2 px-4 py-2 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
-                      >
-                        Réessayer
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : paginatedLaps.length > 0 ? (
-                paginatedLaps.map((lap, index) => {
-                  const currentKey = lapGroupKey(lap);
-                  const prevKey    = index > 0 ? lapGroupKey(paginatedLaps[index - 1]) : null;
-                  const isNewGroup = currentKey !== prevKey;
-                  return (
-                  <Fragment key={lap.id}>
-                    {isNewGroup && (
-                      <tr className="bg-neutral-200/60 dark:bg-neutral-950">
-                        <td colSpan={9} className="px-4 py-2 text-xs font-bold text-neutral-500 dark:text-neutral-400 tracking-wider border-t-2 border-neutral-300 dark:border-neutral-700">
-                          {lapGroupLabel(lap)}
-                        </td>
-                      </tr>
-                    )}
-                  <tr className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
-                    <td className="p-4 font-bold text-neutral-500">{lapGroupRank.get(lap.id) ?? (index + 1)}</td>
-                    <td className="p-4 font-bold text-neutral-900 dark:text-white">
-                      {lap.players?.pseudo ?? 'Inconnu'}
-                      <DiscordTag tag={lap.players?.discord_tag} />
-                    </td>
-                    <td className="p-4">
-                      <span className="font-mono font-bold text-pink-400 text-lg">{formatTime(lap.time_ms)}</span>
-                      {lap.previous_time_ms && (
-                        <div className="text-xs font-mono mt-0.5 flex items-center gap-1.5 text-neutral-500">
-                          ↑ {formatTime(lap.previous_time_ms)}
-                          <span className="text-orange-400">+{((lap.previous_time_ms - lap.time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="p-4 text-neutral-700 dark:text-neutral-300">
-                      {lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}
-                    </td>
-                    <td className="p-4">
-                      <span className="px-2 py-1 rounded text-xs font-bold mr-2" style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>
-                        {lap.car_class}
-                      </span>
-                      <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi}</span>
-                    </td>
-                    <td className="p-4">
-                      <DrivetrainBadge drivetrain={lap.drivetrain} />
-                    </td>
-                    <td className="p-4">
-                      <TuneCell lap={lap} setups={tuneSetups} />
-                    </td>
-                    <td className="p-4 text-right">
-                      {user && currentPlayerId !== null && lap.player_id !== currentPlayerId && (
-                        <button
-                          onClick={() => setReportTarget(lap)}
-                          title="Signaler ce temps comme suspect"
-                          className="text-neutral-500 hover:text-red-400 transition-colors"
+                  </div>
+                  <span className="text-xs text-neutral-500 font-mono flex-shrink-0">
+                    {circuit.subGroups.length} config{circuit.subGroups.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                {/* Sous-groupes */}
+                <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                  {circuit.subGroups.map(group => (
+                    <div key={group.key} className="p-4">
+
+                      {/* En-tête de sous-groupe */}
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <span
+                          className="px-2 py-0.5 rounded text-xs font-bold"
+                          style={CLASS_STYLES[group.carClass] ?? { backgroundColor: '#555', color: '#fff' }}
                         >
-                          🚩
-                        </button>
-                      )}
-                    </td>
-                    <td className="p-4 text-neutral-600 dark:text-neutral-400">
-                      {getTypeIcon(lap.tracks?.type ?? '')} {getSprintIcon(lap.tracks?.is_sprint ?? false)} {lap.tracks?.name ?? 'Inconnu'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
-                    </td>
-                  </tr>
-                  </Fragment>
-                  );
-                })
-              ) : (
-                <tr>
-                <td colSpan={9} className="p-12 text-center text-neutral-500 font-medium">
-                    Aucun temps ne correspond à ces filtres.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                          {group.carClass}
+                        </span>
+                        <DrivetrainBadge drivetrain={group.drivetrain} />
+                        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{group.carLabel}</span>
+                        <span className="text-xs text-neutral-500 ml-auto">
+                          {group.laps.length} pilote{group.laps.length > 1 ? 's' : ''}
+                        </span>
+                      </div>
+
+                      {/* Tableau des temps */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm border-collapse">
+                          <tbody>
+                            {group.laps.map(lap => (
+                              <tr
+                                key={lap.id}
+                                className="hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors"
+                              >
+                                <td className="py-2 px-2 w-8 font-bold text-neutral-500 text-right tabular-nums">
+                                  {lap.rank}
+                                </td>
+                                <td className="py-2 px-3 font-bold text-neutral-900 dark:text-white min-w-[120px]">
+                                  {lap.players?.pseudo ?? 'Inconnu'}
+                                  <DiscordTag tag={lap.players?.discord_tag} />
+                                </td>
+                                <td className="py-2 px-3 min-w-[110px]">
+                                  <span className="font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</span>
+                                  {lap.previous_time_ms && (
+                                    <div className="text-xs font-mono mt-0.5 flex items-center gap-1 text-neutral-500">
+                                      ↑ {formatTime(lap.previous_time_ms)}
+                                      <span className="text-orange-400">
+                                        +{((lap.previous_time_ms - lap.time_ms) / 1000).toFixed(3).replace('.', ',')}s
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-2 px-3 text-neutral-500 font-mono text-xs whitespace-nowrap">
+                                  PI {lap.car_pi}
+                                </td>
+                                <td className="py-2 px-3">
+                                  <TuneCell lap={lap} setups={tuneSetups} />
+                                </td>
+                                <td className="py-2 px-2 text-right">
+                                  {user && currentPlayerId !== null && lap.player_id !== currentPlayerId && (
+                                    <button
+                                      onClick={() => setReportTarget(lap)}
+                                      title="Signaler ce temps comme suspect"
+                                      className="text-neutral-500 hover:text-red-400 transition-colors"
+                                    >
+                                      🚩
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* --- PAGINATION --- */}
         {!isLoading && !error && totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-6">
-
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={safePage === 1}
@@ -754,7 +736,6 @@ export default function ClassementsClient({
             >
               Suivant →
             </button>
-
           </div>
         )}
 
