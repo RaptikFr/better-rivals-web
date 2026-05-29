@@ -633,9 +633,9 @@ export default function ClassementsClient({
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm border-collapse table-fixed">
                           <colgroup>
-                            <col className="w-8" />
+                            <col className="w-10" />
+                            <col className="w-[220px]" />
                             <col className="w-[200px]" />
-                            <col className="w-[150px]" />
                             <col className="w-[90px]" />
                             <col />
                             <col className="w-10" />
@@ -646,31 +646,31 @@ export default function ClassementsClient({
                                 key={lap.id}
                                 className="hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors"
                               >
-                                <td className="py-2 px-2 font-bold text-neutral-500 text-right tabular-nums">
+                                <td className="py-3 px-2 font-bold text-neutral-500 text-right tabular-nums align-top">
                                   {lap.rank}
                                 </td>
-                                <td className="py-2 px-3 font-bold text-neutral-900 dark:text-white">
+                                <td className="py-3 px-3 font-bold text-neutral-900 dark:text-white align-top">
                                   {lap.players?.pseudo ?? 'Inconnu'}
                                   <DiscordTag tag={lap.players?.discord_tag} />
                                 </td>
-                                <td className="py-2 px-3">
+                                <td className="py-3 px-3 align-top">
                                   <span className="font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</span>
                                   {lap.previous_time_ms && (
-                                    <div className="text-xs font-mono mt-0.5 flex items-center gap-1 text-neutral-500">
-                                      ↑ {formatTime(lap.previous_time_ms)}
+                                    <div className="text-xs font-mono mt-0.5 text-neutral-500 whitespace-nowrap">
+                                      ↑ {formatTime(lap.previous_time_ms)}{' '}
                                       <span className="text-orange-400">
                                         +{((lap.previous_time_ms - lap.time_ms) / 1000).toFixed(3).replace('.', ',')}s
                                       </span>
                                     </div>
                                   )}
                                 </td>
-                                <td className="py-2 px-3 text-neutral-500 font-mono text-xs whitespace-nowrap">
+                                <td className="py-3 px-3 text-neutral-500 font-mono text-xs whitespace-nowrap align-top">
                                   PI {lap.car_pi}
                                 </td>
-                                <td className="py-2 px-3">
+                                <td className="py-3 px-3 align-top">
                                   <TuneCell lap={lap} setups={tuneSetups} />
                                 </td>
-                                <td className="py-2 px-2 text-right">
+                                <td className="py-3 px-2 text-right align-top">
                                   {user && currentPlayerId !== null && lap.player_id !== currentPlayerId && (
                                     <button
                                       onClick={() => setReportTarget(lap)}
