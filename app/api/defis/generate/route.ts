@@ -12,20 +12,21 @@ const CAR_CLASSES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R'];
 
 function getWeekBounds() {
   const now = new Date();
-  const day = now.getUTCDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const dayOfWeek = now.getDay(); // 0=dimanche, 1=lundi, ..., 6=samedi
 
-  const monday = new Date(now);
-  monday.setUTCDate(now.getUTCDate() + diffToMonday);
-  monday.setUTCHours(0, 0, 0, 0);
+  const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+  const weekEnd = new Date(now);
+  weekEnd.setDate(now.getDate() + daysUntilSunday);
+  weekEnd.setHours(23, 59, 59, 999);
 
-  const sunday = new Date(monday);
-  sunday.setUTCDate(monday.getUTCDate() + 6);
-  sunday.setUTCHours(23, 59, 59, 999);
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysFromMonday);
+  weekStart.setHours(0, 0, 0, 0);
 
   return {
-    week_start: monday.toISOString(),
-    week_end:   sunday.toISOString(),
+    week_start: weekStart.toISOString(),
+    week_end:   weekEnd.toISOString(),
   };
 }
 
