@@ -218,9 +218,11 @@ export default function ClassementsClient({
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
 
-  const [currentPlayerId,  setCurrentPlayerId]  = useState<string | null>(null);
-  const [reportTarget,     setReportTarget]     = useState<LapTime | null>(null);
-  const [reportSuccessMsg, setReportSuccessMsg] = useState<string | null>(null);
+  const [currentPlayerId,    setCurrentPlayerId]    = useState<string | null>(null);
+  const [currentPlayerPseudo, setCurrentPlayerPseudo] = useState<string | null>(null);
+  const [myTimesOnly,        setMyTimesOnly]        = useState(false);
+  const [reportTarget,       setReportTarget]       = useState<LapTime | null>(null);
+  const [reportSuccessMsg,   setReportSuccessMsg]   = useState<string | null>(null);
 
   // Filtres serveur
   const [allTracks,          setAllTracks]          = useState<Track[]>([]);
@@ -263,13 +265,16 @@ export default function ClassementsClient({
   }, []);
 
   useEffect(() => {
-    if (!user) { setCurrentPlayerId(null); return; }
+    if (!user) { setCurrentPlayerId(null); setCurrentPlayerPseudo(null); return; }
     supabase
       .from('players')
-      .select('id')
+      .select('id, pseudo')
       .eq('user_id', user.id)
       .single()
-      .then(({ data }) => setCurrentPlayerId(data?.id ?? null));
+      .then(({ data }) => {
+        setCurrentPlayerId(data?.id ?? null);
+        setCurrentPlayerPseudo(data?.pseudo ?? null);
+      });
   }, [user]);
 
   const fetchData = useCallback(async () => {
@@ -315,7 +320,7 @@ export default function ClassementsClient({
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  useEffect(() => { setCurrentPage(1); }, [selectedCar, pseudoSearch]);
+  useEffect(() => { setCurrentPage(1); }, [selectedCar, pseudoSearch, myTimesOnly]);
 
   // Lit le paramètre ?highlight= à l'arrivée sur la page
   useEffect(() => {
@@ -366,9 +371,12 @@ export default function ClassementsClient({
         const pseudo = lap.players?.pseudo?.toLowerCase() ?? '';
         if (!pseudo.includes(pseudoSearch.toLowerCase())) return false;
       }
+      if (myTimesOnly && currentPlayerPseudo) {
+        if (lap.players?.pseudo !== currentPlayerPseudo) return false;
+      }
       return true;
     }),
-    [lapTimes, selectedCar, pseudoSearch]
+    [lapTimes, selectedCar, pseudoSearch, myTimesOnly, currentPlayerPseudo]
   );
 
   // Groupement hiérarchique : circuit → (classe × transmission × voiture)
@@ -451,7 +459,7 @@ export default function ClassementsClient({
     safePage * CIRCUITS_PER_PAGE
   );
 
-  const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes' || pseudoSearch !== '';
+  const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes' || pseudoSearch !== '' || myTimesOnly;
 
   async function handleShareRow(lapId: string) {
     const params = new URLSearchParams();
@@ -491,12 +499,26 @@ export default function ClassementsClient({
               Filtrez les résultats pour comparer ce qui est comparable.
             </p>
           </div>
-          <button
-            onClick={handleShare}
-            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors mt-1"
-          >
-            {linkCopied ? '✅ Lien copié !' : '🔗 Partager'}
-          </button>
+          <div className="flex items-center gap-2 mt-1 flex-shrink-0">
+            {user && (
+              <button
+                onClick={() => setMyTimesOnly(v => !v)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                  myTimesOnly
+                    ? 'bg-gradient-to-r from-pink-500 to-violet-600 text-white'
+                    : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                👤 Mes temps
+              </button>
+            )}
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+            >
+              {linkCopied ? '✅ Lien copié !' : '🔗 Partager'}
+            </button>
+          </div>
         </div>
 
         {/* --- ZONE DES FILTRES --- */}
