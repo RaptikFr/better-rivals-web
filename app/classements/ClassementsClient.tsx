@@ -242,8 +242,11 @@ export default function ClassementsClient({
   // Filtre pseudo (client-side)
   const [pseudoSearch, setPseudoSearch] = useState('');
 
-  // Partage
-  const [linkCopied, setLinkCopied] = useState(false);
+  // Partage global
+  const [linkCopied,  setLinkCopied]  = useState(false);
+  // Partage / highlight par ligne
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [copiedRowId, setCopiedRowId] = useState<string | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -313,6 +316,13 @@ export default function ClassementsClient({
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => { setCurrentPage(1); }, [selectedCar, pseudoSearch]);
+
+  // Lit le paramètre ?highlight= à l'arrivée sur la page
+  useEffect(() => {
+    const h = new URLSearchParams(window.location.search).get('highlight');
+    if (h) setHighlightId(h);
+  }, []);
+
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -412,6 +422,27 @@ export default function ClassementsClient({
     return groups.sort((a, b) => a.trackName.localeCompare(b.trackName));
   }, [filteredLaps]);
 
+  // Navigue vers la page contenant la ligne mise en évidence
+  useEffect(() => {
+    if (!highlightId || circuitGroups.length === 0) return;
+    const groupIndex = circuitGroups.findIndex(g =>
+      g.subGroups.some(sg => sg.laps.some(l => l.id === highlightId))
+    );
+    if (groupIndex === -1) return;
+    const targetPage = Math.floor(groupIndex / CIRCUITS_PER_PAGE) + 1;
+    setCurrentPage(targetPage);
+  }, [highlightId, circuitGroups]);
+
+  // Scrolle jusqu'à la ligne mise en évidence après rendu
+  useEffect(() => {
+    if (!highlightId) return;
+    const timer = setTimeout(() => {
+      document.querySelector(`[data-lap-id="${highlightId}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [highlightId, currentPage]);
+
   const totalSubGroups = circuitGroups.reduce((sum, g) => sum + g.subGroups.length, 0);
   const totalPages = Math.max(1, Math.ceil(circuitGroups.length / CIRCUITS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -421,6 +452,19 @@ export default function ClassementsClient({
   );
 
   const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes' || pseudoSearch !== '';
+
+  async function handleShareRow(lapId: string) {
+    const params = new URLSearchParams();
+    if (selectedTrackId !== null)      params.set('track_id',  String(selectedTrackId));
+    if (selectedClass !== 'Toutes')    params.set('class',      selectedClass);
+    if (selectedDrivetrain !== 'Tous') params.set('drivetrain', selectedDrivetrain);
+    if (selectedCar !== 'Toutes')      params.set('car',        encodeURIComponent(selectedCar));
+    params.set('highlight', lapId);
+    const url = `${window.location.origin}/classements?${params.toString()}`;
+    await navigator.clipboard.writeText(url);
+    setCopiedRowId(lapId);
+    setTimeout(() => setCopiedRowId(null), 2000);
+  }
 
   async function handleShare() {
     const params = new URLSearchParams();
@@ -684,13 +728,16 @@ export default function ClassementsClient({
                             <col className="w-[200px]" />
                             <col className="w-[90px]" />
                             <col />
-                            <col className="w-10" />
+                            <col className="w-16" />
                           </colgroup>
                           <tbody>
                             {group.laps.map(lap => (
                               <tr
                                 key={lap.id}
-                                className="hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors"
+                                data-lap-id={lap.id}
+                                className={`hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors ${
+                                  lap.id === highlightId ? 'bg-pink-500/20 dark:bg-pink-500/20' : ''
+                                }`}
                               >
                                 <td className="py-3 px-2 font-bold text-neutral-500 text-right tabular-nums align-top">
                                   {lap.rank}
@@ -717,15 +764,24 @@ export default function ClassementsClient({
                                   <TuneCell lap={lap} setups={tuneSetups} />
                                 </td>
                                 <td className="py-3 px-2 text-right align-top">
-                                  {user && currentPlayerId !== null && lap.player_id !== currentPlayerId && (
+                                  <div className="flex items-center justify-end gap-1.5">
                                     <button
-                                      onClick={() => setReportTarget(lap)}
-                                      title="Signaler ce temps comme suspect"
-                                      className="text-neutral-500 hover:text-red-400 transition-colors"
+                                      onClick={() => handleShareRow(lap.id)}
+                                      title="Copier le lien vers ce temps"
+                                      className="text-neutral-400 hover:text-pink-400 transition-colors text-xs"
                                     >
-                                      🚩
+                                      {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
                                     </button>
-                                  )}
+                                    {user && currentPlayerId !== null && lap.player_id !== currentPlayerId && (
+                                      <button
+                                        onClick={() => setReportTarget(lap)}
+                                        title="Signaler ce temps comme suspect"
+                                        className="text-neutral-500 hover:text-red-400 transition-colors"
+                                      >
+                                        🚩
+                                      </button>
+                                    )}
+                                  </div>
                                 </td>
                               </tr>
                             ))}
