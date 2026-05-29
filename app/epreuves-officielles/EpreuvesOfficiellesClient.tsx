@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { TrackCategory } from '@/types/supabase';
 import { TypeBadge } from '@/components/TypeBadge';
@@ -17,16 +18,21 @@ interface Track {
 }
 
 function TrackCard({ track }: { track: Track }) {
+  const router = useRouter();
+
   return (
-    <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 rounded-xl p-5 transition-colors">
-      <div className="flex items-start justify-between gap-3 mb-3">
+    <div
+      onClick={() => router.push(`/classements?track_id=${track.id}`)}
+      className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-pink-500/50 rounded-xl p-5 transition-colors cursor-pointer flex flex-col gap-3"
+    >
+      <div className="flex items-start justify-between gap-3">
         <h3 className="font-bold text-lg leading-tight">{getTypeIcon(track.type)} {getSprintIcon(track.is_sprint ?? false)} {track.name}</h3>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <TypeBadge type={track.type} />
         </div>
       </div>
       {track.description && (
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">{track.description}</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">{track.description}</p>
       )}
       <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500">
         {track.length_km && <span>📏 {track.length_km} km</span>}
@@ -35,6 +41,11 @@ function TrackCard({ track }: { track: Track }) {
             🔑 {track.event_lab_code}
           </span>
         )}
+      </div>
+      <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800">
+        <span className="text-xs text-neutral-500 group-hover:text-pink-400 transition-colors">
+          Voir les classements →
+        </span>
       </div>
     </div>
   );

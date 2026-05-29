@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type SyntheticEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { TrackCategory } from '@/types/supabase';
@@ -25,6 +26,7 @@ const TRACK_TYPES = [
 ];
 
 function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
+  const router = useRouter();
   const [voted,      setVoted]      = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [thumbsUp,   setThumbsUp]   = useState(track.votes.filter(v => v.vote).length);
@@ -53,7 +55,10 @@ function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
   }
 
   return (
-    <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 rounded-xl p-5 transition-colors flex flex-col gap-3">
+    <div
+      onClick={() => router.push(`/classements?track_id=${track.id}`)}
+      className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-pink-500/50 rounded-xl p-5 transition-colors cursor-pointer flex flex-col gap-3"
+    >
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-bold text-lg leading-tight">{getTypeIcon(track.type)} {getSprintIcon(track.is_sprint ?? false)} {track.name}</h3>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -74,25 +79,30 @@ function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
         )}
       </div>
 
-      <div className="flex items-center gap-3 pt-1 border-t border-neutral-200 dark:border-neutral-800">
-        <button onClick={() => handleVote(true)} disabled={!userId || voted || loading}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-            voted ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
-            : userId ? 'bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 cursor-pointer'
-            : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
-          }`}>
-          👍 <span>{thumbsUp}</span>
-        </button>
-        <button onClick={() => handleVote(false)} disabled={!userId || voted || loading}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-            voted ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
-            : userId ? 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 cursor-pointer'
-            : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
-          }`}>
-          👎 <span>{thumbsDown}</span>
-        </button>
-        {!userId && <span className="text-xs text-neutral-500 ml-1">Connecte-toi pour voter</span>}
-        {voted  && <span className="text-xs text-neutral-500 ml-1">Vote enregistré ✓</span>}
+      <div className="flex items-center justify-between pt-1 border-t border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+          <button onClick={() => handleVote(true)} disabled={!userId || voted || loading}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+              voted ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
+              : userId ? 'bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 cursor-pointer'
+              : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
+            }`}>
+            👍 <span>{thumbsUp}</span>
+          </button>
+          <button onClick={() => handleVote(false)} disabled={!userId || voted || loading}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+              voted ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
+              : userId ? 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 cursor-pointer'
+              : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
+            }`}>
+            👎 <span>{thumbsDown}</span>
+          </button>
+          {!userId && <span className="text-xs text-neutral-500 ml-1">Connecte-toi pour voter</span>}
+          {voted  && <span className="text-xs text-neutral-500 ml-1">Vote enregistré ✓</span>}
+        </div>
+        <span className="text-xs text-neutral-500 transition-colors">
+          Voir les classements →
+        </span>
       </div>
     </div>
   );
