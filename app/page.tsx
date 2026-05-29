@@ -114,7 +114,7 @@ export default function Home() {
           </div>
 
           <a
-            href="https://github.com/RaptikFr/better-rivals-web/releases/download/v1.3.1/BetterRivals.exe"
+            href="https://github.com/RaptikFr/better-rivals-web/releases/download/v1.3.2/BetterRivals.exe"
             className="flex-shrink-0 flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg shadow-pink-500/20"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -122,7 +122,7 @@ export default function Home() {
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Télécharger v1.3.1
+            Télécharger v1.3.2
           </a>
 
         </div>
