@@ -15,9 +15,7 @@ export async function GET() {
     const { data: defi, error } = await supabaseAdmin
       .from('defis')
       .select('id, track_id, car_id, car_class, week_start, week_end, tracks(id, name, type, length_km, is_sprint), cars(id, car_ordinal, manufacturer, name, year)')
-      .lte('week_start', now)
-      .gte('week_end', now)
-      .order('week_start', { ascending: false })
+      .order('id', { ascending: false })
       .limit(1)
       .maybeSingle();
 

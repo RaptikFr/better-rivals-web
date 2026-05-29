@@ -52,11 +52,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Récupère tous les circuits éligibles (approuvés, pas de sprint)
+    const TYPES_EXCLUS = ['Course tous chemins', 'Cross-country', 'Course de drag'];
+
     const { data: tracks, error: tracksError } = await supabaseAdmin
       .from('tracks')
       .select('id, name')
       .eq('status', 'approved')
-      .eq('is_sprint', false);
+      .not('type', 'in', `(${TYPES_EXCLUS.map(t => `"${t}"`).join(',')})`);
 
     if (tracksError || !tracks?.length) {
       return NextResponse.json({ error: 'Aucun circuit disponible.' }, { status: 500 });
