@@ -8,6 +8,7 @@ import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
+import { getTypeIcon, getSprintIcon } from '@/app/lib/trackIcons';
 
 interface TuneSetup {
   player_id: string;
@@ -30,7 +31,7 @@ interface LapTime {
   previous_time_ms: number | null;
   players: { pseudo: string; discord_tag: string | null } | null;
   cars: { manufacturer: string | null; name: string; year: number | null } | null;
-  tracks: { name: string; length_km: number | null } | null;
+  tracks: { name: string; length_km: number | null; type: string | null; is_sprint: boolean | null } | null;
 }
 
 interface Track {
@@ -274,7 +275,7 @@ export default function ClassementsClient({
         id, time_ms, previous_time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id,
         players ( pseudo, discord_tag ),
         cars ( manufacturer, name, year ),
-        tracks ( name, length_km )
+        tracks ( name, length_km, type, is_sprint )
       `)
       .order('time_ms', { ascending: true });
 
@@ -685,7 +686,7 @@ export default function ClassementsClient({
                       )}
                     </td>
                     <td className="p-4 text-neutral-600 dark:text-neutral-400">
-                      {lap.tracks?.name ?? 'Inconnu'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
+                      {getTypeIcon(lap.tracks?.type ?? '')} {getSprintIcon(lap.tracks?.is_sprint ?? false)} {lap.tracks?.name ?? 'Inconnu'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
                     </td>
                   </tr>
                   </Fragment>
