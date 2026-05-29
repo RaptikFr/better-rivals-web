@@ -55,7 +55,8 @@ export default function EpreuvesOfficiellesClient() {
   const [tracks,     setTracks]     = useState<Track[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
-  const [filterType, setFilterType] = useState('Tous');
+  const [filterType,   setFilterType]   = useState('Tous');
+  const [searchQuery,  setSearchQuery]  = useState('');
 
   useEffect(() => { fetchData(); }, []);
 
@@ -75,7 +76,10 @@ export default function EpreuvesOfficiellesClient() {
   }
 
   const allTypes = ['Tous', ...Array.from(new Set(tracks.map(t => t.type))).sort()];
-  const filtered = tracks.filter(t => filterType === 'Tous' || t.type === filterType);
+  const filtered = tracks.filter(t =>
+    (filterType === 'Tous' || t.type === filterType) &&
+    t.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoading) return (
     <main className="min-h-screen flex items-center justify-center">
@@ -100,6 +104,16 @@ export default function EpreuvesOfficiellesClient() {
           <p className="text-neutral-600 dark:text-neutral-400 text-lg">Les circuits officiels de Forza Horizon 6.</p>
         </div>
 
+        <div className="mb-4">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Rechercher une épreuve..."
+            className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2.5 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+          />
+        </div>
+
         <div className="flex flex-wrap gap-2 mb-8">
           {allTypes.map(type => (
             <button key={type} onClick={() => setFilterType(type)}
@@ -121,7 +135,7 @@ export default function EpreuvesOfficiellesClient() {
             </span>
           </div>
           {filtered.length === 0 ? (
-            <p className="text-neutral-500 text-sm">Aucune épreuve pour ce filtre.</p>
+            <p className="text-neutral-500 text-sm">Aucune épreuve ne correspond à cette recherche.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(track => <TrackCard key={track.id} track={track} />)}

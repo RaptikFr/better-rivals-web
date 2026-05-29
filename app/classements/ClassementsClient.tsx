@@ -239,6 +239,9 @@ export default function ClassementsClient({
   const [carSearch,      setCarSearch]      = useState('');
   const [showCarDropdown, setShowCarDropdown] = useState(false);
 
+  // Filtre pseudo (client-side)
+  const [pseudoSearch, setPseudoSearch] = useState('');
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -306,7 +309,7 @@ export default function ClassementsClient({
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  useEffect(() => { setCurrentPage(1); }, [selectedCar]);
+  useEffect(() => { setCurrentPage(1); }, [selectedCar, pseudoSearch]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -342,11 +345,17 @@ export default function ClassementsClient({
 
   const filteredLaps = useMemo(() =>
     lapTimes.filter(lap => {
-      if (selectedCar === 'Toutes') return true;
-      const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
-      return carLabel === selectedCar;
+      if (selectedCar !== 'Toutes') {
+        const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
+        if (carLabel !== selectedCar) return false;
+      }
+      if (pseudoSearch) {
+        const pseudo = lap.players?.pseudo?.toLowerCase() ?? '';
+        if (!pseudo.includes(pseudoSearch.toLowerCase())) return false;
+      }
+      return true;
     }),
-    [lapTimes, selectedCar]
+    [lapTimes, selectedCar, pseudoSearch]
   );
 
   // Groupement hiérarchique : circuit → (classe × transmission × voiture)
@@ -408,7 +417,7 @@ export default function ClassementsClient({
     safePage * CIRCUITS_PER_PAGE
   );
 
-  const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes';
+  const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes' || pseudoSearch !== '';
 
   return (
     <main className="min-h-screen p-6">
@@ -524,6 +533,17 @@ export default function ClassementsClient({
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Pilote :</label>
+            <input
+              type="text"
+              value={pseudoSearch}
+              onChange={e => setPseudoSearch(e.target.value)}
+              placeholder="Rechercher un pseudo..."
+              className="bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+            />
           </div>
 
           <div className="flex flex-col">

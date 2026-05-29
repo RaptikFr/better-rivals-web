@@ -232,6 +232,7 @@ export default function EpreuvesCommunauteClient() {
   const [showModal,   setShowModal]   = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [filterType,  setFilterType]  = useState('Tous');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => { fetchData(); }, []);
 
@@ -257,7 +258,10 @@ export default function EpreuvesCommunauteClient() {
   }
 
   const allTypes = ['Tous', ...Array.from(new Set(tracks.map(t => t.type))).sort()];
-  const filtered = tracks.filter(t => filterType === 'Tous' || t.type === filterType);
+  const filtered = tracks.filter(t =>
+    (filterType === 'Tous' || t.type === filterType) &&
+    t.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoading) return (
     <main className="min-h-screen flex items-center justify-center">
@@ -322,6 +326,18 @@ export default function EpreuvesCommunauteClient() {
         </div>
 
         {tracks.length > 0 && (
+          <div className="mb-4">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Rechercher une épreuve..."
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2.5 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+            />
+          </div>
+        )}
+
+        {tracks.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
             {allTypes.map(type => (
               <button key={type} onClick={() => setFilterType(type)}
@@ -339,7 +355,7 @@ export default function EpreuvesCommunauteClient() {
         {filtered.length === 0 ? (
           <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-12 text-center">
             <p className="text-neutral-500 mb-4">
-              {tracks.length === 0 ? "Aucune épreuve communauté pour l'instant." : "Aucune épreuve pour ce filtre."}
+              {tracks.length === 0 ? "Aucune épreuve communauté pour l'instant." : "Aucune épreuve ne correspond à cette recherche."}
             </p>
             {user && tracks.length === 0 && (
               <button onClick={() => setShowModal(true)}
