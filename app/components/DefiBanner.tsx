@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { getTypeIcon } from '@/app/lib/trackIcons';
@@ -9,6 +10,7 @@ const supabaseAdmin = createClient(
 );
 
 export default async function DefiBanner() {
+  noStore();
   const now = new Date().toISOString();
   const { data: defi } = await supabaseAdmin
     .from('defis')
