@@ -14,7 +14,13 @@
       "Bash(cat tailwind.config.js)",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" -Force | Select-Object Name, @{N='Type';E={if\\($_.PSIsContainer\\){'Dir'}else{'File'}}})",
       "Bash(npx supabase *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" status)",
+      "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" diff)",
+      "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" log --oneline -5)",
+      "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" add app/lib/ app/classements/ClassementsClient.tsx app/epreuves-communaute/EpreuvesCommunauteClient.tsx app/epreuves-officielles/EpreuvesOfficiellesClient.tsx)",
+      "Bash(git -C 'c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web' commit -m ' *)",
+      "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" push)"
     ]
   }
 }
