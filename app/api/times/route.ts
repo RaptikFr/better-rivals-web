@@ -321,7 +321,7 @@ export async function GET(request: NextRequest) {
     // Garde uniquement le meilleur temps par joueur + classe + transmission
     const seen = new Set<string>();
     const best = (data ?? []).filter(lap => {
-      const key = `${(lap.players as { pseudo: string }[] | null)?.[0]?.pseudo}_${lap.car_class}_${lap.drivetrain}`;
+      const key = `${(lap.players as { pseudo: string }[] | null)?.[0]?.pseudo}_${lap.car_ordinal}_${lap.car_class}_${lap.drivetrain}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
