@@ -20,7 +20,10 @@
       "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" log --oneline -5)",
       "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" add app/lib/ app/classements/ClassementsClient.tsx app/epreuves-communaute/EpreuvesCommunauteClient.tsx app/epreuves-officielles/EpreuvesOfficiellesClient.tsx)",
       "Bash(git -C 'c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web' commit -m ' *)",
-      "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" push)"
+      "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" push)",
+      "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" add app/classements/ClassementsClient.tsx)",
+      "Bash(node -e \"const p = require\\('./node_modules/next/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('hex'\\)\\)\")"
     ]
   }
 }
