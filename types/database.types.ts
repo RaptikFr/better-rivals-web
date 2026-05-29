@@ -74,6 +74,41 @@ export type Database = {
         }
         Relationships: []
       }
+      defis: {
+        Row: {
+          id:         string
+          track_id:   number
+          car_class:  string
+          week_start: string
+          week_end:   string
+          created_at: string
+        }
+        Insert: {
+          id?:        string
+          track_id:   number
+          car_class:  string
+          week_start: string
+          week_end:   string
+          created_at?: string
+        }
+        Update: {
+          id?:        string
+          track_id?:  number
+          car_class?: string
+          week_start?: string
+          week_end?:   string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "defis_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       lap_times: {
         Row: {
           car_class: string
