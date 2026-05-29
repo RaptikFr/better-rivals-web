@@ -251,6 +251,18 @@ export default function ClassementsClient({
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [copiedRowId, setCopiedRowId] = useState<string | null>(null);
 
+  // Accordéon sous-groupes
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+
+  function toggleGroup(key: string) {
+    setOpenGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -279,6 +291,13 @@ export default function ClassementsClient({
   }, [user]);
 
   const fetchData = useCallback(async () => {
+    if (selectedTrackId === null) {
+      setLapTimes([]);
+      setTuneSetups([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setSelectedCar('Toutes');
@@ -299,10 +318,6 @@ export default function ClassementsClient({
     if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
     if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
 
-    if (selectedTrackId === null && selectedClass === 'Toutes' && selectedDrivetrain === 'Tous') {
-      query = query.limit(200);
-    }
-
     const [{ data, error }, { data: setupsData }] = await Promise.all([
       query,
       supabase
@@ -322,6 +337,7 @@ export default function ClassementsClient({
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => { setCurrentPage(1); }, [selectedCar, pseudoSearch, myTimesOnly]);
+  useEffect(() => { setOpenGroups(new Set()); }, [selectedTrackId]);
 
   // Lit le paramètre ?highlight= à l'arrivée sur la page
   useEffect(() => {
@@ -679,7 +695,17 @@ export default function ClassementsClient({
         )}
 
         {/* --- CONTENU --- */}
-        {isLoading ? (
+        {selectedTrackId === null ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-20 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-center">
+            <span className="text-5xl">🏁</span>
+            <div>
+              <p className="text-lg font-bold text-neutral-900 dark:text-white mb-1">Sélectionne une épreuve</p>
+              <p className="text-sm text-neutral-500 max-w-sm">
+                Choisis un circuit dans le filtre ci-dessus pour afficher les classements.
+              </p>
+            </div>
+          </div>
+        ) : isLoading ? (
           <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-12 text-center">
             <p className="text-neutral-500 font-medium animate-pulse">Chargement des données télémétriques...</p>
           </div>
@@ -725,25 +751,35 @@ export default function ClassementsClient({
                 {/* Sous-groupes */}
                 <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
                   {circuit.subGroups.map(group => (
-                    <div key={group.key} className="p-4">
+                    <div key={group.key}>
 
-                      {/* En-tête de sous-groupe */}
-                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {/* En-tête cliquable */}
+                      <button
+                        onClick={() => toggleGroup(group.key)}
+                        className="w-full flex items-center gap-2 px-4 py-3 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors text-left"
+                      >
                         <span
-                          className="px-2 py-0.5 rounded text-xs font-bold"
+                          className="px-2 py-0.5 rounded text-xs font-bold flex-shrink-0"
                           style={CLASS_STYLES[group.carClass] ?? { backgroundColor: '#555', color: '#fff' }}
                         >
                           {group.carClass}
                         </span>
                         <DrivetrainBadge drivetrain={group.drivetrain} />
-                        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{group.carLabel}</span>
-                        <span className="text-xs text-neutral-500 ml-auto">
+                        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 truncate">{group.carLabel}</span>
+                        <span className="text-xs text-neutral-500 ml-auto flex-shrink-0 mr-1">
                           {group.laps.length} pilote{group.laps.length > 1 ? 's' : ''}
                         </span>
-                      </div>
+                        <svg
+                          className={`w-4 h-4 flex-shrink-0 text-neutral-400 transition-transform ${openGroups.has(group.key) ? 'rotate-180' : ''}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
 
-                      {/* Tableau des temps */}
-                      <div className="overflow-x-auto">
+                      {/* Tableau des temps — visible si ouvert */}
+                      {openGroups.has(group.key) && (
+                      <div className="overflow-x-auto px-4 pb-4">
                         <table className="w-full text-sm border-collapse table-fixed">
                           <colgroup>
                             <col className="w-10" />
@@ -816,6 +852,7 @@ export default function ClassementsClient({
                           </tbody>
                         </table>
                       </div>
+                      )}
                     </div>
                   ))}
                 </div>
