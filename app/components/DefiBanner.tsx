@@ -21,7 +21,7 @@ export default async function DefiBanner() {
 
   if (!defi) return null;
 
-  const track = defi.tracks as { name: string; type: string } | null;
+  const track = defi.tracks as unknown as { name: string; type: string } | null;
   const classStyle = CLASS_STYLES[defi.car_class] ?? { backgroundColor: '#555', color: '#fff' };
 
   return (
