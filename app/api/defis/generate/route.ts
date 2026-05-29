@@ -13,29 +13,37 @@ const CAR_CLASSES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R'];
 function getWeekBounds() {
   const now = new Date();
 
-  // sv-SE donne "YYYY-MM-DD HH:mm:ss" — format ISO fiable sur tous les environnements Node
-  const parisStr  = now.toLocaleString('sv-SE', { timeZone: 'Europe/Paris' });
-  const parisAsUtc = new Date(parisStr.replace(' ', 'T') + 'Z');
-  const offsetMs   = parisAsUtc.getTime() - now.getTime(); // ex : +7 200 000 ms (CEST)
+  // Extraire les composantes Paris sans parsing de chaîne
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone:     'Europe/Paris',
+    year:         'numeric',
+    month:        '2-digit',
+    day:          '2-digit',
+    weekday:      'short',
+    timeZoneName: 'shortOffset',
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(now).map(p => [p.type, p.value]));
 
-  // Date actuelle vue depuis Paris (manipulée comme si c'était UTC)
-  const nowParis   = new Date(now.getTime() + offsetMs);
-  const dayOfWeek  = nowParis.getUTCDay(); // 0=dim, 1=lun, ..., 6=sam en heure Paris
+  const year  = parseInt(parts.year);
+  const month = parseInt(parts.month) - 1; // 0-indexed pour Date.UTC
+  const day   = parseInt(parts.day);
+
+  // Jour de la semaine Paris (0=dim, 1=lun, ..., 6=sam)
+  const DOW: Record<string, number> = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+  const dayOfWeek = DOW[parts.weekday] ?? 0;
+
+  // Décalage Paris en heures (+2 CEST, +1 CET) depuis "GMT+2" ou "GMT+1"
+  const tzMatch    = (parts.timeZoneName ?? '').match(/GMT([+-])(\d+)/);
+  const parisOffset = tzMatch ? (tzMatch[1] === '+' ? 1 : -1) * parseInt(tzMatch[2]) : 1;
 
   const daysFromMonday  = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
 
-  // Dimanche 23:59:59 heure Paris → convertit en UTC réel
-  const weekEndParis = new Date(nowParis);
-  weekEndParis.setUTCDate(nowParis.getUTCDate() + daysUntilSunday);
-  weekEndParis.setUTCHours(23, 59, 59, 999);
-  const weekEnd = new Date(weekEndParis.getTime() - offsetMs);
-
-  // Lundi 00:00:00 heure Paris → convertit en UTC réel
-  const weekStartParis = new Date(nowParis);
-  weekStartParis.setUTCDate(nowParis.getUTCDate() - daysFromMonday);
-  weekStartParis.setUTCHours(0, 0, 0, 0);
-  const weekStart = new Date(weekStartParis.getTime() - offsetMs);
+  // Date.UTC gère les overflow/underflow de jours et d'heures automatiquement
+  // Dimanche 23:59:59 Paris = dimanche (23 - parisOffset):59:59 UTC
+  const weekEnd = new Date(Date.UTC(year, month, day + daysUntilSunday, 23 - parisOffset, 59, 59, 999));
+  // Lundi 00:00:00 Paris = (lundi) (0 - parisOffset):00:00 UTC = dimanche 22:00 ou 23:00 UTC
+  const weekStart = new Date(Date.UTC(year, month, day - daysFromMonday, -parisOffset, 0, 0, 0));
 
   return {
     week_start: weekStart.toISOString(),
