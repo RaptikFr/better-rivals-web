@@ -631,21 +631,29 @@ export default function ClassementsClient({
 
                       {/* Tableau des temps */}
                       <div className="overflow-x-auto">
-                        <table className="w-full text-sm border-collapse">
+                        <table className="w-full text-sm border-collapse table-fixed">
+                          <colgroup>
+                            <col className="w-8" />
+                            <col className="w-[200px]" />
+                            <col className="w-[150px]" />
+                            <col className="w-[90px]" />
+                            <col />
+                            <col className="w-10" />
+                          </colgroup>
                           <tbody>
                             {group.laps.map(lap => (
                               <tr
                                 key={lap.id}
                                 className="hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors"
                               >
-                                <td className="py-2 px-2 w-8 font-bold text-neutral-500 text-right tabular-nums">
+                                <td className="py-2 px-2 font-bold text-neutral-500 text-right tabular-nums">
                                   {lap.rank}
                                 </td>
-                                <td className="py-2 px-3 font-bold text-neutral-900 dark:text-white min-w-[120px]">
+                                <td className="py-2 px-3 font-bold text-neutral-900 dark:text-white">
                                   {lap.players?.pseudo ?? 'Inconnu'}
                                   <DiscordTag tag={lap.players?.discord_tag} />
                                 </td>
-                                <td className="py-2 px-3 min-w-[110px]">
+                                <td className="py-2 px-3">
                                   <span className="font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</span>
                                   {lap.previous_time_ms && (
                                     <div className="text-xs font-mono mt-0.5 flex items-center gap-1 text-neutral-500">
