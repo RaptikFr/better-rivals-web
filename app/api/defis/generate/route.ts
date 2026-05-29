@@ -12,17 +12,30 @@ const CAR_CLASSES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R'];
 
 function getWeekBounds() {
   const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=dimanche, 1=lundi, ..., 6=samedi
 
+  // Calcule le décalage Europe/Paris dynamiquement (gère CEST +2 et CET +1)
+  const utcMs   = Date.parse(now.toLocaleString('en-US', { timeZone: 'UTC'           }));
+  const parisMs = Date.parse(now.toLocaleString('en-US', { timeZone: 'Europe/Paris'  }));
+  const offsetMs = parisMs - utcMs; // ex : +7 200 000 ms en été (CEST)
+
+  // Date actuelle vue depuis Paris (manipulée comme si c'était UTC)
+  const nowParis   = new Date(now.getTime() + offsetMs);
+  const dayOfWeek  = nowParis.getUTCDay(); // 0=dim, 1=lun, ..., 6=sam en heure Paris
+
+  const daysFromMonday  = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-  const weekEnd = new Date(now);
-  weekEnd.setDate(now.getDate() + daysUntilSunday);
-  weekEnd.setHours(23, 59, 59, 999);
 
-  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - daysFromMonday);
-  weekStart.setHours(0, 0, 0, 0);
+  // Dimanche 23:59:59 heure Paris → convertit en UTC réel
+  const weekEndParis = new Date(nowParis);
+  weekEndParis.setUTCDate(nowParis.getUTCDate() + daysUntilSunday);
+  weekEndParis.setUTCHours(23, 59, 59, 999);
+  const weekEnd = new Date(weekEndParis.getTime() - offsetMs);
+
+  // Lundi 00:00:00 heure Paris → convertit en UTC réel
+  const weekStartParis = new Date(nowParis);
+  weekStartParis.setUTCDate(nowParis.getUTCDate() - daysFromMonday);
+  weekStartParis.setUTCHours(0, 0, 0, 0);
+  const weekStart = new Date(weekStartParis.getTime() - offsetMs);
 
   return {
     week_start: weekStart.toISOString(),
