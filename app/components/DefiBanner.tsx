@@ -16,6 +16,7 @@ export default async function DefiBanner() {
     .lte('week_start', now)
     .gte('week_end',   now)
     .order('week_start', { ascending: false })
+    .order('id',         { ascending: false })
     .limit(1)
     .maybeSingle();
 
