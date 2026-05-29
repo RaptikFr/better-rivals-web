@@ -433,15 +433,15 @@ export default function ClassementsClient({
     setCurrentPage(targetPage);
   }, [highlightId, circuitGroups]);
 
-  // Scrolle jusqu'à la ligne mise en évidence après rendu
+  // Scrolle jusqu'à la ligne mise en évidence — attend la fin du chargement
   useEffect(() => {
-    if (!highlightId) return;
+    if (!highlightId || isLoading) return;
     const timer = setTimeout(() => {
       document.querySelector(`[data-lap-id="${highlightId}"]`)
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 150);
+    }, 200);
     return () => clearTimeout(timer);
-  }, [highlightId, currentPage]);
+  }, [highlightId, currentPage, isLoading]);
 
   const totalSubGroups = circuitGroups.reduce((sum, g) => sum + g.subGroups.length, 0);
   const totalPages = Math.max(1, Math.ceil(circuitGroups.length / CIRCUITS_PER_PAGE));
