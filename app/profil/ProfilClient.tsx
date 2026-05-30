@@ -782,6 +782,18 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
     [history, selectedTrack, selectedCar]
   );
 
+  const filteredCurrentBests = useMemo(() =>
+    laps.filter(lap => {
+      const matchTrack = selectedTrack === 'Tous' || lap.tracks?.name === selectedTrack;
+      const carLabel   = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
+      const matchCar   = selectedCar === 'Toutes' || carLabel === selectedCar;
+      if (!matchTrack || !matchCar) return false;
+      const key = `${lap.track_id}-${lap.car_ordinal}-${lap.car_class}-${lap.drivetrain}`;
+      return history.some(h => `${h.track_id}-${h.car_ordinal}-${h.car_class}-${h.drivetrain}` === key);
+    }),
+    [laps, selectedTrack, selectedCar, history]
+  );
+
   const filteredWithDiffs = useMemo(() => {
     const groups = new Map<string, HistoryEntry[]>();
     for (const h of filtered) {
@@ -943,7 +955,7 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
         </div>
       </div>
 
-      <p className="text-sm text-neutral-500">{filtered.length} entrée{filtered.length !== 1 ? 's' : ''} dans l&apos;historique</p>
+      <p className="text-sm text-neutral-500">{filtered.length + filteredCurrentBests.length} entrée{(filtered.length + filteredCurrentBests.length) !== 1 ? 's' : ''} dans l&apos;historique</p>
 
       <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
         <table className="w-full text-left border-collapse whitespace-nowrap">
@@ -958,6 +970,22 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
             </tr>
           </thead>
           <tbody>
+            {filteredCurrentBests.map(lap => (
+              <tr key={`best-${lap.id}`} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors bg-green-950/10">
+                <td className="p-4 text-xs text-neutral-500">{formatDate(lap.created_at)}</td>
+                <td className="p-4 font-mono">
+                  <span className="font-bold text-green-400">{formatTime(lap.time_ms)}</span>
+                  <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-medium">Record actuel</span>
+                </td>
+                <td className="p-4 text-neutral-700 dark:text-neutral-300">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</td>
+                <td className="p-4">
+                  <span className="px-2 py-1 rounded text-xs font-bold mr-2" style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>{lap.car_class}</span>
+                  <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi ?? '—'}</span>
+                </td>
+                <td className="p-4"><DrivetrainBadge drivetrain={lap.drivetrain} /></td>
+                <td className="p-4 text-neutral-600 dark:text-neutral-400">{lap.tracks?.name ?? '—'}</td>
+              </tr>
+            ))}
             {filteredWithDiffs.map(h => (
               <tr key={h.id} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
                 <td className="p-4 text-xs text-neutral-500">{formatDate(h.recorded_at)}</td>
