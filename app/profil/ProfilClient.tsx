@@ -586,7 +586,7 @@ export default function ProfilClient() {
         )}
 
         {activeTab === 'classements' && <ClassementsTab laps={laps} />}
-        {activeTab === 'suivi'       && playerId !== null && <SuiviTab playerId={playerId} />}
+        {activeTab === 'suivi'       && playerId !== null && <SuiviTab playerId={playerId} laps={laps} />}
         {activeTab === 'stats'       && <StatsTab stats={stats} laps={laps} />}
         {activeTab === 'reglages'    && playerId !== null && <ReglagesTab laps={laps} playerId={playerId} />}
 
@@ -656,16 +656,65 @@ interface HistoryEntry {
   tracks: { name: string } | null;
 }
 
-function SuiviTab({ playerId }: { playerId: string }) {
+const SUIVI_COLORS = ['#e91e8c', '#7c3aed', '#22c55e', '#f59e0b', '#3b82f6', '#ef4444', '#06b6d4'];
+
+function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) {
   const [history,      setHistory]      = useState<HistoryEntry[]>([]);
   const [currentBests, setCurrentBests] = useState<Map<string, number>>(new Map());
   const [loading,      setLoading]      = useState(true);
+  const [chartTrack,   setChartTrack]   = useState('');
   const [trackSearch, setTrackSearch] = useState('');
   const [selectedTrack, setSelectedTrack] = useState('Tous');
   const [showTrackDrop, setShowTrackDrop] = useState(false);
   const [carSearch,   setCarSearch]   = useState('');
   const [selectedCar, setSelectedCar] = useState('Toutes');
   const [showCarDrop, setShowCarDrop] = useState(false);
+
+  const chartTracks = useMemo(() =>
+    Array.from(new Set(laps.map(l => l.tracks?.name ?? ''))).filter(Boolean).sort(),
+    [laps]
+  );
+
+  const chartData = useMemo(() => {
+    if (!chartTrack) return null;
+    const trackLaps = laps
+      .filter(l => l.tracks?.name === chartTrack)
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    const byConfig = new Map<string, { label: string; laps: ProfileLap[] }>();
+    for (const lap of trackLaps) {
+      const key = `${lap.car_ordinal}_${lap.car_class}_${lap.drivetrain}`;
+      if (!byConfig.has(key)) {
+        const label = `${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''} — ${lap.car_class}/${lap.drivetrain}`.trim();
+        byConfig.set(key, { label, laps: [] });
+      }
+      byConfig.get(key)!.laps.push(lap);
+    }
+
+    const allTs = [...new Set(trackLaps.map(l => new Date(l.created_at).getTime()))].sort((a, b) => a - b);
+
+    const data = allTs.map(ts => {
+      const d = new Date(ts);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yy = String(d.getFullYear()).slice(2);
+      const row: Record<string, unknown> = {
+        ts,
+        label: `${dd}/${mm}/${yy}`,
+        full: d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      };
+      for (const [key, { laps: configLaps }] of byConfig) {
+        const lap = configLaps.find(l => new Date(l.created_at).getTime() === ts);
+        if (lap) row[key] = lap.time_ms;
+      }
+      return row;
+    });
+
+    const configKeys = [...byConfig.keys()];
+    const totalPoints = data.reduce((sum, row) => sum + configKeys.filter(k => row[k] !== undefined).length, 0);
+
+    return { data, byConfig, configKeys, totalPoints };
+  }, [laps, chartTrack]);
 
   useEffect(() => {
     Promise.all([
@@ -744,6 +793,83 @@ function SuiviTab({ playerId }: { playerId: string }) {
 
   return (
     <div className="space-y-4">
+
+      {/* ── GRAPHIQUE DE PROGRESSION ── */}
+      <div className="p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl space-y-4">
+        <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Progression sur circuit</p>
+        <select
+          value={chartTrack}
+          onChange={e => setChartTrack(e.target.value)}
+          className="w-full md:w-72 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+        >
+          <option value="">Sélectionne un circuit</option>
+          {chartTracks.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+
+        {chartTrack && chartData && (
+          chartData.totalPoints >= 2 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData.data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(115,115,115,0.15)" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: '#737373', fontSize: 11 }}
+                  tickLine={false}
+                />
+                <YAxis
+                  reversed
+                  domain={['auto', 'auto']}
+                  tickFormatter={ms => {
+                    const min = Math.floor((ms as number) / 60000);
+                    const sec = Math.floor(((ms as number) % 60000) / 1000);
+                    const msRem = Math.floor((ms as number) % 1000);
+                    return `${min}:${String(sec).padStart(2, '0')}.${String(msRem).padStart(3, '0').slice(0, 2)}`;
+                  }}
+                  tick={{ fill: '#737373', fontSize: 11 }}
+                  tickLine={false}
+                  width={64}
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const row = payload[0].payload as Record<string, unknown>;
+                    return (
+                      <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-xs shadow-xl space-y-1">
+                        <p className="text-neutral-400 mb-1">{String(row.full)}</p>
+                        {payload.map((p, i) => (
+                          <p key={i} style={{ color: p.color }} className="font-mono">
+                            {p.name}: {formatTime(p.value as number)}
+                          </p>
+                        ))}
+                      </div>
+                    );
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+                {chartData.configKeys.map((key, i) => (
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    name={chartData.byConfig.get(key)!.label}
+                    stroke={SUIVI_COLORS[i % SUIVI_COLORS.length]}
+                    strokeWidth={2}
+                    dot={{ fill: SUIVI_COLORS[i % SUIVI_COLORS.length], r: 3 }}
+                    activeDot={{ r: 5 }}
+                    connectNulls
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-neutral-500 py-4">
+              Fais au moins 2 chronos sur ce circuit pour voir ta progression.
+            </p>
+          )
+        )}
+      </div>
+
+      {/* ── HISTORIQUE ── */}
       <div className="flex flex-col md:flex-row gap-3 p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
         <div className="flex flex-col relative flex-1">
           <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Circuit :</label>
