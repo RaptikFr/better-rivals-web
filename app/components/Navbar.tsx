@@ -40,7 +40,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, loading, signOut } = useAuth();
-  const { notifications, unreadCount, markAllAsRead, markOneAsRead } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, markOneAsRead, deleteAllRead } = useNotifications();
   const { theme, setTheme } = useTheme();
   const [mounted,          setMounted]          = useState(false);
   const [bellOpen,        setBellOpen]        = useState(false);
@@ -51,6 +51,11 @@ export default function Navbar() {
   const classementsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
+
+  // Marque toutes les notifications comme lues à l'ouverture du dropdown
+  useEffect(() => {
+    if (bellOpen && unreadCount > 0) markAllAsRead();
+  }, [bellOpen]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -223,12 +228,12 @@ export default function Navbar() {
                       <div className="absolute right-0 top-full mt-2 w-80 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
                         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
                           <p className="text-sm font-bold text-neutral-900 dark:text-white">Notifications</p>
-                          {unreadCount > 0 && (
+                          {notifications.length > 0 && (
                             <button
-                              onClick={markAllAsRead}
-                              className="text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                              onClick={async () => { await deleteAllRead(); setBellOpen(false); }}
+                              className="text-xs text-neutral-500 hover:text-red-400 transition-colors"
                             >
-                              Tout marquer comme lu
+                              🗑️ Effacer tout
                             </button>
                           )}
                         </div>

@@ -68,5 +68,15 @@ export function useNotifications() {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   }
 
-  return { notifications, unreadCount, markAllAsRead, markOneAsRead };
+  async function deleteAllRead() {
+    if (!playerId) return;
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('player_id', playerId)
+      .eq('read', true);
+    setNotifications(prev => prev.filter(n => !n.read));
+  }
+
+  return { notifications, unreadCount, markAllAsRead, markOneAsRead, deleteAllRead };
 }
