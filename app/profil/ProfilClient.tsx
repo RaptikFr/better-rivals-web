@@ -671,41 +671,59 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
   const [showCarDrop, setShowCarDrop] = useState(false);
 
   const chartTracks = useMemo(() =>
-    Array.from(new Set(laps.map(l => l.tracks?.name ?? ''))).filter(Boolean).sort(),
-    [laps]
+    Array.from(new Set(history.map(h => h.tracks?.name ?? ''))).filter(Boolean).sort(),
+    [history]
   );
 
   const chartData = useMemo(() => {
     if (!chartTrack) return null;
-    const trackLaps = laps
-      .filter(l => l.tracks?.name === chartTrack)
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-    const byConfig = new Map<string, { label: string; laps: ProfileLap[] }>();
-    for (const lap of trackLaps) {
-      const key = `${lap.car_ordinal}_${lap.car_class}_${lap.drivetrain}`;
+    const now = Date.now();
+    const trackHistory = history
+      .filter(h => h.tracks?.name === chartTrack)
+      .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
+
+    if (trackHistory.length === 0) return null;
+
+    const byConfig = new Map<string, { label: string; trackId: number; carOrdinal: number; carClass: string; drivetrain: string; points: { ts: number; ms: number }[] }>();
+    for (const h of trackHistory) {
+      const key = `${h.car_ordinal}_${h.car_class}_${h.drivetrain}`;
       if (!byConfig.has(key)) {
-        const label = `${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''} — ${lap.car_class}/${lap.drivetrain}`.trim();
-        byConfig.set(key, { label, laps: [] });
+        const label = `${h.cars?.year ?? ''} ${h.cars?.manufacturer ?? ''} ${h.cars?.name ?? ''} — ${h.car_class}/${h.drivetrain}`.trim();
+        byConfig.set(key, { label, trackId: h.track_id, carOrdinal: h.car_ordinal, carClass: h.car_class, drivetrain: h.drivetrain, points: [] });
       }
-      byConfig.get(key)!.laps.push(lap);
+      byConfig.get(key)!.points.push({ ts: new Date(h.recorded_at).getTime(), ms: h.time_ms });
     }
 
-    const allTs = [...new Set(trackLaps.map(l => new Date(l.created_at).getTime()))].sort((a, b) => a - b);
+    for (const [, config] of byConfig) {
+      const bestKey = `${config.trackId}-${config.carOrdinal}-${config.carClass}-${config.drivetrain}`;
+      const currentBest = currentBests.get(bestKey);
+      if (currentBest !== undefined) {
+        config.points.push({ ts: now, ms: currentBest });
+      }
+    }
 
-    const data = allTs.map(ts => {
+    const allTs = new Set<number>();
+    for (const { points } of byConfig.values()) {
+      for (const { ts } of points) allTs.add(ts);
+    }
+    const sortedTs = [...allTs].sort((a, b) => a - b);
+
+    const data = sortedTs.map(ts => {
+      const isNow = ts === now;
       const d = new Date(ts);
       const dd = String(d.getDate()).padStart(2, '0');
       const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const yy = String(d.getFullYear()).slice(2);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mn = String(d.getMinutes()).padStart(2, '0');
       const row: Record<string, unknown> = {
         ts,
-        label: `${dd}/${mm}/${yy}`,
-        full: d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        label: isNow ? 'Actuel' : `${dd}/${mm} ${hh}:${mn}`,
+        full: isNow ? 'Record actuel' : d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
       };
-      for (const [key, { laps: configLaps }] of byConfig) {
-        const lap = configLaps.find(l => new Date(l.created_at).getTime() === ts);
-        if (lap) row[key] = lap.time_ms;
+      for (const [key, { points }] of byConfig) {
+        const point = points.find(p => p.ts === ts);
+        if (point) row[key] = point.ms;
       }
       return row;
     });
@@ -714,7 +732,7 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
     const totalPoints = data.reduce((sum, row) => sum + configKeys.filter(k => row[k] !== undefined).length, 0);
 
     return { data, byConfig, configKeys, totalPoints };
-  }, [laps, chartTrack]);
+  }, [history, currentBests, chartTrack]);
 
   useEffect(() => {
     Promise.all([
@@ -806,8 +824,8 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
           {chartTracks.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
 
-        {chartTrack && chartData && (
-          chartData.totalPoints >= 2 ? (
+        {chartTrack && (
+          chartData && chartData.totalPoints >= 2 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData.data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(115,115,115,0.15)" />
@@ -863,7 +881,7 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
             </ResponsiveContainer>
           ) : (
             <p className="text-sm text-neutral-500 py-4">
-              Fais au moins 2 chronos sur ce circuit pour voir ta progression.
+              Bats ton record au moins une fois sur ce circuit pour voir ta progression.
             </p>
           )
         )}
@@ -946,10 +964,10 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
                 <td className="p-4 font-mono">
                   <span className="font-bold text-neutral-400 dark:text-neutral-500">{formatTime(h.time_ms)}</span>
                   {h.diffVsBest !== null && (
-                    <span className="ml-2 text-xs text-orange-400">
+                    <span className="ml-2 text-xs text-orange-400" title="Écart avec ton record actuel">
                       +{(h.diffVsBest / 1000).toFixed(3).replace('.', ',')}s
                       {h.diffVsNext !== null && (
-                        <span className="text-neutral-500 ml-1">(+{(h.diffVsNext / 1000).toFixed(3).replace('.', ',')}s)</span>
+                        <span className="text-neutral-500 ml-1" title="Gain par rapport à l'ancien record précédent">(+{(h.diffVsNext / 1000).toFixed(3).replace('.', ',')}s)</span>
                       )}
                     </span>
                   )}
