@@ -2,7 +2,7 @@ name: Défi Hebdomadaire
 
 on:
   schedule:
-    - cron: '0 8 * * 1'  # Chaque lundi à 8h00 UTC
+    - cron: '1 0 * * 1'
   workflow_dispatch:       # Permet de déclencher manuellement
 
 jobs:
