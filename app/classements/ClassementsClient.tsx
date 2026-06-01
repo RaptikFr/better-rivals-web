@@ -38,6 +38,7 @@ interface LapTime {
 interface Track {
   id: number;
   name: string;
+  is_official?: boolean;
 }
 
 interface RankedLap extends LapTime {
@@ -206,11 +207,13 @@ export default function ClassementsClient({
   initialClass,
   initialDrivetrain,
   initialCar,
+  communityOnly = false,
 }: {
   initialTrackId?:    number | null;
   initialClass?:      string;
   initialDrivetrain?: string;
   initialCar?:        string;
+  communityOnly?:     boolean;
 } = {}) {
 
   const { user } = useAuth();
@@ -306,10 +309,12 @@ export default function ClassementsClient({
       const res = await fetch('/api/circuits');
       if (res.ok) {
         const { circuits } = await res.json();
-        setAllTracks(circuits ?? []);
+        const list: Track[] = circuits ?? [];
+        setAllTracks(communityOnly ? list.filter(t => t.is_official === false) : list);
       }
     }
     fetchTracks();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -545,10 +550,12 @@ export default function ClassementsClient({
         <div className="flex items-start justify-between gap-4 mb-8">
           <div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
-              Leaderboards
+              {communityOnly ? 'Classements Communauté' : 'Leaderboards'}
             </h1>
             <p className="text-neutral-600 dark:text-neutral-400 text-lg">
-              Filtrez les résultats pour comparer ce qui est comparable.
+              {communityOnly
+                ? 'Classements sur les épreuves créées par la communauté.'
+                : 'Filtrez les résultats pour comparer ce qui est comparable.'}
             </p>
           </div>
           <div className="flex items-center gap-2 mt-1 flex-shrink-0">
@@ -736,7 +743,9 @@ export default function ClassementsClient({
             <div>
               <p className="text-lg font-bold text-neutral-900 dark:text-white mb-1">Sélectionne une épreuve</p>
               <p className="text-sm text-neutral-500 max-w-sm">
-                Choisis un circuit dans le filtre ci-dessus pour afficher les classements.
+                {communityOnly
+                  ? 'Choisis une épreuve communautaire dans le filtre ci-dessus pour afficher les classements.'
+                  : 'Choisis un circuit dans le filtre ci-dessus pour afficher les classements.'}
               </p>
             </div>
           </div>
