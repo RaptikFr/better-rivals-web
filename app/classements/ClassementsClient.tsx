@@ -63,6 +63,7 @@ interface CircuitGroup {
 
 const CAR_CLASS_ORDER = ['D', 'C', 'B', 'A', 'S1', 'S2', 'X'];
 const CIRCUITS_PER_PAGE = 5;
+const STORAGE_KEY = 'br_classements_filters';
 const CAR_CLASSES: Array<"Toutes" | CarClass> = ["Toutes", "D", "C", "B", "A", "S1", "S2", "X"];
 const DRIVETRAIN_OPTIONS: Array<"Tous" | Drivetrain> = ["Tous", "AWD", "RWD", "FWD"];
 const RAISONS = ['Temps impossible', 'Mauvais circuit sélectionné', 'Autre'] as const;
@@ -232,6 +233,7 @@ export default function ClassementsClient({
   const [selectedDrivetrain, setSelectedDrivetrain] = useState<"Tous" | Drivetrain>(
     (initialDrivetrain as Drivetrain | undefined) ?? "Tous"
   );
+  const [storageLoaded, setStorageLoaded] = useState(false);
 
   // Filtre circuit avec recherche
   const [trackSearch,       setTrackSearch]       = useState('');
@@ -265,6 +267,39 @@ export default function ClassementsClient({
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Restaure les filtres depuis localStorage (les props URL ont priorité)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const stored = JSON.parse(raw);
+        if (typeof initialTrackId !== 'number') {
+          if (typeof stored.trackId === 'number') setSelectedTrackId(stored.trackId);
+        }
+        if (typeof initialClass !== 'string') {
+          if (typeof stored.class === 'string') setSelectedClass(stored.class);
+        }
+        if (typeof initialDrivetrain !== 'string') {
+          if (typeof stored.drivetrain === 'string') setSelectedDrivetrain(stored.drivetrain as "Tous" | Drivetrain);
+        }
+      }
+    } catch {}
+    setStorageLoaded(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sauvegarde les filtres persistants à chaque changement (après la restauration initiale)
+  useEffect(() => {
+    if (!storageLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        trackId: selectedTrackId,
+        class: selectedClass,
+        drivetrain: selectedDrivetrain,
+      }));
+    } catch {}
+  }, [selectedTrackId, selectedClass, selectedDrivetrain, storageLoaded]);
 
   useEffect(() => {
     async function fetchTracks() {
