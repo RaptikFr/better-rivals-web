@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,6 +8,8 @@ const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function formatTime(ms: number): string {
   const minutes      = Math.floor(ms / 60000);
@@ -56,13 +59,25 @@ async function notifierRecordBattu(opts: {
       drivetrain: opts.drivetrain,
       car:       carLabel,
     });
+    const link = `/classements?${params.toString()}`;
     await supabaseAdmin.from('notifications').insert([{
       player_id: exact.player_id,
       message:   `🏆 Ton record sur ${opts.trackName} avec ${carLabel} en ${opts.carClass}/${opts.drivetrain} a été battu par ${opts.pseudo} (${formatTime(opts.newTimeMs)})`,
       type:      'exact',
-      link:      `/classements?${params.toString()}`,
+      link,
       read:      false,
     }]);
+    // Envoi email async — ne bloque pas la réponse
+    sendBeatenEmail({
+      beatenPlayerId:  exact.player_id,
+      newPlayerPseudo: opts.pseudo,
+      trackName:       opts.trackName,
+      carLabel,
+      carClass:        opts.carClass,
+      drivetrain:      opts.drivetrain,
+      newTimeMs:       opts.newTimeMs,
+      link,
+    });
     return;
   }
 
@@ -119,6 +134,101 @@ async function notifierRecordBattu(opts: {
       link:      `/classements?${params.toString()}`,
       read:      false,
     }]);
+  }
+}
+
+function buildBeatenEmailHtml(opts: {
+  newPlayerPseudo: string;
+  trackName:       string;
+  carLabel:        string;
+  carClass:        string;
+  drivetrain:      string;
+  newTimeMs:       number;
+  ctaUrl:          string;
+  profileUrl:      string;
+}): string {
+  function row(label: string, value: string, valueColor = '#171717', mono = false) {
+    return `
+      <tr>
+        <td style="padding:7px 0;color:#737373;font-size:13px;border-bottom:1px solid #f0f0f0;">${label}</td>
+        <td style="padding:7px 0;font-size:13px;font-weight:700;text-align:right;border-bottom:1px solid #f0f0f0;color:${valueColor};${mono ? 'font-family:monospace;font-size:15px;' : ''}">${value}</td>
+      </tr>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;padding:32px 16px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <span style="font-size:20px;font-weight:900;color:#ec4899;">Better</span><span style="font-size:20px;font-weight:900;color:#7c3aed;">Rivals</span>
+    </div>
+    <div style="background:#ffffff;border-radius:12px;padding:32px;border:1px solid #e5e5e5;">
+      <h1 style="margin:0 0 6px;font-size:20px;font-weight:800;color:#0a0a0a;">Tu viens de te faire dépasser 🏆</h1>
+      <p style="margin:0 0 24px;color:#737373;font-size:14px;"><strong style="color:#171717;">${opts.newPlayerPseudo}</strong> a battu ton record.</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:28px;">
+        ${row('Circuit',        opts.trackName)}
+        ${row('Voiture',        opts.carLabel)}
+        ${row('Classe / Trans.', `${opts.carClass} / ${opts.drivetrain}`)}
+        ${row('Nouveau leader', opts.newPlayerPseudo, '#ec4899')}
+        ${row('Son temps',      formatTime(opts.newTimeMs), '#ec4899', true)}
+      </table>
+      <a href="${opts.ctaUrl}" style="display:inline-block;background:#ec4899;color:#ffffff;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">Voir le classement →</a>
+    </div>
+    <p style="text-align:center;color:#a3a3a3;font-size:12px;margin:20px 0 0;">
+      Tu reçois cet email car les notifications sont activées sur ton profil.<br>
+      <a href="${opts.profileUrl}" style="color:#a3a3a3;text-decoration:underline;">Gérer mes préférences</a>
+    </p>
+  </div>
+</body>
+</html>`;
+}
+
+async function sendBeatenEmail(opts: {
+  beatenPlayerId:  string;
+  newPlayerPseudo: string;
+  trackName:       string;
+  carLabel:        string;
+  carClass:        string;
+  drivetrain:      string;
+  newTimeMs:       number;
+  link:            string;
+}) {
+  try {
+    const { data: player } = await supabaseAdmin
+      .from('players')
+      .select('user_id, email_notifications_enabled')
+      .eq('id', opts.beatenPlayerId)
+      .maybeSingle();
+
+    if (!player?.email_notifications_enabled || !player.user_id) return;
+
+    const { data: authData } = await supabaseAdmin.auth.admin.getUserById(player.user_id);
+    const email = authData?.user?.email;
+    if (!email) return;
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://better-rivals.gg';
+
+    await resend.emails.send({
+      from:    process.env.RESEND_FROM_EMAIL ?? 'Better Rivals <noreply@better-rivals.gg>',
+      to:      email,
+      subject: `Tu viens de te faire dépasser sur ${opts.trackName}`,
+      html:    buildBeatenEmailHtml({
+        newPlayerPseudo: opts.newPlayerPseudo,
+        trackName:       opts.trackName,
+        carLabel:        opts.carLabel,
+        carClass:        opts.carClass,
+        drivetrain:      opts.drivetrain,
+        newTimeMs:       opts.newTimeMs,
+        ctaUrl:          `${siteUrl}${opts.link}`,
+        profileUrl:      `${siteUrl}/profil`,
+      }),
+    });
+  } catch {
+    // L'échec d'envoi d'email ne doit pas faire rater la requête principale
   }
 }
 

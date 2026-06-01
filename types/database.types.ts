@@ -285,6 +285,7 @@ export type Database = {
         Row: {
           created_at: string
           discord_tag: string | null
+          email_notifications_enabled: boolean
           id: string
           pin_code: string | null
           pseudo: string
@@ -293,6 +294,7 @@ export type Database = {
         Insert: {
           created_at?: string
           discord_tag?: string | null
+          email_notifications_enabled?: boolean
           id?: string
           pin_code?: string | null
           pseudo: string
@@ -301,6 +303,7 @@ export type Database = {
         Update: {
           created_at?: string
           discord_tag?: string | null
+          email_notifications_enabled?: boolean
           id?: string
           pin_code?: string | null
           pseudo?: string

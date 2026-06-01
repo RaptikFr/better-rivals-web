@@ -189,6 +189,7 @@ export default function ProfilClient() {
   const [discordTag,  setDiscordTag]  = useState<string>('');
   const [editDiscord, setEditDiscord] = useState(false);
   const [savingDiscord, setSavingDiscord] = useState(false);
+  const [emailNotifs, setEmailNotifs] = useState(false);
   const [playerId,    setPlayerId]    = useState<string | null>(null);
   const [laps,      setLaps]      = useState<ProfileLap[]>([]);
   const [podiums,   setPodiums]   = useState<Podiums>({ gold: 0, silver: 0, bronze: 0 });
@@ -218,11 +219,15 @@ export default function ProfilClient() {
     setError(null);
 
     const { data: playerData } = await supabase
-      .from('players').select('id, pseudo, discord_tag').eq('user_id', user!.id).single();
+      .from('players')
+      .select('id, pseudo, discord_tag, email_notifications_enabled')
+      .eq('user_id', user!.id)
+      .single();
 
     if (!playerData) { setIsLoading(false); return; }
     setPseudo(playerData.pseudo);
     setDiscordTag(playerData.discord_tag ?? '');
+    setEmailNotifs(playerData.email_notifications_enabled ?? false);
     setPlayerId(playerData.id);
 
     const { data: lapsData, error: lapsError } = await supabase
@@ -278,6 +283,13 @@ export default function ProfilClient() {
     await supabase.from('players').update({ discord_tag: discordTag.trim() || null }).eq('id', playerId);
     setSavingDiscord(false);
     setEditDiscord(false);
+  }
+
+  async function toggleEmailNotifs() {
+    if (!playerId) return;
+    const next = !emailNotifs;
+    setEmailNotifs(next);
+    await supabase.from('players').update({ email_notifications_enabled: next }).eq('id', playerId);
   }
 
   const recentLaps = useMemo(() => laps.slice(0, 20), [laps]);
@@ -388,6 +400,20 @@ export default function ProfilClient() {
                       {discordTag ? <span className="text-indigo-400">Discord lié</span> : 'Lier Discord'}
                     </button>
                   )}
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <button
+                    onClick={toggleEmailNotifs}
+                    className={`flex items-center gap-1.5 text-sm transition-colors ${
+                      emailNotifs
+                        ? 'text-pink-400 hover:text-pink-300'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                    }`}
+                    title={emailNotifs ? 'Désactiver les notifications email' : 'Activer les notifications email quand tu te fais dépasser à la 1ère place'}
+                  >
+                    <span>{emailNotifs ? '🔔' : '🔕'}</span>
+                    <span>Notifications email {emailNotifs ? 'activées' : 'désactivées'}</span>
+                  </button>
                 </div>
               </div>
             </div>
