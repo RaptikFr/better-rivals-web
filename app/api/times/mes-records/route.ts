@@ -45,26 +45,17 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from('lap_times')
-      .select('track_id, time_ms')
+      .select('track_id, time_ms, drivetrain')
       .eq('player_id',   player.id)
       .eq('car_ordinal', carOrdinal)
       .eq('car_class',   carClass)
-      .order('time_ms',  { ascending: true });
+      .order('track_id', { ascending: true });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Garde le meilleur temps par circuit (plusieurs transmissions possibles)
-    const bestByTrack = new Map<number, number>();
-    for (const row of data ?? []) {
-      const current = bestByTrack.get(row.track_id);
-      if (current === undefined || row.time_ms < current) {
-        bestByTrack.set(row.track_id, row.time_ms);
-      }
-    }
-
-    const records = Array.from(bestByTrack.entries()).map(([track_id, time_ms]) => ({ track_id, time_ms }));
+    const records = (data ?? []).map(({ track_id, time_ms, drivetrain }) => ({ track_id, time_ms, drivetrain }));
 
     return NextResponse.json({ records }, { status: 200 });
 
