@@ -16,8 +16,10 @@ export type Database = {
     Tables: {
       cars: {
         Row: {
+          add_ons: string | null
           car_ordinal: number | null
           car_type: string | null
+          collection: string | null
           id: number
           initial_class: string | null
           manufacturer: string | null
@@ -25,8 +27,10 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          add_ons?: string | null
           car_ordinal?: number | null
           car_type?: string | null
+          collection?: string | null
           id?: never
           initial_class?: string | null
           manufacturer?: string | null
@@ -34,8 +38,10 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          add_ons?: string | null
           car_ordinal?: number | null
           car_type?: string | null
+          collection?: string | null
           id?: never
           initial_class?: string | null
           manufacturer?: string | null
