@@ -15,6 +15,8 @@ interface Car {
   year: number;
   car_type: string | null;
   initial_class: string | null;
+  collection: string | null;
+  add_ons: string | null;
 }
 
 export default function VoituresClient() {
@@ -30,7 +32,7 @@ export default function VoituresClient() {
     async function load() {
       const { data, error } = await supabase
         .from('cars')
-        .select('id, manufacturer, name, year, car_type, initial_class')
+        .select('id, manufacturer, name, year, car_type, initial_class, collection, add_ons')
         .order('manufacturer')
         .order('name');
 
@@ -163,7 +165,7 @@ export default function VoituresClient() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-                  {['Constructeur', 'Modèle', 'Année', 'Classe', 'Type'].map(col => (
+                  {['Constructeur', 'Modèle', 'Année', 'Classe', 'Type', 'Collection', 'Add-Ons'].map(col => (
                     <th key={col} className="text-left px-4 py-3 font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider text-xs whitespace-nowrap">
                       {col}
                     </th>
@@ -173,7 +175,7 @@ export default function VoituresClient() {
               <tbody>
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-16 text-neutral-400 dark:text-neutral-500">
+                    <td colSpan={7} className="text-center py-16 text-neutral-400 dark:text-neutral-500">
                       Aucune voiture trouvée.
                     </td>
                   </tr>
@@ -208,7 +210,12 @@ export default function VoituresClient() {
                       <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
                         {car.car_type ?? '—'}
                       </td>
-
+                      <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                        {car.collection || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                        {car.add_ons || '—'}
+                      </td>
                     </tr>
                   );
                 })}
