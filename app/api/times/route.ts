@@ -311,7 +311,7 @@ export async function POST(request: NextRequest) {
       .eq('car_class', car_class)
       .maybeSingle();
 
-    if (worldRecord && newTimeMs < worldRecord.time_ms * 0.97) {
+    if (worldRecord && newTimeMs < worldRecord.time_ms * 0.985) {
       return NextResponse.json(
         { error: 'Temps impossible — trop rapide par rapport au record de référence.' },
         { status: 400 }
