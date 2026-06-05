@@ -11,15 +11,6 @@ import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
 import { getTypeIcon, getSprintIcon } from '@/app/lib/trackIcons';
 
-interface TuneSetup {
-  player_id: string;
-  car_ordinal: number;
-  share_code: string;
-  is_original: boolean | null;
-  label: string | null;
-  track_id: number | null;
-}
-
 interface LapTime {
   id: string;
   time_ms: number;
@@ -29,6 +20,7 @@ interface LapTime {
   player_id: string;
   track_id: number;
   drivetrain: Drivetrain;
+  share_code: string | null;
   previous_time_ms: number | null;
   players: { pseudo: string; discord_tag: string | null } | null;
   cars: { manufacturer: string | null; name: string; year: number | null } | null;
@@ -70,33 +62,25 @@ const DRIVETRAIN_OPTIONS: Array<"Tous" | Drivetrain> = ["Tous", "AWD", "RWD", "F
 const RAISONS = ['Temps impossible', 'Mauvais circuit sélectionné', 'Autre'] as const;
 type Raison = typeof RAISONS[number];
 
-function TuneCell({ lap, setups }: { lap: LapTime; setups: TuneSetup[] }) {
+function TuneCell({ lap }: { lap: LapTime }) {
   const [copied, setCopied] = useState(false);
 
-  const carSetups = setups.filter(s => s.player_id === lap.player_id && s.car_ordinal === lap.car_ordinal);
-  const tune = carSetups.find(s => s.track_id === lap.track_id)
-            ?? carSetups.find(s => s.track_id === null)
-            ?? null;
-
-  if (!tune) return <span className="text-neutral-600">—</span>;
+  if (!lap.share_code) return <span className="text-neutral-600">—</span>;
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(tune!.share_code);
+    await navigator.clipboard.writeText(lap.share_code!);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
   return (
-    <div className="flex items-center gap-1.5">
-      <span title={tune.is_original ? 'Réglage original' : 'Réglage partagé'}>{tune.is_original ? '🔧' : '📋'}</span>
-      <button
-        onClick={handleCopy}
-        title="Copier le code de réglage"
-        className="font-mono text-sm text-neutral-700 dark:text-neutral-300 hover:text-pink-400 transition-colors"
-      >
-        {copied ? <span className="text-green-400 font-bold not-italic">Copié !</span> : tune.share_code}
-      </button>
-    </div>
+    <button
+      onClick={handleCopy}
+      title="Copier le code de réglage"
+      className="font-mono text-sm text-neutral-700 dark:text-neutral-300 hover:text-pink-400 transition-colors"
+    >
+      {copied ? <span className="text-green-400 font-bold not-italic">Copié !</span> : lap.share_code}
+    </button>
   );
 }
 
@@ -219,7 +203,6 @@ export default function ClassementsClient({
   const { user } = useAuth();
 
   const [lapTimes,   setLapTimes]   = useState<LapTime[]>([]);
-  const [tuneSetups, setTuneSetups] = useState<TuneSetup[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
 
@@ -333,7 +316,6 @@ export default function ClassementsClient({
   const fetchData = useCallback(async () => {
     if (selectedTrackId === null) {
       setLapTimes([]);
-      setTuneSetups([]);
       setIsLoading(false);
       return;
     }
@@ -347,7 +329,7 @@ export default function ClassementsClient({
     let query = supabase
       .from('lap_times')
       .select(`
-        id, time_ms, previous_time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id,
+        id, time_ms, previous_time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id, share_code,
         players ( pseudo, discord_tag ),
         cars ( manufacturer, name, year ),
         tracks ( name, length_km, type, is_sprint )
@@ -358,18 +340,12 @@ export default function ClassementsClient({
     if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
     if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
 
-    const [{ data, error }, { data: setupsData }] = await Promise.all([
-      query,
-      supabase
-        .from('tune_setups')
-        .select('player_id, car_ordinal, share_code, is_original, label, track_id'),
-    ]);
+    const { data, error } = await query;
 
     if (error) {
       setError("Impossible de charger les classements. Vérifie ta connexion ou réessaie dans quelques instants.");
     } else if (data) {
       setLapTimes(data as LapTime[]);
-      setTuneSetups((setupsData ?? []) as TuneSetup[]);
     }
     setIsLoading(false);
   }, [selectedTrackId, selectedClass, selectedDrivetrain]);
@@ -869,7 +845,7 @@ export default function ClassementsClient({
                                   PI {lap.car_pi}
                                 </td>
                                 <td className="py-3 px-3 align-top">
-                                  <TuneCell lap={lap} setups={tuneSetups} />
+                                  <TuneCell lap={lap} />
                                 </td>
                                 <td className="py-3 px-2 text-right align-top">
                                   <div className="flex items-center justify-end gap-1.5">
