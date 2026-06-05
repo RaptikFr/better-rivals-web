@@ -303,6 +303,21 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // --- VALIDATION CONTRE LE WORLD RECORD ---
+    const { data: worldRecord } = await supabaseAdmin
+      .from('world_records')
+      .select('time_ms')
+      .eq('track_id',  numTrackId)
+      .eq('car_class', car_class)
+      .maybeSingle();
+
+    if (worldRecord && newTimeMs < worldRecord.time_ms * 0.97) {
+      return NextResponse.json(
+        { error: 'Temps impossible — trop rapide par rapport au record de référence.' },
+        { status: 400 }
+      );
+    }
+
     // --- GESTION DE LA VOITURE ---
     const { data: existingCar } = await supabaseAdmin
       .from('cars')
