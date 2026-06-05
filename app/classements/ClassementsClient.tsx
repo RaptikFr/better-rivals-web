@@ -831,17 +831,22 @@ export default function ClassementsClient({
                                   <DiscordTag tag={lap.players?.discord_tag} />
                                 </td>
                                 <td className="py-3 px-3 align-top">
-                                  <span className="font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</span>
+                                  <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                                    <span className="text-xs text-neutral-500 font-sans">Meilleur</span>
+                                    <span className="font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</span>
+                                  </div>
                                   {lap.previous_time_ms && (
-                                    <div className="text-xs font-mono mt-0.5 text-neutral-500 whitespace-nowrap">
-                                      ↑ {formatTime(lap.previous_time_ms)}{' '}
+                                    <div className="flex items-baseline gap-1.5 text-xs font-mono mt-0.5 text-neutral-500 whitespace-nowrap">
+                                      <span className="font-sans">Précédent</span>
+                                      <span>↑ {formatTime(lap.previous_time_ms)}</span>
                                       <span className="text-orange-400">
                                         +{((lap.previous_time_ms - lap.time_ms) / 1000).toFixed(3).replace('.', ',')}s
                                       </span>
                                     </div>
                                   )}
                                   {lap.rank > 1 && (
-                                    <div className="text-xs font-mono mt-0.5 text-sky-400 whitespace-nowrap">
+                                    <div className="flex items-baseline gap-1.5 text-xs font-mono mt-0.5 text-sky-400 whitespace-nowrap">
+                                      <span className="font-sans text-neutral-500">Écart leader</span>
                                       +{((lap.time_ms - group.laps[0].time_ms) / 1000).toFixed(3).replace('.', ',')}s
                                     </div>
                                   )}
