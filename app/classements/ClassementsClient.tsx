@@ -840,6 +840,11 @@ export default function ClassementsClient({
                                       </span>
                                     </div>
                                   )}
+                                  {lap.rank > 1 && (
+                                    <div className="text-xs font-mono mt-0.5 text-sky-400 whitespace-nowrap">
+                                      +{((lap.time_ms - group.laps[0].time_ms) / 1000).toFixed(3).replace('.', ',')}s
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="py-3 px-3 text-neutral-500 font-mono text-xs whitespace-nowrap align-top">
                                   PI {lap.car_pi}
