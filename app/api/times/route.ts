@@ -386,9 +386,9 @@ export async function POST(request: NextRequest) {
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
         await notifierRecordBattu({ ...notifOpts, newTimeMs });
-        return NextResponse.json({ success: true, message: "Nouveau record ! 🏆", data, id: data?.[0]?.id ?? null }, { status: 200 });
+        return NextResponse.json({ success: true, is_new_record: true, message: "Nouveau record ! 🏆", data, id: data?.[0]?.id ?? null }, { status: 200 });
       } else {
-        return NextResponse.json({ success: true, message: "Ton record avec cette config est déjà meilleur.", id: existingTime.id }, { status: 200 });
+        return NextResponse.json({ success: true, is_new_record: false, message: "Ton record avec cette config est déjà meilleur.", id: existingTime.id }, { status: 200 });
       }
     } else {
       const { data, error } = await supabaseAdmin
@@ -409,7 +409,7 @@ export async function POST(request: NextRequest) {
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       await notifierRecordBattu({ ...notifOpts, newTimeMs });
-      return NextResponse.json({ success: true, message: "Chrono enregistré !", data, id: data?.[0]?.id ?? null }, { status: 201 });
+      return NextResponse.json({ success: true, is_new_record: true, message: "Chrono enregistré !", data, id: data?.[0]?.id ?? null }, { status: 201 });
     }
 
   } catch {
