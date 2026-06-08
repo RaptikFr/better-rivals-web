@@ -122,7 +122,7 @@ export default function Home() {
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Télécharger v1.7.0
+            Télécharger v1.7.1
           </a>
 
         </div>
