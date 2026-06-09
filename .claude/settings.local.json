@@ -23,7 +23,15 @@
       "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" push)",
       "Bash(git -C \"c:\\\\Users\\\\night\\\\Documents\\\\better-rivals-web\" add app/classements/ClassementsClient.tsx)",
       "Bash(node -e \"const p = require\\('./node_modules/next/package.json'\\); console.log\\(p.version\\)\")",
-      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('hex'\\)\\)\")"
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('hex'\\)\\)\")",
+      "Bash(ls -la \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\\" | head -30)",
+      "Read(//e/Rowwan/Projet Site Web/**)",
+      "PowerShell(head -20)",
+      "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\.github\\\\workflows\\\\defi_hebdo.yml\")",
+      "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\app\\\\components\\\\DefiBanner.tsx\")",
+      "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\app\\\\defis\\\\DefisClient.tsx\")",
+      "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\app\\\\defis\\\\page.tsx\")",
+      "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\app\\\\api\\\\defis\\\\generate\\\\route.ts\")"
     ]
   }
 }

@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import DerniersChronos from './components/DerniersChronos';
-import DefiBanner from './components/DefiBanner';
 
 export default function Home() {
   return (
@@ -44,7 +43,6 @@ export default function Home() {
       </div>
 
       <DerniersChronos />
-      <DefiBanner />
 
       {/* --- SECTION MODE D'EMPLOI --- */}
       <div className="mt-24 max-w-5xl mx-auto text-left w-full border-t border-neutral-200 dark:border-neutral-800 pt-16">
