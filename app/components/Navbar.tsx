@@ -23,7 +23,7 @@ const navLinks = [
   { href: '/defis',              label: 'Défis'              },
   { href: '/stats',              label: 'Stats'              },
   { href: '/voitures',           label: 'Voitures'           },
-  { href: '/#telecharger',       label: 'Télécharger'        },
+  { href: '/telecharger',         label: 'Télécharger'        },
   { href: '/contact',            label: 'Contact'            },
 ];
 
