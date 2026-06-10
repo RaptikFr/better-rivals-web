@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
@@ -67,15 +68,17 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
       const lapsData = (playerLaps ?? []) as Lap[];
       setLaps(lapsData);
 
-      // Podiums : compare avec tous les temps sur les mêmes circuits
+      // Podiums : compare avec tous les temps (paginés) sur les mêmes circuits
       const trackIds = [...new Set(lapsData.map(l => l.track_id))].filter(Boolean);
       if (trackIds.length > 0) {
-        const { data: allLapsRaw } = await supabase
-          .from('lap_times')
-          .select('time_ms, car_ordinal, car_class, drivetrain, track_id')
-          .in('track_id', trackIds);
-
-        const allLaps = (allLapsRaw ?? []) as Pick<Lap, 'time_ms' | 'car_ordinal' | 'car_class' | 'drivetrain' | 'track_id'>[];
+        const { data: allLaps } = await fetchAllRows<Pick<Lap, 'time_ms' | 'car_ordinal' | 'car_class' | 'drivetrain' | 'track_id'>>((from, to) =>
+          supabase
+            .from('lap_times')
+            .select('time_ms, car_ordinal, car_class, drivetrain, track_id')
+            .in('track_id', trackIds)
+            .order('id')
+            .range(from, to)
+        );
 
         setPodiums(countPodiums(lapsData, allLaps));
       }

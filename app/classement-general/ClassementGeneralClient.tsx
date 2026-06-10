@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { usePlayer } from '@/hooks/usePlayer';
 import { DiscordTag } from '@/components/DiscordTag';
 
@@ -46,17 +47,19 @@ export default function ClassementGeneralClient() {
       setIsLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from('lap_times')
-        .select('time_ms, car_ordinal, car_class, drivetrain, track_id, player_id, players ( pseudo, discord_tag )');
+      const { data: allLaps, error: fetchError } = await fetchAllRows<RawLap>((from, to) =>
+        supabase
+          .from('lap_times')
+          .select('time_ms, car_ordinal, car_class, drivetrain, track_id, player_id, players ( pseudo, discord_tag )')
+          .order('id')
+          .range(from, to)
+      );
 
-      if (fetchError || !data) {
+      if (fetchError) {
         setError("Impossible de charger le classement général.");
         setIsLoading(false);
         return;
       }
-
-      const allLaps = data as RawLap[];
 
       // Étape 1 : meilleur temps par (config × joueur)
       // config key = track_id-car_ordinal-car_class-drivetrain

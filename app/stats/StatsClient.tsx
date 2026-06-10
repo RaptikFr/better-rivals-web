@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { formatTime } from '@/components/formatTime';
 
 interface Stats {
@@ -13,6 +14,13 @@ interface Stats {
 
 interface TopPilote { pseudo: string; count: number; }
 interface TopItem   { name: string;  count: number; }
+
+interface LapRow {
+  car_ordinal: number;
+  players: { pseudo: string } | null;
+  tracks:  { name: string } | null;
+  cars:    { manufacturer: string | null; name: string; year: number | null } | null;
+}
 
 interface LastChrono {
   id:         string;
@@ -45,19 +53,19 @@ export default function StatsClient() {
         supabase.from('lap_times').select('*', { count: 'exact', head: true }),
         supabase.from('players').select('*', { count: 'exact', head: true }),
         supabase.from('tracks').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-        // Une seule lecture de lap_times pour tous les agrégats (voitures distinctes + tops)
-        supabase.from('lap_times').select('car_ordinal, players ( pseudo ), tracks ( name ), cars ( manufacturer, name, year )'),
+        // Une seule lecture (paginée) de lap_times pour tous les agrégats (voitures distinctes + tops)
+        fetchAllRows<LapRow>((from, to) =>
+          supabase.from('lap_times')
+            .select('car_ordinal, players ( pseudo ), tracks ( name ), cars ( manufacturer, name, year )')
+            .order('id')
+            .range(from, to)
+        ),
         supabase.from('lap_times')
           .select('id, time_ms, created_at, players ( pseudo ), cars ( manufacturer, name, year ), tracks ( name )')
           .order('created_at', { ascending: false }).limit(5),
       ]);
 
-      const lapRows = (lapRowsData ?? []) as Array<{
-        car_ordinal: number;
-        players: { pseudo: string } | null;
-        tracks:  { name: string } | null;
-        cars:    { manufacturer: string | null; name: string; year: number | null } | null;
-      }>;
+      const lapRows = lapRowsData;
 
       const distinctCars = new Set(lapRows.map(r => r.car_ordinal));
 

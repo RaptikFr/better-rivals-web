@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlayer } from '@/hooks/usePlayer';
 import type { Drivetrain, CarClass } from '@/types/supabase';
@@ -315,26 +316,28 @@ export default function ClassementsClient({
     setCarSearch('');
     setCurrentPage(1);
 
-    let query = supabase
-      .from('lap_times')
-      .select(`
-        id, time_ms, previous_time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id, share_code,
-        players ( pseudo, discord_tag ),
-        cars ( manufacturer, name, year ),
-        tracks ( name, length_km, type, is_sprint )
-      `)
-      .order('time_ms', { ascending: true });
-
-    query = query.eq('track_id', selectedTrackId);
-    if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
-    if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
-
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows<LapTime>((from, to) => {
+      let query = supabase
+        .from('lap_times')
+        .select(`
+          id, time_ms, previous_time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id, share_code,
+          players ( pseudo, discord_tag ),
+          cars ( manufacturer, name, year ),
+          tracks ( name, length_km, type, is_sprint )
+        `)
+        .eq('track_id', selectedTrackId);
+      if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
+      if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
+      return query
+        .order('time_ms', { ascending: true })
+        .order('id')
+        .range(from, to);
+    });
 
     if (error) {
       setError("Impossible de charger les classements. Vérifie ta connexion ou réessaie dans quelques instants.");
-    } else if (data) {
-      setLapTimes(data as LapTime[]);
+    } else {
+      setLapTimes(data);
     }
     setIsLoading(false);
   }, [selectedTrackId, selectedClass, selectedDrivetrain]);

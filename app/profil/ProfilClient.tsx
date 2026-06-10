@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 import { formatTime } from '@/components/formatTime';
@@ -184,15 +185,17 @@ export default function ProfilClient() {
     const playerLaps = (lapsData ?? []) as ProfileLap[];
     setLaps(playerLaps);
 
-    // Fetch all laps on the player's tracks in one query, then rank client-side
+    // Fetch all laps on the player's tracks (paginated), then rank client-side
     const trackIds = [...new Set(playerLaps.map(l => l.track_id))].filter(Boolean);
     if (trackIds.length > 0) {
-      const { data: allLapsRaw } = await supabase
-        .from('lap_times')
-        .select('time_ms, car_ordinal, car_class, drivetrain, track_id')
-        .in('track_id', trackIds);
-
-      const allLaps = (allLapsRaw ?? []) as ConfigLapRow[];
+      const { data: allLaps } = await fetchAllRows<ConfigLapRow>((from, to) =>
+        supabase
+          .from('lap_times')
+          .select('time_ms, car_ordinal, car_class, drivetrain, track_id')
+          .in('track_id', trackIds)
+          .order('id')
+          .range(from, to)
+      );
 
       setAllTrackLaps(allLaps);
       setPodiums(countPodiums(playerLaps, allLaps));

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { formatTime } from '@/components/formatTime';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { getTypeIcon } from '@/lib/trackIcons';
@@ -166,9 +167,13 @@ export default function ComparaisonClient() {
     const fields =
       'time_ms, car_class, car_ordinal, player_id, track_id, drivetrain, tracks(name, type, is_sprint), cars(manufacturer, name, year)';
 
-    const [{ data: raw1, error: e1 }, { data: raw2, error: e2 }] = await Promise.all([
-      supabase.from('lap_times').select(fields).eq('player_id', player1.id),
-      supabase.from('lap_times').select(fields).eq('player_id', player2.id),
+    const [{ data: laps1, error: e1 }, { data: laps2, error: e2 }] = await Promise.all([
+      fetchAllRows<LapWithJoins>((from, to) =>
+        supabase.from('lap_times').select(fields).eq('player_id', player1.id).order('id').range(from, to)
+      ),
+      fetchAllRows<LapWithJoins>((from, to) =>
+        supabase.from('lap_times').select(fields).eq('player_id', player2.id).order('id').range(from, to)
+      ),
     ]);
 
     if (e1 || e2) {
@@ -176,9 +181,6 @@ export default function ComparaisonClient() {
       setLoading(false);
       return;
     }
-
-    const laps1 = (raw1 ?? []) as unknown as LapWithJoins[];
-    const laps2 = (raw2 ?? []) as unknown as LapWithJoins[];
 
     const map2 = new Map(
       laps2.map((l) => [`${l.track_id}-${l.car_class}-${l.drivetrain}-${l.car_ordinal}`, l])
