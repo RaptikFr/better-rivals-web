@@ -11,10 +11,10 @@ export default function Home() {
 
         {/* Bannière */}
         <Image
-          src="/og-image.png"
+          src="/og-image.jpg"
           alt="Better Rivals FH6"
           width={1280}
-          height={480}
+          height={512}
           priority
           className="w-full rounded-2xl"
         />

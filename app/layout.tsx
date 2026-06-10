@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://better-rivals-fh6.vercel.app'),
   title: {
     default: "Better Rivals FH6",
     template: "%s | Better Rivals",
@@ -30,20 +31,19 @@ export const metadata: Metadata = {
     siteName: "Better Rivals FH6",
     locale: "fr_FR",
     type: "website",
-    images: [{ url: '/og-image.png', width: 1280, height: 480 }],
+    images: [{ url: '/og-image.jpg', width: 1280, height: 512 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Better Rivals",
     description:
       "Le classement alternatif, équitable et par modèle de voiture pour Forza Horizon 6.",
-    images: ['/og-image.png'],
+    images: ['/og-image.jpg'],
   },
   icons: {
     icon: [
       { url: '/favicon_16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon_32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon_512.png',   sizes: '512x512', type: 'image/png' },
     ],
     apple: [
       { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
