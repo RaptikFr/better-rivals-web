@@ -3,8 +3,6 @@ const TYPE_COLORS: Record<string, string> = {
   'Course tous chemins': 'bg-amber-900/30 border-amber-800/50 text-amber-700',
   'Cross-country':       'bg-green-500/20 border-green-500/50 text-green-400',
   'Touge':               'bg-violet-500/20 border-violet-500/50 text-violet-400',
-  // Alias historique — supprimable une fois renommage_touge.sql appliqué
-  'Toge':                'bg-violet-500/20 border-violet-500/50 text-violet-400',
   'Course de rue':       'bg-yellow-500/20 border-yellow-500/50 text-yellow-400',
   'Course de drag':      'bg-orange-500/20 border-orange-500/50 text-orange-400',
 };
