@@ -3,6 +3,8 @@ export function getTypeIcon(type: string): string {
     'Course sur route':    '🛣️',
     'Cross-country':       '⛰️',
     'Course tous chemins': '🌿',
+    'Touge':               '🌀',
+    // Alias historique — supprimable une fois renommage_touge.sql appliqué
     'Toge':                '🌀',
     'Course de rue':       '🏙️',
     'Course de drag':      '🚦',

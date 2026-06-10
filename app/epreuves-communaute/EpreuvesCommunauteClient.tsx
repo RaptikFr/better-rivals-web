@@ -22,7 +22,7 @@ interface Track {
 
 const TRACK_TYPES = [
   'Course sur route', 'Course tous chemins', 'Cross-country',
-  'Toge', 'Course de rue', 'Course de drag',
+  'Touge', 'Course de rue', 'Course de drag',
 ];
 
 function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
