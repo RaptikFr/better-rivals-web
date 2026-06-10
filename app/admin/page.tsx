@@ -45,24 +45,36 @@ export default function AdminPage() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesFetched, setMessagesFetched] = useState(false);
 
+  // Toutes les actions admin passent par /api/admin/* : le contrôle des droits
+  // est fait côté serveur, la RLS peut donc interdire ces opérations aux clients
+  async function authHeaders(): Promise<Record<string, string> | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    return {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    };
+  }
+
   async function fetchPending() {
     setTracksLoading(true);
-    const { data } = await supabase
-      .from('tracks')
-      .select('id, name, type, length_km, event_lab_code, description, submitted_by')
-      .eq('status', 'pending')
-      .order('id', { ascending: true });
-    setTracks(data ?? []);
+    const headers = await authHeaders();
+    if (headers) {
+      const res = await fetch('/api/admin/tracks', { headers });
+      const json = await res.json();
+      setTracks(res.ok ? (json.tracks ?? []) : []);
+    }
     setTracksLoading(false);
   }
 
   async function fetchMessages() {
     setMessagesLoading(true);
-    const { data } = await supabase
-      .from('contact_messages')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setMessages(data ?? []);
+    const headers = await authHeaders();
+    if (headers) {
+      const res = await fetch('/api/admin/messages', { headers });
+      const json = await res.json();
+      setMessages(res.ok ? (json.messages ?? []) : []);
+    }
     setMessagesLoading(false);
     setMessagesFetched(true);
   }
@@ -89,9 +101,16 @@ export default function AdminPage() {
   }
 
   async function handleTrackAction(id: number, action: 'approved' | 'rejected') {
-    const { error } = await supabase.from('tracks').update({ status: action }).eq('id', id);
-    if (error) {
-      notify(`Erreur : ${error.message}`, false);
+    const headers = await authHeaders();
+    if (!headers) return;
+    const res = await fetch('/api/admin/tracks', {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ id, status: action }),
+    });
+    if (!res.ok) {
+      const json = await res.json();
+      notify(`Erreur : ${json.error ?? res.status}`, false);
     } else {
       notify(action === 'approved' ? '✅ Épreuve approuvée !' : '❌ Épreuve refusée.', action === 'approved');
       setTracks(t => t.filter(tr => tr.id !== id));
@@ -99,9 +118,16 @@ export default function AdminPage() {
   }
 
   async function handleMessageStatus(id: string, status: 'lu' | 'traité') {
-    const { error } = await supabase.from('contact_messages').update({ status }).eq('id', id);
-    if (error) {
-      notify(`Erreur : ${error.message}`, false);
+    const headers = await authHeaders();
+    if (!headers) return;
+    const res = await fetch('/api/admin/messages', {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ id, status }),
+    });
+    if (!res.ok) {
+      const json = await res.json();
+      notify(`Erreur : ${json.error ?? res.status}`, false);
     } else {
       setMessages(ms => ms.map(m => m.id === id ? { ...m, status } : m));
     }
@@ -109,9 +135,15 @@ export default function AdminPage() {
 
   async function handleMessageDelete(id: string) {
     if (!window.confirm('Supprimer définitivement ce message ?')) return;
-    const { error } = await supabase.from('contact_messages').delete().eq('id', id);
-    if (error) {
-      notify(`Erreur : ${error.message}`, false);
+    const headers = await authHeaders();
+    if (!headers) return;
+    const res = await fetch(`/api/admin/messages?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!res.ok) {
+      const json = await res.json();
+      notify(`Erreur : ${json.error ?? res.status}`, false);
     } else {
       setMessages(ms => ms.filter(m => m.id !== id));
       notify('Message supprimé.', true);
