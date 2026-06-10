@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 
 const ITEMS_PER_PAGE = 50;
@@ -30,16 +31,20 @@ export default function VoituresClient() {
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase
-        .from('cars')
-        .select('id, manufacturer, name, year, car_type, initial_class, collection, add_ons')
-        .order('manufacturer')
-        .order('name');
+      const { data, error } = await fetchAllRows<Car>((from, to) =>
+        supabase
+          .from('cars')
+          .select('id, manufacturer, name, year, car_type, initial_class, collection, add_ons')
+          .order('manufacturer')
+          .order('name')
+          .order('id')
+          .range(from, to)
+      );
 
       if (error) {
         setError('Impossible de charger les voitures.');
       } else {
-        setCars((data ?? []) as Car[]);
+        setCars(data);
       }
       setLoading(false);
     }

@@ -42,7 +42,7 @@ export async function PATCH(
     .eq('id', id)
     .eq('player_id', player.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: 'Chrono introuvable' }, { status: 404 });

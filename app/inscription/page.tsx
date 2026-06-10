@@ -19,7 +19,24 @@ export default function InscriptionPage() {
     setError(null);
     setLoading(true);
 
-    // 1. Créer le compte Auth Supabase
+    const pseudoClean = pseudo.trim();
+
+    // 1. Vérifier la disponibilité du Gamertag AVANT de créer le compte Auth :
+    // un échec après signUp laisserait un compte sans profil joueur, et l'email
+    // serait définitivement bloqué pour une nouvelle inscription
+    const { data: taken } = await supabase
+      .from('players')
+      .select('id')
+      .ilike('pseudo', pseudoClean)
+      .maybeSingle();
+
+    if (taken) {
+      setError("Ce Gamertag est déjà utilisé. Choisis-en un autre.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Créer le compte Auth Supabase
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -38,10 +55,10 @@ export default function InscriptionPage() {
       return;
     }
 
-    // 2. Créer le profil joueur lié au compte Auth
+    // 3. Créer le profil joueur lié au compte Auth
     const { error: playerError } = await supabase
       .from('players')
-      .insert([{ pseudo, user_id: userId }]);
+      .insert([{ pseudo: pseudoClean, user_id: userId }]);
 
     if (playerError) {
       // Si le pseudo est déjà pris
@@ -54,7 +71,7 @@ export default function InscriptionPage() {
       return;
     }
 
-    // 3. Redirection vers le profil
+    // 4. Redirection vers le profil
     router.push('/profil');
   }
 

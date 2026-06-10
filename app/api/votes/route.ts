@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const { track_id, vote } = await request.json();
 
-    if (track_id === undefined || vote === undefined) {
+    if (typeof track_id !== 'number' || typeof vote !== 'boolean') {
       return NextResponse.json({ error: 'Données incomplètes.' }, { status: 400 });
     }
 

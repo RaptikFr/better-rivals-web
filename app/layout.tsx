@@ -14,8 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://better-rivals-fh6.org';
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://better-rivals-fh6.vercel.app'),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Better Rivals FH6",
     template: "%s | Better Rivals",
@@ -27,7 +29,7 @@ export const metadata: Metadata = {
     title: "Better Rivals",
     description:
       "Le classement alternatif, équitable et par modèle de voiture pour Forza Horizon 6.",
-    url: "https://better-rivals-fh6.vercel.app",
+    url: siteUrl,
     siteName: "Better Rivals FH6",
     locale: "fr_FR",
     type: "website",
