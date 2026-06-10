@@ -45,8 +45,11 @@ export default function Navbar() {
   useEffect(() => setMounted(true), []);
 
   // Marque toutes les notifications comme lues à l'ouverture du dropdown
+  // (volontairement déclenché sur bellOpen seul : réagir à unreadCount
+  // marquerait comme lues des notifications arrivées dropdown ouvert)
   useEffect(() => {
     if (bellOpen && unreadCount > 0) markAllAsRead();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bellOpen]);
 
   useEffect(() => {

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { TrackCategory } from '@/types/supabase';
 import { TypeBadge } from '@/components/TypeBadge';
-import { getTypeIcon, getSprintIcon } from '@/app/lib/trackIcons';
+import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 
 interface Track {
   id: number;
@@ -58,8 +58,6 @@ export default function EpreuvesOfficiellesClient() {
   const [filterType,   setFilterType]   = useState('Tous');
   const [searchQuery,  setSearchQuery]  = useState('');
 
-  useEffect(() => { fetchData(); }, []);
-
   async function fetchData() {
     setIsLoading(true);
     setError(null);
@@ -74,6 +72,8 @@ export default function EpreuvesOfficiellesClient() {
     else setTracks(data ?? []);
     setIsLoading(false);
   }
+
+  useEffect(() => { fetchData(); }, []);
 
   const allTypes = ['Tous', ...Array.from(new Set(tracks.map(t => t.type))).sort()];
   const filtered = tracks.filter(t =>

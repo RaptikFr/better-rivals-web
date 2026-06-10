@@ -45,22 +45,6 @@ export default function AdminPage() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesFetched, setMessagesFetched] = useState(false);
 
-  useEffect(() => {
-    if (!loading && (!user || !isAdmin(user.email))) {
-      router.push('/');
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    if (isAdmin(user?.email)) fetchPending();
-  }, [user]);
-
-  useEffect(() => {
-    if (adminTab === 'messages' && isAdmin(user?.email) && !messagesFetched) {
-      fetchMessages();
-    }
-  }, [adminTab, user, messagesFetched]);
-
   async function fetchPending() {
     setTracksLoading(true);
     const { data } = await supabase
@@ -82,6 +66,22 @@ export default function AdminPage() {
     setMessagesLoading(false);
     setMessagesFetched(true);
   }
+
+  useEffect(() => {
+    if (!loading && (!user || !isAdmin(user.email))) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    if (isAdmin(user?.email)) fetchPending();
+  }, [user]);
+
+  useEffect(() => {
+    if (adminTab === 'messages' && isAdmin(user?.email) && !messagesFetched) {
+      fetchMessages();
+    }
+  }, [adminTab, user, messagesFetched]);
 
   function notify(text: string, ok: boolean) {
     setNotification({ text, ok });
@@ -133,7 +133,7 @@ export default function AdminPage() {
         </h1>
 
         {/* Onglets */}
-        <div className="flex gap-1 mb-6 bg-neutral-900 border border-neutral-800 rounded-xl p-1 w-fit">
+        <div className="flex gap-1 mb-6 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-1 w-fit">
           {([
             { id: 'epreuves', label: '🏁 Épreuves', count: tracks.length },
             { id: 'messages', label: '✉️ Messages',  count: messages.filter(m => m.status === 'non_lu').length },
@@ -144,13 +144,13 @@ export default function AdminPage() {
               className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
                 adminTab === tab.id
                   ? 'bg-gradient-to-r from-pink-500 to-violet-600 text-white'
-                  : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800'
               }`}
             >
               {tab.label}
               {tab.count > 0 && (
                 <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                  adminTab === tab.id ? 'bg-white/20 text-white' : 'bg-neutral-700 text-neutral-300'
+                  adminTab === tab.id ? 'bg-white/20 text-white' : 'bg-neutral-300 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
                 }`}>
                   {tab.count}
                 </span>
@@ -175,26 +175,26 @@ export default function AdminPage() {
           tracksLoading ? (
             <p className="text-neutral-500 animate-pulse">Chargement...</p>
           ) : tracks.length === 0 ? (
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-12 text-center">
+            <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-12 text-center">
               <p className="text-neutral-500">Aucune épreuve en attente. 🎉</p>
             </div>
           ) : (
             <div className="space-y-4">
               {tracks.map(track => (
-                <div key={track.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+                <div key={track.id} className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-bold text-white">{track.name}</h3>
+                        <h3 className="text-lg font-bold text-neutral-900 dark:text-white">{track.name}</h3>
                         <span className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/50 text-amber-400 rounded text-xs font-bold">
                           En attente
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-3 text-sm text-neutral-400">
+                      <div className="flex flex-wrap gap-3 text-sm text-neutral-600 dark:text-neutral-400">
                         <span>📂 {track.type}</span>
                         {track.length_km && <span>📏 {track.length_km} km</span>}
                         {track.event_lab_code && (
-                          <span className="font-mono bg-neutral-800 px-2 py-0.5 rounded text-xs text-neutral-300">
+                          <span className="font-mono bg-neutral-200 dark:bg-neutral-800 px-2 py-0.5 rounded text-xs text-neutral-700 dark:text-neutral-300">
                             🔑 {track.event_lab_code}
                           </span>
                         )}
@@ -209,7 +209,7 @@ export default function AdminPage() {
                     <div className="flex gap-3 flex-shrink-0">
                       <button
                         onClick={() => handleTrackAction(track.id, 'rejected')}
-                        className="px-4 py-2 bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold rounded-lg hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-400 transition-colors"
+                        className="px-4 py-2 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-bold rounded-lg hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-400 transition-colors"
                       >
                         Refuser
                       </button>
@@ -232,20 +232,20 @@ export default function AdminPage() {
           messagesLoading ? (
             <p className="text-neutral-500 animate-pulse">Chargement des messages...</p>
           ) : messages.length === 0 ? (
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-12 text-center">
+            <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-12 text-center">
               <p className="text-neutral-500">Aucun message de contact. 🎉</p>
             </div>
           ) : (
             <div className="space-y-4">
               {messages.map(msg => {
                 const statusColors: Record<string, string> = {
-                  non_lu: 'border-neutral-700 bg-neutral-900',
-                  lu:     'border-neutral-800 bg-neutral-900/50 opacity-80',
-                  traité: 'border-neutral-800 bg-neutral-900/30 opacity-60',
+                  non_lu: 'border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900',
+                  lu:     'border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 opacity-80',
+                  traité: 'border-neutral-200 dark:border-neutral-800 bg-white/30 dark:bg-neutral-900/30 opacity-60',
                 };
                 const statusBadge: Record<string, string> = {
                   non_lu: 'bg-pink-500/20 border-pink-500/50 text-pink-400',
-                  lu:     'bg-neutral-700 border-neutral-600 text-neutral-400',
+                  lu:     'bg-neutral-300 dark:bg-neutral-700 border-neutral-400 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400',
                   traité: 'bg-green-500/10 border-green-500/30 text-green-600',
                 };
                 return (
@@ -253,16 +253,16 @@ export default function AdminPage() {
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                       <div className="flex-1 space-y-2 min-w-0">
                         <div className="flex flex-wrap items-center gap-3">
-                          <span className="font-bold text-white">{msg.gamertag}</span>
+                          <span className="font-bold text-neutral-900 dark:text-white">{msg.gamertag}</span>
                           <span className="text-sm text-neutral-500">{msg.email}</span>
                           <span className={`px-2 py-0.5 border rounded text-xs font-bold ${statusBadge[msg.status ?? 'non_lu'] ?? statusBadge.non_lu}`}>
                             {(msg.status ?? 'non_lu').replace('_', ' ')}
                           </span>
-                          <span className="px-2 py-0.5 bg-neutral-800 border border-neutral-700 rounded text-xs text-neutral-400">
+                          <span className="px-2 py-0.5 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-xs text-neutral-600 dark:text-neutral-400">
                             {msg.sujet}
                           </span>
                         </div>
-                        <p className="text-sm text-neutral-300 whitespace-pre-wrap">{msg.message}</p>
+                        <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{msg.message}</p>
                         <p className="text-xs text-neutral-600">
                           {msg.created_at ? new Date(msg.created_at).toLocaleDateString('fr-FR', {
                             day: '2-digit', month: 'long', year: 'numeric',
@@ -274,7 +274,7 @@ export default function AdminPage() {
                         {msg.status === 'non_lu' && (
                           <button
                             onClick={() => handleMessageStatus(msg.id, 'lu')}
-                            className="px-3 py-1.5 bg-neutral-800 border border-neutral-700 text-neutral-300 text-sm font-bold rounded-lg hover:bg-neutral-700 transition-colors"
+                            className="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-bold rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
                           >
                             Marquer lu
                           </button>

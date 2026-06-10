@@ -67,17 +67,17 @@ export default function InscriptionPage() {
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600 mb-2">
             Créer un compte
           </h1>
-          <p className="text-neutral-400 text-sm">
+          <p className="text-neutral-600 dark:text-neutral-400 text-sm">
             Rejoins Better Rivals et retrouve tous tes chronos.
           </p>
         </div>
 
         {/* Formulaire */}
-        <form onSubmit={handleSubmit} className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-8 space-y-5">
 
           {/* Gamertag */}
           <div>
-            <label className="block text-sm font-bold text-neutral-300 mb-2">
+            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
               Gamertag Xbox
             </label>
             <input
@@ -86,7 +86,7 @@ export default function InscriptionPage() {
               onChange={e => setPseudo(e.target.value)}
               placeholder="Ton Gamertag exact"
               required
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
             />
             <p className="text-xs text-amber-500 mt-1">
               ⚠ Utilise ton Gamertag exact — il sera utilisé par le relais pour t&apos;identifier.
@@ -95,7 +95,7 @@ export default function InscriptionPage() {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-bold text-neutral-300 mb-2">
+            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
               Adresse email
             </label>
             <input
@@ -104,13 +104,13 @@ export default function InscriptionPage() {
               onChange={e => setEmail(e.target.value)}
               placeholder="ton@email.com"
               required
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
             />
           </div>
 
           {/* Mot de passe */}
           <div>
-            <label className="block text-sm font-bold text-neutral-300 mb-2">
+            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
               Mot de passe
             </label>
             <input
@@ -120,7 +120,7 @@ export default function InscriptionPage() {
               placeholder="8 caractères minimum"
               required
               minLength={8}
-              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
             />
           </div>
 

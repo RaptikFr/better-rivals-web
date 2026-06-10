@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatTime } from '@/components/formatTime';
 import { CLASS_STYLES } from '@/components/ClassStyles';
-import { getTypeIcon } from '@/app/lib/trackIcons';
+import { getTypeIcon } from '@/lib/trackIcons';
 
 interface Player {
   id: string;

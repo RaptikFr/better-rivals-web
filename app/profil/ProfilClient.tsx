@@ -153,14 +153,6 @@ export default function ProfilClient() {
   const [filterTrackSearch,  setFilterTrackSearch]  = useState('');
   const [showTrackFilter,    setShowTrackFilter]    = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) router.push('/connexion');
-  }, [user, authLoading, router]);
-
-  useEffect(() => {
-    if (user) fetchData();
-  }, [user]);
-
   async function fetchData() {
     setIsLoading(true);
     setError(null);
@@ -210,6 +202,15 @@ export default function ProfilClient() {
 
     setIsLoading(false);
   }
+
+  useEffect(() => {
+    if (!authLoading && !user) router.push('/connexion');
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   async function saveDiscordTag() {
     if (!playerId) return;
@@ -511,7 +512,12 @@ export default function ProfilClient() {
                       return (
                         <div key={trackName} className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
                           <button
-                            onClick={() => setOpenTrackGroups(prev => { const next = new Set(prev); isOpen ? next.delete(trackName) : next.add(trackName); return next; })}
+                            onClick={() => setOpenTrackGroups(prev => {
+                              const next = new Set(prev);
+                              if (isOpen) next.delete(trackName);
+                              else next.add(trackName);
+                              return next;
+                            })}
                             className="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors text-left"
                           >
                             <span className="font-bold text-neutral-900 dark:text-white">{trackName}</span>
@@ -668,6 +674,7 @@ const SUIVI_COLORS = ['#e91e8c', '#7c3aed', '#22c55e', '#f59e0b', '#3b82f6', '#e
 function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) {
   const [history,      setHistory]      = useState<HistoryEntry[]>([]);
   const [currentBests, setCurrentBests] = useState<Map<string, number>>(new Map());
+  const [loadedAt,     setLoadedAt]     = useState<number | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [chartTrack,   setChartTrack]   = useState('');
   const [trackSearch, setTrackSearch] = useState('');
@@ -683,9 +690,9 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
   );
 
   const chartData = useMemo(() => {
-    if (!chartTrack) return null;
+    if (!chartTrack || loadedAt === null) return null;
 
-    const now = Date.now();
+    const now = loadedAt;
     const trackHistory = history
       .filter(h => h.tracks?.name === chartTrack)
       .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
@@ -739,7 +746,7 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
     const totalPoints = data.reduce((sum, row) => sum + configKeys.filter(k => row[k] !== undefined).length, 0);
 
     return { data, byConfig, configKeys, totalPoints };
-  }, [history, currentBests, chartTrack]);
+  }, [history, currentBests, chartTrack, loadedAt]);
 
   useEffect(() => {
     Promise.all([
@@ -759,6 +766,7 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
         bestMap.set(`${b.track_id}-${b.car_ordinal}-${b.car_class}-${b.drivetrain}`, b.time_ms);
       }
       setCurrentBests(bestMap);
+      setLoadedAt(Date.now());
       setLoading(false);
     });
   }, [playerId]);
@@ -970,7 +978,7 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
                   <span className="px-2 py-1 rounded text-xs font-bold mr-2" style={CLASS_STYLES[h.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>{h.car_class}</span>
                   <span className="text-sm text-neutral-500 font-mono">PI {h.car_pi ?? '—'}</span>
                 </td>
-                <td className="p-4"><DrivetrainBadge drivetrain={h.drivetrain as import('@/types/supabase').Drivetrain} /></td>
+                <td className="p-4"><DrivetrainBadge drivetrain={h.drivetrain as Drivetrain} /></td>
                 <td className="p-4 text-neutral-600 dark:text-neutral-400">{h.tracks?.name ?? '—'}</td>
               </tr>
             ))}

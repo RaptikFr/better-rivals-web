@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { TrackCategory } from '@/types/supabase';
 import { TypeBadge } from '@/components/TypeBadge';
-import { getTypeIcon, getSprintIcon } from '@/app/lib/trackIcons';
+import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 
 interface Track {
   id: number;
@@ -234,8 +234,6 @@ export default function EpreuvesCommunauteClient() {
   const [filterType,  setFilterType]  = useState('Tous');
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => { fetchData(); }, []);
-
   async function fetchData() {
     setIsLoading(true);
     setError(null);
@@ -250,6 +248,8 @@ export default function EpreuvesCommunauteClient() {
     else setTracks((data ?? []) as Track[]);
     setIsLoading(false);
   }
+
+  useEffect(() => { fetchData(); }, []);
 
   function handleSuccess() {
     setShowModal(false);

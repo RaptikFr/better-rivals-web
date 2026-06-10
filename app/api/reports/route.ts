@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,7 +48,7 @@ export async function POST(request: NextRequest) {
       .from('reports')
       .select('id')
       .eq('lap_time_id', lap_time_id)
-      .eq('reporter_player_id', reporter.id)
+      .eq('reporter_id', reporter.id)
       .maybeSingle();
     if (existing) {
       return NextResponse.json({ error: 'Tu as déjà signalé ce temps.' }, { status: 409 });
@@ -61,7 +57,7 @@ export async function POST(request: NextRequest) {
     const { error: insertError } = await supabaseAdmin
       .from('reports')
       .insert([{
-        reporter_player_id: reporter.id,
+        reporter_id: reporter.id,
         lap_time_id,
         raison,
         details: details || null,

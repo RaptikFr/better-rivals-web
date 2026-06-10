@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -295,7 +291,7 @@ export async function POST(request: NextRequest) {
       .eq('id', numTrackId)
       .maybeSingle();
 
-    if (trackData && !validerTemps(newTimeMs, trackData.length_km, is_sprint ?? false)) {
+    if (trackData?.length_km && !validerTemps(newTimeMs, trackData.length_km, is_sprint ?? false)) {
       const minS = ((trackData.length_km * 1000 / 100) * 0.8).toFixed(0);
       const maxS = ((trackData.length_km * 1000 / 20)  * 1.2).toFixed(0);
       return NextResponse.json({
@@ -304,7 +300,10 @@ export async function POST(request: NextRequest) {
     }
 
     // --- VALIDATION CONTRE LE WORLD RECORD ---
-    const { data: worldRecord } = await supabaseAdmin
+    // ⚠ world_records est absente du schéma généré (types/database.types.ts) :
+    // soit la table n'existe plus, soit les types sont à régénérer.
+    // Requête volontairement non typée en attendant.
+    const { data: worldRecord } = await (supabaseAdmin as SupabaseClient)
       .from('world_records')
       .select('time_ms')
       .eq('track_id',  numTrackId)
@@ -443,10 +442,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Garde uniquement le meilleur temps par joueur + classe + transmission
+    // Garde uniquement le meilleur temps par joueur + voiture + classe + transmission
     const seen = new Set<string>();
     const best = (data ?? []).filter(lap => {
-      const key = `${(lap.players as { pseudo: string }[] | null)?.[0]?.pseudo}_${lap.car_ordinal}_${lap.car_class}_${lap.drivetrain}`;
+      const key = `${lap.players?.pseudo}_${lap.car_ordinal}_${lap.car_class}_${lap.drivetrain}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

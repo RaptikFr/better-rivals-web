@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import DerniersChronos from './components/DerniersChronos';
+import DerniersChronos from '@/components/DerniersChronos';
 
 export default function Home() {
   return (

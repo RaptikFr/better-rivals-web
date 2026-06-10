@@ -10,7 +10,7 @@ import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
-import { getTypeIcon, getSprintIcon } from '@/app/lib/trackIcons';
+import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 
 interface LapTime {
   id: string;
@@ -55,10 +55,10 @@ interface CircuitGroup {
   subGroups: SubGroup[];
 }
 
-const CAR_CLASS_ORDER = ['D', 'C', 'B', 'A', 'S1', 'S2', 'X'];
+const CAR_CLASS_ORDER = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R', 'X'];
 const CIRCUITS_PER_PAGE = 5;
 const STORAGE_KEY = 'br_classements_filters';
-const CAR_CLASSES: Array<"Toutes" | CarClass> = ["Toutes", "D", "C", "B", "A", "S1", "S2", "X"];
+const CAR_CLASSES: Array<"Toutes" | CarClass> = ["Toutes", "D", "C", "B", "A", "S1", "S2", "R", "X"];
 const DRIVETRAIN_OPTIONS: Array<"Tous" | Drivetrain> = ["Tous", "AWD", "RWD", "FWD"];
 const RAISONS = ['Temps impossible', 'Mauvais circuit sélectionné', 'Autre'] as const;
 type Raison = typeof RAISONS[number];
