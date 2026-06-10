@@ -494,6 +494,27 @@ export type Database = {
           },
         ]
       }
+      // Ajouté manuellement : table présente en base mais absente de la
+      // dernière génération — colonnes utilisées par /api/times uniquement.
+      // À remplacer par une vraie régénération (npx supabase gen types).
+      world_records: {
+        Row: {
+          track_id: number
+          car_class: string
+          time_ms: number
+        }
+        Insert: {
+          track_id: number
+          car_class: string
+          time_ms: number
+        }
+        Update: {
+          track_id?: number
+          car_class?: string
+          time_ms?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       leaderboard: {

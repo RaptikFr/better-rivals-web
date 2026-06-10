@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -300,10 +299,9 @@ export async function POST(request: NextRequest) {
     }
 
     // --- VALIDATION CONTRE LE WORLD RECORD ---
-    // ⚠ world_records est absente du schéma généré (types/database.types.ts) :
-    // soit la table n'existe plus, soit les types sont à régénérer.
-    // Requête volontairement non typée en attendant.
-    const { data: worldRecord } = await (supabaseAdmin as SupabaseClient)
+    // ⚠ La table existe mais est vide à ce jour : la validation ne filtre
+    // rien tant que des temps de référence n'y sont pas insérés.
+    const { data: worldRecord } = await supabaseAdmin
       .from('world_records')
       .select('time_ms')
       .eq('track_id',  numTrackId)

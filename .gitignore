@@ -48,3 +48,9 @@ supabase/.temp/
 
 # Relais desktop (outil local, jamais envoyé sur GitHub)
 /relais/
+
+# Copie locale du relais (éditée ici, jamais publiée)
+public/relais.py
+
+# Permissions locales Claude Code (propres à chaque machine)
+.claude/settings.local.json
