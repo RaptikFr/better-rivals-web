@@ -6,6 +6,14 @@ const DRIVETRAIN_COLORS: Record<Drivetrain, string> = {
   FWD: "bg-green-500/20 border-green-500/50 text-green-400",
 };
 
+// Couleurs pleines pour les boutons de filtre transmission actifs
+export const DRIVETRAIN_FILTER_COLORS: Record<"Tous" | Drivetrain, string> = {
+  Tous: "bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white",
+  AWD:  "bg-blue-500 text-white border-blue-500",
+  RWD:  "bg-orange-500 text-white border-orange-500",
+  FWD:  "bg-green-500 text-white border-green-500",
+};
+
 export function DrivetrainBadge({ drivetrain }: { drivetrain: Drivetrain | null }) {
   const style = drivetrain
     ? DRIVETRAIN_COLORS[drivetrain]

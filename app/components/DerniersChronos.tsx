@@ -6,6 +6,9 @@ import { supabase } from '@/lib/supabase';
 import { formatTime } from '@/components/formatTime';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
+import { DrivetrainBadge } from '@/components/DrivetrainBadge';
+import { dateRelative } from '@/lib/dateRelative';
+import type { Drivetrain } from '@/types/supabase';
 
 interface Chrono {
   id:         string;
@@ -17,21 +20,6 @@ interface Chrono {
   cars:       { manufacturer: string | null; name: string; year: number | null } | null;
   tracks:     { name: string } | null;
 }
-
-function dateRelative(iso: string): string {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60)   return "à l'instant";
-  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} heure${Math.floor(diff / 3600) > 1 ? 's' : ''}`;
-  if (diff < 172800) return 'hier';
-  return `il y a ${Math.floor(diff / 86400)} jours`;
-}
-
-const DRIVETRAIN_COLORS: Record<string, string> = {
-  AWD: 'bg-blue-500/20 border-blue-500/50 text-blue-400',
-  RWD: 'bg-orange-500/20 border-orange-500/50 text-orange-400',
-  FWD: 'bg-green-500/20 border-green-500/50 text-green-400',
-};
 
 export default function DerniersChronos() {
   const [chronos, setChronos] = useState<Chrono[]>([]);
@@ -90,9 +78,7 @@ export default function DerniersChronos() {
                 {lap.car_class}
               </span>
               {lap.drivetrain && (
-                <span className={`px-2 py-0.5 border rounded text-xs font-bold ${DRIVETRAIN_COLORS[lap.drivetrain] ?? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'}`}>
-                  {lap.drivetrain}
-                </span>
+                <DrivetrainBadge drivetrain={lap.drivetrain as Drivetrain} />
               )}
             </div>
 

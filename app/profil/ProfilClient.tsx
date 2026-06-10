@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 import { formatTime } from '@/components/formatTime';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { DrivetrainBadge } from '@/components/DrivetrainBadge';
+import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
-import { DiscordTag } from '@/components/DiscordTag';
+import { countPodiums, type Podiums } from '@/lib/podiums';
 
 interface ProfileLap {
   id: string;
@@ -32,15 +31,7 @@ interface Stats {
   totalVoitures: number;
   classFavorite: string;
   drivetrainFavorite: string;
-  bestRank: number | null;
 }
-
-interface Podiums {
-  gold:   number;
-  silver: number;
-  bronze: number;
-}
-
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', {
@@ -239,20 +230,7 @@ export default function ProfilClient() {
         drivetrain: string; track_id: number;
       }>;
 
-      let gold = 0, silver = 0, bronze = 0;
-      for (const lap of playerLaps) {
-        const betterCount = allLaps.filter(
-          l => l.track_id   === lap.track_id   &&
-               l.car_ordinal === lap.car_ordinal &&
-               l.car_class   === lap.car_class   &&
-               l.drivetrain  === lap.drivetrain   &&
-               l.time_ms < lap.time_ms
-        ).length;
-        if (betterCount === 0) gold++;
-        else if (betterCount === 1) silver++;
-        else if (betterCount === 2) bronze++;
-      }
-      setPodiums({ gold, silver, bronze });
+      setPodiums(countPodiums(playerLaps, allLaps));
     }
 
     setIsLoading(false);
@@ -324,7 +302,6 @@ export default function ProfilClient() {
       laps.forEach(l => { counts[l.drivetrain] = (counts[l.drivetrain] || 0) + 1; });
       return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
     })(),
-    bestRank: null,
   }), [laps]);
 
   if (authLoading || isLoading) return (
@@ -521,16 +498,10 @@ export default function ProfilClient() {
                 <div className="flex flex-wrap gap-2">
                   {(['Tous', 'AWD', 'RWD', 'FWD'] as const).map(dt => {
                     const isActive = filterDrivetrain === dt;
-                    const activeColors = {
-                      Tous: 'bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white',
-                      AWD:  'bg-blue-500 text-white border-blue-500',
-                      RWD:  'bg-orange-500 text-white border-orange-500',
-                      FWD:  'bg-green-500 text-white border-green-500',
-                    };
                     return (
                       <button key={dt} onClick={() => setFilterDrivetrain(dt)}
                         className={`px-4 py-1.5 rounded-full border text-sm font-bold transition-all ${
-                          isActive ? activeColors[dt] : 'bg-white dark:bg-neutral-950 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-500'
+                          isActive ? DRIVETRAIN_FILTER_COLORS[dt] : 'bg-white dark:bg-neutral-950 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-500'
                         }`}>
                         {dt}
                       </button>

@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
+import { countPodiums } from '@/lib/podiums';
 import type { Drivetrain } from '@/types/supabase';
 
 interface Lap {
@@ -76,20 +77,7 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
 
         const allLaps = (allLapsRaw ?? []) as Pick<Lap, 'time_ms' | 'car_ordinal' | 'car_class' | 'drivetrain' | 'track_id'>[];
 
-        let gold = 0, silver = 0, bronze = 0;
-        for (const lap of lapsData) {
-          const betterCount = allLaps.filter(
-            l => l.track_id    === lap.track_id    &&
-                 l.car_ordinal === lap.car_ordinal  &&
-                 l.car_class   === lap.car_class    &&
-                 l.drivetrain  === lap.drivetrain   &&
-                 l.time_ms     <  lap.time_ms
-          ).length;
-          if (betterCount === 0) gold++;
-          else if (betterCount === 1) silver++;
-          else if (betterCount === 2) bronze++;
-        }
-        setPodiums({ gold, silver, bronze });
+        setPodiums(countPodiums(lapsData, allLaps));
       }
 
       setLoading(false);

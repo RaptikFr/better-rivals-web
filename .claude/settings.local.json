@@ -31,7 +31,16 @@
       "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\app\\\\components\\\\DefiBanner.tsx\")",
       "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\app\\\\defis\\\\DefisClient.tsx\")",
       "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\app\\\\defis\\\\page.tsx\")",
-      "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\app\\\\api\\\\defis\\\\generate\\\\route.ts\")"
+      "Bash(Remove-Item -Force \"e:\\\\Rowwan\\\\Projet Site Web\\\\better-rivals-web\\\\app\\\\api\\\\defis\\\\generate\\\\route.ts\")",
+      "PowerShell(Get-ChildItem -Recurse -File app,components,hooks,lib,types,supabase,public | ForEach-Object { $_.FullName.Replace\\(\\(Get-Location\\).Path + '\\\\',''\\) + \"`t\" + [math]::Round\\($_.Length/1KB,1\\) + ' KB' })",
+      "PowerShell(npx eslint app components hooks lib types 2>&1)",
+      "PowerShell(npx eslint app components hooks lib types --format json 2>$null | Out-File -Encoding utf8 $env:TEMP\\\\eslint.json; node -e \"const r=require\\(process.env.TEMP+'/eslint.json'\\);let tot=0;for\\(const f of r\\){if\\(!f.messages.length\\)continue;const rel=f.filePath.split\\('better-rivals-web'\\)[1];for\\(const m of f.messages\\){tot++;console.log\\(rel+':'+m.line+' ['+\\(m.severity===2?'error':'warn'\\)+'] '+m.ruleId+' — '+m.message.split\\('\\\\n'\\)[0]\\);}}console.log\\('TOTAL: '+tot\\)\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 30; echo \"EXIT:$LASTEXITCODE\")",
+      "PowerShell(git ls-files public | %{ \"$_\" }; echo \"---\"; git check-ignore tsconfig.tsbuildinfo; echo \"ignored:$LASTEXITCODE\"; Get-Content app\\\\globals.css)",
+      "PowerShell(Get-ChildItem -Recurse node_modules\\\\next\\\\dist\\\\docs -File | Where-Object { $_.Name -match 'loading|error|not-found' } | Select-Object -ExpandProperty FullName)",
+      "PowerShell(git rm app/admin/Signalements.tsx app/times/route.ts public/next.svg public/vercel.svg public/file.svg public/globe.svg public/window.svg)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 20; echo \"EXIT:$LASTEXITCODE\")",
+      "PowerShell(git add -A)"
     ]
   }
 }

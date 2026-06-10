@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 import { formatTime } from '@/components/formatTime';
-import { DrivetrainBadge } from '@/components/DrivetrainBadge';
+import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
 import { getTypeIcon, getSprintIcon } from '@/app/lib/trackIcons';
@@ -678,19 +678,13 @@ export default function ClassementsClient({
             <div className="flex flex-wrap gap-2">
               {DRIVETRAIN_OPTIONS.map(dt => {
                 const isActive = selectedDrivetrain === dt;
-                const activeColors: Record<typeof dt, string> = {
-                  Tous: "bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white",
-                  AWD:  "bg-blue-500 text-white border-blue-500",
-                  RWD:  "bg-orange-500 text-white border-orange-500",
-                  FWD:  "bg-green-500 text-white border-green-500",
-                };
                 return (
                   <button
                     key={dt}
                     onClick={() => setSelectedDrivetrain(dt)}
                     className={`px-4 py-1.5 rounded-full border text-sm font-bold transition-all ${
                       isActive
-                        ? activeColors[dt]
+                        ? DRIVETRAIN_FILTER_COLORS[dt]
                         : "bg-white dark:bg-neutral-950 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-500"
                     }`}
                   >
