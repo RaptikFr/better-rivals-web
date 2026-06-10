@@ -40,7 +40,8 @@
       "PowerShell(Get-ChildItem -Recurse node_modules\\\\next\\\\dist\\\\docs -File | Where-Object { $_.Name -match 'loading|error|not-found' } | Select-Object -ExpandProperty FullName)",
       "PowerShell(git rm app/admin/Signalements.tsx app/times/route.ts public/next.svg public/vercel.svg public/file.svg public/globe.svg public/window.svg)",
       "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 20; echo \"EXIT:$LASTEXITCODE\")",
-      "PowerShell(git add -A)"
+      "PowerShell(git add -A)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 25; echo \"EXIT:$LASTEXITCODE\")"
     ]
   }
 }

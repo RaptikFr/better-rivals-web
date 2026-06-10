@@ -2,14 +2,20 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 import { formatTime } from '@/components/formatTime';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
-import { countPodiums, type Podiums } from '@/lib/podiums';
+import { countPodiums, groupByConfig, configKey, type Podiums } from '@/lib/podiums';
+
+// recharts (~100 KB gz) n'est chargé que lorsqu'un graphique est affiché
+const LapTimeChart = dynamic(() => import('./LapTimeChart'), {
+  ssr: false,
+  loading: () => <p className="text-neutral-500 animate-pulse text-sm py-8">Chargement du graphique…</p>,
+});
 
 interface ProfileLap {
   id: string;
@@ -31,6 +37,16 @@ interface Stats {
   totalVoitures: number;
   classFavorite: string;
   drivetrainFavorite: string;
+}
+
+// Temps de tous les joueurs sur les circuits du joueur courant —
+// sert à la fois aux podiums et à l'onglet « Mes classements »
+interface ConfigLapRow {
+  time_ms:     number;
+  car_ordinal: number;
+  car_class:   string;
+  drivetrain:  string;
+  track_id:    number;
 }
 
 function formatDate(iso: string): string {
@@ -86,58 +102,16 @@ function ProgressionChart({ laps, trackName }: { laps: ProfileLap[]; trackName: 
       <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">
         Progression — {trackName}
       </p>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(115,115,115,0.2)" />
-          <XAxis
-            dataKey="label"
-            tick={{ fill: '#737373', fontSize: 11 }}
-            tickLine={false}
-          />
-          <YAxis
-            reversed
-            domain={['auto', 'auto']}
-            tickFormatter={ms => {
-              const m = Math.floor((ms as number) / 60000);
-              const s = Math.floor(((ms as number) % 60000) / 1000);
-              return `${m}:${String(s).padStart(2, '0')}`;
-            }}
-            tick={{ fill: '#737373', fontSize: 11 }}
-            tickLine={false}
-            width={52}
-          />
-          <Tooltip
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const row = payload[0].payload as Record<string, unknown>;
-              return (
-                <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-xs shadow-xl space-y-1">
-                  <p className="text-neutral-400 mb-1">{String(row.full)}</p>
-                  {payload.map((p, i) => (
-                    <p key={i} style={{ color: p.color }} className="font-mono">
-                      {p.name}: {formatTime(p.value as number)}
-                    </p>
-                  ))}
-                </div>
-              );
-            }}
-          />
-          <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
-          {configKeys.map((key, i) => (
-            <Line
-              key={key}
-              type="monotone"
-              dataKey={key}
-              name={key}
-              stroke={CHART_COLORS[i % CHART_COLORS.length]}
-              strokeWidth={2}
-              dot={{ fill: CHART_COLORS[i % CHART_COLORS.length], r: 3 }}
-              activeDot={{ r: 5 }}
-              connectNulls
-            />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+      <LapTimeChart
+        data={data}
+        series={configKeys.map(key => ({ key, name: key }))}
+        colors={CHART_COLORS}
+        yTickFormatter={ms => {
+          const m = Math.floor(ms / 60000);
+          const s = Math.floor((ms % 60000) / 1000);
+          return `${m}:${String(s).padStart(2, '0')}`;
+        }}
+      />
     </div>
   );
 }
@@ -164,6 +138,7 @@ export default function ProfilClient() {
   const [emailNotifs, setEmailNotifs] = useState(false);
   const [playerId,    setPlayerId]    = useState<string | null>(null);
   const [laps,      setLaps]      = useState<ProfileLap[]>([]);
+  const [allTrackLaps, setAllTrackLaps] = useState<ConfigLapRow[]>([]);
   const [podiums,   setPodiums]   = useState<Podiums>({ gold: 0, silver: 0, bronze: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
@@ -225,12 +200,12 @@ export default function ProfilClient() {
         .select('time_ms, car_ordinal, car_class, drivetrain, track_id')
         .in('track_id', trackIds);
 
-      const allLaps = (allLapsRaw ?? []) as Array<{
-        time_ms: number; car_ordinal: number; car_class: string;
-        drivetrain: string; track_id: number;
-      }>;
+      const allLaps = (allLapsRaw ?? []) as ConfigLapRow[];
 
+      setAllTrackLaps(allLaps);
       setPodiums(countPodiums(playerLaps, allLaps));
+    } else {
+      setAllTrackLaps([]);
     }
 
     setIsLoading(false);
@@ -563,7 +538,7 @@ export default function ProfilClient() {
           </div>
         )}
 
-        {activeTab === 'classements' && <ClassementsTab laps={laps} />}
+        {activeTab === 'classements' && <ClassementsTab laps={laps} allLaps={allTrackLaps} />}
         {activeTab === 'suivi'       && playerId !== null && <SuiviTab playerId={playerId} laps={laps} />}
         {activeTab === 'stats'       && <StatsTab stats={stats} laps={laps} />}
 
@@ -870,59 +845,17 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
 
         {chartTrack && (
           chartData && chartData.totalPoints >= 2 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData.data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(115,115,115,0.15)" />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fill: '#737373', fontSize: 11 }}
-                  tickLine={false}
-                />
-                <YAxis
-                  reversed
-                  domain={['auto', 'auto']}
-                  tickFormatter={ms => {
-                    const min = Math.floor((ms as number) / 60000);
-                    const sec = Math.floor(((ms as number) % 60000) / 1000);
-                    const msRem = Math.floor((ms as number) % 1000);
-                    return `${min}:${String(sec).padStart(2, '0')}.${String(msRem).padStart(3, '0').slice(0, 2)}`;
-                  }}
-                  tick={{ fill: '#737373', fontSize: 11 }}
-                  tickLine={false}
-                  width={64}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const row = payload[0].payload as Record<string, unknown>;
-                    return (
-                      <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-xs shadow-xl space-y-1">
-                        <p className="text-neutral-400 mb-1">{String(row.full)}</p>
-                        {payload.map((p, i) => (
-                          <p key={i} style={{ color: p.color }} className="font-mono">
-                            {p.name}: {formatTime(p.value as number)}
-                          </p>
-                        ))}
-                      </div>
-                    );
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
-                {chartData.configKeys.map((key, i) => (
-                  <Line
-                    key={key}
-                    type="monotone"
-                    dataKey={key}
-                    name={chartData.byConfig.get(key)!.label}
-                    stroke={SUIVI_COLORS[i % SUIVI_COLORS.length]}
-                    strokeWidth={2}
-                    dot={{ fill: SUIVI_COLORS[i % SUIVI_COLORS.length], r: 3 }}
-                    activeDot={{ r: 5 }}
-                    connectNulls
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
+            <LapTimeChart
+              data={chartData.data}
+              series={chartData.configKeys.map(key => ({ key, name: chartData.byConfig.get(key)!.label }))}
+              colors={SUIVI_COLORS}
+              yTickFormatter={ms => {
+                const min = Math.floor(ms / 60000);
+                const sec = Math.floor((ms % 60000) / 1000);
+                const msRem = Math.floor(ms % 1000);
+                return `${min}:${String(sec).padStart(2, '0')}.${String(msRem).padStart(3, '0').slice(0, 2)}`;
+              }}
+            />
           ) : (
             <p className="text-sm text-neutral-500 py-4">
               Bats ton record au moins une fois sur ce circuit pour voir ta progression.
@@ -1048,29 +981,21 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
   );
 }
 
-function ClassementsTab({ laps }: { laps: ProfileLap[] }) {
-  const [rankings, setRankings] = useState<{ lap: ProfileLap; rank: number; total: number }[]>([]);
-  const [loading,  setLoading]  = useState(true);
+function ClassementsTab({ laps, allLaps }: { laps: ProfileLap[]; allLaps: ConfigLapRow[] }) {
+  // Rang et total calculés à partir des temps déjà téléchargés pour les
+  // podiums — aucune requête supplémentaire (anciennement 2 requêtes par chrono)
+  const rankings = useMemo(() => {
+    const byConfig = groupByConfig(allLaps);
+    return laps
+      .filter(lap => lap.tracks?.name)
+      .map(lap => {
+        const times = byConfig.get(configKey(lap)) ?? [];
+        const rank  = times.filter(t => t < lap.time_ms).length + 1;
+        return { lap, rank, total: Math.max(times.length, 1) };
+      })
+      .sort((a, b) => a.rank - b.rank);
+  }, [laps, allLaps]);
 
-  useEffect(() => {
-    async function fetchRankings() {
-      const results = await Promise.all(
-        laps.map(async (lap) => {
-          const trackName = lap.tracks?.name;
-          if (!trackName) return null;
-          const { count }       = await supabase.from('lap_times').select('*', { count: 'exact', head: true }).eq('track_id', lap.track_id).eq('car_ordinal', lap.car_ordinal).eq('drivetrain', lap.drivetrain).eq('car_class', lap.car_class).lt('time_ms', lap.time_ms);
-          const { count: total } = await supabase.from('lap_times').select('*', { count: 'exact', head: true }).eq('track_id', lap.track_id).eq('car_ordinal', lap.car_ordinal).eq('drivetrain', lap.drivetrain).eq('car_class', lap.car_class);
-          return { lap, rank: (count ?? 0) + 1, total: total ?? 1 };
-        })
-      );
-      setRankings(results.filter(Boolean) as { lap: ProfileLap; rank: number; total: number }[]);
-      setLoading(false);
-    }
-    if (laps.length > 0) fetchRankings();
-    else setLoading(false);
-  }, [laps]);
-
-  if (loading) return <p className="text-neutral-500 animate-pulse p-4">Calcul des classements...</p>;
   if (rankings.length === 0) return <EmptyState message="Aucun classement disponible pour l'instant." />;
 
   return (
@@ -1086,7 +1011,7 @@ function ClassementsTab({ laps }: { laps: ProfileLap[] }) {
           </tr>
         </thead>
         <tbody>
-          {rankings.sort((a, b) => a.rank - b.rank).map(({ lap, rank, total }, i) => (
+          {rankings.map(({ lap, rank, total }, i) => (
             <tr key={i} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
               <td className="p-4">
                 <span className={`text-lg font-extrabold ${rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-neutral-400 dark:text-neutral-300' : rank === 3 ? 'text-amber-600' : 'text-neutral-500'}`}>

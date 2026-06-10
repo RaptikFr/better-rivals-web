@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/hooks/useAuth';
+import { usePlayer } from '@/hooks/usePlayer';
 import { DiscordTag } from '@/components/DiscordTag';
 
 const POINTS_TABLE = [10, 7, 5, 3, 1];
@@ -34,22 +34,12 @@ interface PlayerRanking {
 }
 
 export default function ClassementGeneralClient() {
-  const { user } = useAuth();
+  const { player } = usePlayer();
+  const currentPseudo = player?.pseudo ?? null;
 
   const [ranking,       setRanking]       = useState<PlayerRanking[]>([]);
-  const [currentPseudo, setCurrentPseudo] = useState<string | null>(null);
   const [isLoading,     setIsLoading]     = useState(true);
   const [error,         setError]         = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from('players')
-      .select('pseudo')
-      .eq('user_id', user.id)
-      .single()
-      .then(({ data }) => setCurrentPseudo(data?.pseudo ?? null));
-  }, [user]);
 
   useEffect(() => {
     async function fetchAndCompute() {

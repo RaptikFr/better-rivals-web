@@ -4,11 +4,13 @@ import { useState, useEffect, type SyntheticEvent } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlayer } from '@/hooks/usePlayer';
 
 const SUJETS = ['Conflit de réglage', 'Signaler un temps suspect', 'Autre'];
 
 export default function ContactClient() {
   const { user } = useAuth();
+  const { player } = usePlayer();
 
   const [form, setForm] = useState({
     gamertag: '',
@@ -24,15 +26,11 @@ export default function ContactClient() {
   useEffect(() => {
     if (!user) return;
     setForm(f => ({ ...f, email: user.email ?? '' }));
-    supabase
-      .from('players')
-      .select('pseudo')
-      .eq('user_id', user.id)
-      .single()
-      .then(({ data }) => {
-        if (data?.pseudo) setForm(f => ({ ...f, gamertag: data.pseudo }));
-      });
   }, [user]);
+
+  useEffect(() => {
+    if (player?.pseudo) setForm(f => ({ ...f, gamertag: player.pseudo }));
+  }, [player]);
 
   async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();

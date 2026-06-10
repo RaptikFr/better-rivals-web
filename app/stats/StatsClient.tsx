@@ -39,48 +39,43 @@ export default function StatsClient() {
         { count: totalChronos },
         { count: totalPilotes },
         { count: totalCircuits },
-        { data: carOrdinalsData },
-        { data: pilotesData },
-        { data: circuitsData },
-        { data: voituresData },
+        { data: lapRowsData },
         { data: lastData },
       ] = await Promise.all([
         supabase.from('lap_times').select('*', { count: 'exact', head: true }),
         supabase.from('players').select('*', { count: 'exact', head: true }),
         supabase.from('tracks').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-        supabase.from('lap_times').select('car_ordinal'),
-        supabase.from('lap_times').select('players ( pseudo )'),
-        supabase.from('lap_times').select('tracks ( name )'),
-        supabase.from('lap_times').select('cars ( manufacturer, name, year )'),
+        // Une seule lecture de lap_times pour tous les agrégats (voitures distinctes + tops)
+        supabase.from('lap_times').select('car_ordinal, players ( pseudo ), tracks ( name ), cars ( manufacturer, name, year )'),
         supabase.from('lap_times')
           .select('id, time_ms, created_at, players ( pseudo ), cars ( manufacturer, name, year ), tracks ( name )')
           .order('created_at', { ascending: false }).limit(5),
       ]);
 
-      const distinctCars = new Set(
-        (carOrdinalsData ?? [] as { car_ordinal: number }[]).map(r => r.car_ordinal)
-      );
+      const lapRows = (lapRowsData ?? []) as Array<{
+        car_ordinal: number;
+        players: { pseudo: string } | null;
+        tracks:  { name: string } | null;
+        cars:    { manufacturer: string | null; name: string; year: number | null } | null;
+      }>;
+
+      const distinctCars = new Set(lapRows.map(r => r.car_ordinal));
 
       const piloteCount: Record<string, number> = {};
-      for (const row of (pilotesData ?? []) as { players: { pseudo: string } | null }[]) {
+      const circuitCount: Record<string, number> = {};
+      const voitureCount: Record<string, number> = {};
+      for (const row of lapRows) {
         const pseudo = row.players?.pseudo ?? 'Inconnu';
         piloteCount[pseudo] = (piloteCount[pseudo] ?? 0) + 1;
-      }
-      const top3Pilotes = Object.entries(piloteCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([pseudo, count]) => ({ pseudo, count }));
 
-      const circuitCount: Record<string, number> = {};
-      for (const row of (circuitsData ?? []) as { tracks: { name: string } | null }[]) {
-        const name = row.tracks?.name ?? 'Inconnu';
-        circuitCount[name] = (circuitCount[name] ?? 0) + 1;
+        const trackName = row.tracks?.name ?? 'Inconnu';
+        circuitCount[trackName] = (circuitCount[trackName] ?? 0) + 1;
+
+        const carName = row.cars ? `${row.cars.year} ${row.cars.manufacturer} ${row.cars.name}` : 'Inconnue';
+        voitureCount[carName] = (voitureCount[carName] ?? 0) + 1;
       }
+      const top3Pilotes  = Object.entries(piloteCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([pseudo, count]) => ({ pseudo, count }));
       const top5Circuits = Object.entries(circuitCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
-
-      const voitureCount: Record<string, number> = {};
-      for (const row of (voituresData ?? []) as { cars: { manufacturer: string; name: string; year: number } | null }[]) {
-        const c = row.cars;
-        const name = c ? `${c.year} ${c.manufacturer} ${c.name}` : 'Inconnue';
-        voitureCount[name] = (voitureCount[name] ?? 0) + 1;
-      }
       const top5Voitures = Object.entries(voitureCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
 
       setStats({ totalChronos: totalChronos ?? 0, totalPilotes: totalPilotes ?? 0, totalCircuits: totalCircuits ?? 0, totalVoitures: distinctCars.size });

@@ -67,8 +67,8 @@ async function notifierRecordBattu(opts: {
       link,
       read:      false,
     }]);
-    // Envoi email async — ne bloque pas la réponse
-    sendBeatenEmail({
+    // En serverless, un envoi non attendu peut être gelé avant d'aboutir
+    await sendBeatenEmail({
       beatenPlayerId:  exact.player_id,
       newPlayerPseudo: opts.pseudo,
       trackName:       opts.trackName,

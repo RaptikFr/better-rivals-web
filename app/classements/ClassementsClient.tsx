@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlayer } from '@/hooks/usePlayer';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
@@ -201,13 +202,14 @@ export default function ClassementsClient({
 } = {}) {
 
   const { user } = useAuth();
+  const { player } = usePlayer();
+  const currentPlayerId     = player?.id     ?? null;
+  const currentPlayerPseudo = player?.pseudo ?? null;
 
   const [lapTimes,   setLapTimes]   = useState<LapTime[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
 
-  const [currentPlayerId,    setCurrentPlayerId]    = useState<string | null>(null);
-  const [currentPlayerPseudo, setCurrentPlayerPseudo] = useState<string | null>(null);
   const [myTimesOnly,        setMyTimesOnly]        = useState(false);
   const [reportTarget,       setReportTarget]       = useState<LapTime | null>(null);
   const [reportSuccessMsg,   setReportSuccessMsg]   = useState<string | null>(null);
@@ -300,19 +302,6 @@ export default function ClassementsClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!user) { setCurrentPlayerId(null); setCurrentPlayerPseudo(null); return; }
-    supabase
-      .from('players')
-      .select('id, pseudo')
-      .eq('user_id', user.id)
-      .single()
-      .then(({ data }) => {
-        setCurrentPlayerId(data?.id ?? null);
-        setCurrentPlayerPseudo(data?.pseudo ?? null);
-      });
-  }, [user]);
-
   const fetchData = useCallback(async () => {
     if (selectedTrackId === null) {
       setLapTimes([]);
@@ -336,7 +325,7 @@ export default function ClassementsClient({
       `)
       .order('time_ms', { ascending: true });
 
-    if (selectedTrackId !== null)      query = query.eq('track_id', selectedTrackId);
+    query = query.eq('track_id', selectedTrackId);
     if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
     if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
 
