@@ -80,51 +80,6 @@ export type Database = {
         }
         Relationships: []
       }
-      defis: {
-        Row: {
-          car_class: string
-          car_id: number | null
-          created_at: string | null
-          id: number
-          track_id: number
-          week_end: string
-          week_start: string
-        }
-        Insert: {
-          car_class: string
-          car_id?: number | null
-          created_at?: string | null
-          id?: never
-          track_id: number
-          week_end: string
-          week_start: string
-        }
-        Update: {
-          car_class?: string
-          car_id?: number | null
-          created_at?: string | null
-          id?: never
-          track_id?: number
-          week_end?: string
-          week_start?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "defis_car_id_fkey"
-            columns: ["car_id"]
-            isOneToOne: false
-            referencedRelation: "cars"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "defis_track_id_fkey"
-            columns: ["track_id"]
-            isOneToOne: false
-            referencedRelation: "tracks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       lap_times: {
         Row: {
           car_class: string
@@ -538,24 +493,7 @@ export type Database = {
       }
     }
     Views: {
-      leaderboard: {
-        Row: {
-          car_class: string | null
-          car_name: string | null
-          car_pi: number | null
-          drivetrain: string | null
-          pseudo: string | null
-          rank_in_class: number | null
-          recorded_at: string | null
-          share_code: string | null
-          time_formatted: string | null
-          time_ms: number | null
-          track_name: string | null
-          verified: boolean | null
-          year: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never
