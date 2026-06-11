@@ -4,6 +4,7 @@ import { useState, useEffect, type SyntheticEvent } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlayer } from '@/hooks/usePlayer';
+import TurnstileWidget, { TURNSTILE_SITE_KEY } from '@/components/TurnstileWidget';
 
 const SUJETS = ['Conflit de réglage', 'Signaler un temps suspect', 'Autre'];
 
@@ -20,6 +21,8 @@ export default function ContactClient() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   // Pré-remplissage si connecté
   useEffect(() => {
@@ -44,12 +47,16 @@ export default function ContactClient() {
         email:    form.email.trim(),
         sujet:    form.sujet,
         message:  form.message.trim(),
+        turnstileToken: captchaToken,
       }),
     });
 
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       setError(data?.error ?? "Erreur lors de l'envoi. Réessaie dans quelques instants.");
+      // Les jetons Turnstile sont à usage unique : nouveau défi avant de retenter
+      setCaptchaToken(null);
+      setCaptchaReset(n => n + 1);
     } else {
       setSuccess(true);
     }
@@ -170,9 +177,11 @@ export default function ContactClient() {
             </div>
           )}
 
+          <TurnstileWidget onToken={setCaptchaToken} resetSignal={captchaReset} />
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (!!TURNSTILE_SITE_KEY && !captchaToken)}
             className="w-full py-3 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {loading ? 'Envoi en cours...' : 'Envoyer le message'}
