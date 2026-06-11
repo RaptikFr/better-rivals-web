@@ -22,9 +22,9 @@ export type Database = {
           collection: string | null
           id: number
           initial_class: string | null
-          manufacturer: string | null
+          manufacturer: string
           name: string
-          year: number | null
+          year: number
         }
         Insert: {
           add_ons?: string | null
@@ -33,9 +33,9 @@ export type Database = {
           collection?: string | null
           id?: never
           initial_class?: string | null
-          manufacturer?: string | null
+          manufacturer: string
           name: string
-          year?: number | null
+          year: number
         }
         Update: {
           add_ons?: string | null
@@ -44,9 +44,9 @@ export type Database = {
           collection?: string | null
           id?: never
           initial_class?: string | null
-          manufacturer?: string | null
+          manufacturer?: string
           name?: string
-          year?: number | null
+          year?: number
         }
         Relationships: []
       }
@@ -82,40 +82,47 @@ export type Database = {
       }
       defis: {
         Row: {
-          id:         string
-          track_id:   number
-          car_id:     number | null
-          car_class:  string
+          car_class: string
+          car_id: number | null
+          created_at: string | null
+          id: number
+          track_id: number
+          week_end: string
           week_start: string
-          week_end:   string
-          created_at: string
         }
         Insert: {
-          id?:        string
-          track_id:   number
-          car_id?:    number | null
-          car_class:  string
+          car_class: string
+          car_id?: number | null
+          created_at?: string | null
+          id?: never
+          track_id: number
+          week_end: string
           week_start: string
-          week_end:   string
-          created_at?: string
         }
         Update: {
-          id?:        string
-          track_id?:  number
-          car_id?:    number | null
           car_class?: string
+          car_id?: number | null
+          created_at?: string | null
+          id?: never
+          track_id?: number
+          week_end?: string
           week_start?: string
-          week_end?:   string
-          created_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "defis_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "defis_track_id_fkey"
             columns: ["track_id"]
             isOneToOne: false
             referencedRelation: "tracks"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       lap_times: {
@@ -126,6 +133,7 @@ export type Database = {
           created_at: string
           drivetrain: string
           id: string
+          is_sprint: boolean | null
           num_cylinders: number | null
           player_id: string
           previous_time_ms: number | null
@@ -143,6 +151,7 @@ export type Database = {
           created_at?: string
           drivetrain: string
           id?: string
+          is_sprint?: boolean | null
           num_cylinders?: number | null
           player_id: string
           previous_time_ms?: number | null
@@ -160,6 +169,7 @@ export type Database = {
           created_at?: string
           drivetrain?: string
           id?: string
+          is_sprint?: boolean | null
           num_cylinders?: number | null
           player_id?: string
           previous_time_ms?: number | null
@@ -230,18 +240,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lap_times_history_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lap_times_history_car_ordinal_fkey"
             columns: ["car_ordinal"]
             isOneToOne: false
             referencedRelation: "cars"
             referencedColumns: ["car_ordinal"]
+          },
+          {
+            foreignKeyName: "lap_times_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "lap_times_history_track_id_fkey"
@@ -325,7 +335,7 @@ export type Database = {
           lap_time_id: string
           raison: string
           reporter_id: string
-          status: string | null
+          status: string
         }
         Insert: {
           created_at?: string | null
@@ -334,7 +344,7 @@ export type Database = {
           lap_time_id: string
           raison: string
           reporter_id: string
-          status?: string | null
+          status?: string
         }
         Update: {
           created_at?: string | null
@@ -343,7 +353,7 @@ export type Database = {
           lap_time_id?: string
           raison?: string
           reporter_id?: string
-          status?: string | null
+          status?: string
         }
         Relationships: [
           {
@@ -368,7 +378,7 @@ export type Database = {
           event_lab_code: string | null
           id: number
           is_official: boolean
-          is_sprint: boolean | null
+          is_sprint: boolean
           length_km: number | null
           name: string
           status: string
@@ -380,7 +390,7 @@ export type Database = {
           event_lab_code?: string | null
           id?: number
           is_official?: boolean
-          is_sprint?: boolean | null
+          is_sprint?: boolean
           length_km?: number | null
           name: string
           status?: string
@@ -392,7 +402,7 @@ export type Database = {
           event_lab_code?: string | null
           id?: number
           is_official?: boolean
-          is_sprint?: boolean | null
+          is_sprint?: boolean
           length_km?: number | null
           name?: string
           status?: string
@@ -405,7 +415,7 @@ export type Database = {
         Row: {
           car_ordinal: number
           id: string
-          is_original: boolean | null
+          is_original: boolean
           label: string | null
           player_id: string
           share_code: string
@@ -416,7 +426,7 @@ export type Database = {
         Insert: {
           car_ordinal: number
           id?: string
-          is_original?: boolean | null
+          is_original?: boolean
           label?: string | null
           player_id: string
           share_code: string
@@ -427,7 +437,7 @@ export type Database = {
         Update: {
           car_ordinal?: number
           id?: string
-          is_original?: boolean | null
+          is_original?: boolean
           label?: string | null
           player_id?: string
           share_code?: string
@@ -491,26 +501,40 @@ export type Database = {
           },
         ]
       }
-      // Ajouté manuellement : table présente en base mais absente de la
-      // dernière génération — colonnes utilisées par /api/times uniquement.
-      // À remplacer par une vraie régénération (npx supabase gen types).
       world_records: {
         Row: {
-          track_id: number
           car_class: string
+          created_at: string | null
+          id: number
           time_ms: number
+          track_id: number | null
+          updated_at: string | null
         }
         Insert: {
-          track_id: number
           car_class: string
+          created_at?: string | null
+          id?: never
           time_ms: number
+          track_id?: number | null
+          updated_at?: string | null
         }
         Update: {
-          track_id?: number
           car_class?: string
+          created_at?: string | null
+          id?: never
           time_ms?: number
+          track_id?: number | null
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "world_records_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
