@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { isAdmin } from '@/lib/admins';
 import { dateRelative } from '@/lib/dateRelative';
+import GlobalSearch from '@/components/GlobalSearch';
 
 const navLinks = [
   { href: '/comparaison',        label: 'Comparer'           },
@@ -173,6 +174,9 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          {/* Recherche globale */}
+          <GlobalSearch />
 
           {/* Toggle thème */}
           {mounted && (

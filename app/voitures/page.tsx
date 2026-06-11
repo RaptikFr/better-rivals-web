@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description: "Liste des voitures de Forza Horizon 6 disponibles sur Better Rivals.",
 };
 
-export default function VoituresPage() {
-  return <VoituresClient />;
+export default async function VoituresPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string }>;
+}) {
+  const params = await searchParams;
+  return <VoituresClient initialSearch={params.search} />;
 }

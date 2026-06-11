@@ -20,11 +20,11 @@ interface Car {
   add_ons: string | null;
 }
 
-export default function VoituresClient() {
+export default function VoituresClient({ initialSearch }: { initialSearch?: string }) {
   const [cars,        setCars]        = useState<Car[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState<string | null>(null);
-  const [search,      setSearch]      = useState('');
+  const [search,      setSearch]      = useState(initialSearch ?? '');
   const [filterClass, setFilterClass] = useState('Toutes');
   const [filterType,  setFilterType]  = useState('Tous');
   const [currentPage, setCurrentPage] = useState(1);
