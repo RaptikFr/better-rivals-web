@@ -17,6 +17,10 @@ async function notifierRecordBattu(opts: {
   playerId:   string;
   pseudo:     string;
   newTimeMs:  number;
+  // Ancien record du joueur sur cette config (null = premier chrono).
+  // Sert à ne notifier qu'un dépassement réel : si le joueur était déjà
+  // devant sa cible, une simple amélioration ne renotifie pas.
+  previousTimeMs: number | null;
   trackId:    number;
   carOrdinal: number;
   carClass:   string;
@@ -24,6 +28,9 @@ async function notifierRecordBattu(opts: {
   trackName:  string;
   carLabel:   string;
 }) {
+  // La cible n'est « dépassée » que si elle était devant l'ancien temps
+  const estDepassement = (targetTimeMs: number) =>
+    opts.previousTimeMs === null || targetTimeMs < opts.previousTimeMs;
   // Nom de la voiture depuis la DB (source de vérité, car déjà insérée/mise à jour)
   const { data: carData } = await supabaseAdmin
     .from('cars')
@@ -47,7 +54,7 @@ async function notifierRecordBattu(opts: {
     .limit(1)
     .maybeSingle();
 
-  if (exact && opts.newTimeMs < exact.time_ms) {
+  if (exact && opts.newTimeMs < exact.time_ms && estDepassement(exact.time_ms)) {
     const params = new URLSearchParams({
       track_id:  String(opts.trackId),
       class:     opts.carClass,
@@ -89,7 +96,7 @@ async function notifierRecordBattu(opts: {
     .limit(1)
     .maybeSingle();
 
-  if (diffDrive && opts.newTimeMs < diffDrive.time_ms) {
+  if (diffDrive && opts.newTimeMs < diffDrive.time_ms && estDepassement(diffDrive.time_ms)) {
     const params = new URLSearchParams({
       track_id: String(opts.trackId),
       class:    opts.carClass,
@@ -117,7 +124,7 @@ async function notifierRecordBattu(opts: {
     .limit(1)
     .maybeSingle();
 
-  if (diffCar && opts.newTimeMs < diffCar.time_ms) {
+  if (diffCar && opts.newTimeMs < diffCar.time_ms && estDepassement(diffCar.time_ms)) {
     const params = new URLSearchParams({
       track_id: String(opts.trackId),
       class:    opts.carClass,
@@ -387,14 +394,16 @@ export async function POST(request: NextRequest) {
           car_pi:      existingTime.car_pi,
         }]);
 
+        // recorded_at = date du temps courant : l'amélioration remonte
+        // ainsi dans le flux « Derniers chronos » de l'accueil
         const { data, error } = await supabaseAdmin
           .from('lap_times')
-          .update({ time_ms: newTimeMs, verified: is_valid, car_pi, num_cylinders, previous_time_ms: existingTime.time_ms })
+          .update({ time_ms: newTimeMs, verified: is_valid, car_pi, num_cylinders, previous_time_ms: existingTime.time_ms, recorded_at: new Date().toISOString() })
           .eq('id', existingTime.id)
           .select();
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        await notifierRecordBattu({ ...notifOpts, newTimeMs });
+        await notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: existingTime.time_ms });
         return NextResponse.json({ success: true, is_new_record: true, message: "Nouveau record ! 🏆", data, id: data?.[0]?.id ?? null }, { status: 200 });
       } else {
         return NextResponse.json({ success: true, is_new_record: false, message: "Ton record avec cette config est déjà meilleur.", id: existingTime.id }, { status: 200 });
@@ -416,7 +425,7 @@ export async function POST(request: NextRequest) {
         .select();
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      await notifierRecordBattu({ ...notifOpts, newTimeMs });
+      await notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: null });
       return NextResponse.json({ success: true, is_new_record: true, message: "Chrono enregistré !", data, id: data?.[0]?.id ?? null }, { status: 201 });
     }
 

@@ -11,14 +11,15 @@ import { dateRelative } from '@/lib/dateRelative';
 import type { Drivetrain } from '@/types/supabase';
 
 interface Chrono {
-  id:         string;
-  time_ms:    number;
-  car_class:  string;
-  drivetrain: string | null;
-  created_at: string;
-  players:    { pseudo: string; discord_tag: string | null } | null;
-  cars:       { manufacturer: string | null; name: string; year: number | null } | null;
-  tracks:     { name: string } | null;
+  id:               string;
+  time_ms:          number;
+  previous_time_ms: number | null;
+  car_class:        string;
+  drivetrain:       string | null;
+  recorded_at:      string;
+  players:          { pseudo: string; discord_tag: string | null } | null;
+  cars:             { manufacturer: string | null; name: string; year: number | null } | null;
+  tracks:           { name: string } | null;
 }
 
 export default function DerniersChronos() {
@@ -28,8 +29,10 @@ export default function DerniersChronos() {
   useEffect(() => {
     supabase
       .from('lap_times')
-      .select('id, time_ms, car_class, drivetrain, created_at, players ( pseudo, discord_tag ), cars ( manufacturer, name, year ), tracks ( name )')
-      .order('created_at', { ascending: false })
+      // recorded_at (mis à jour à chaque amélioration) plutôt que created_at,
+      // pour que les records améliorés remontent dans le flux
+      .select('id, time_ms, previous_time_ms, car_class, drivetrain, recorded_at, players ( pseudo, discord_tag ), cars ( manufacturer, name, year ), tracks ( name )')
+      .order('recorded_at', { ascending: false })
       .limit(5)
       .then(({ data, error }) => {
         if (!error && data) setChronos(data as Chrono[]);
@@ -53,9 +56,19 @@ export default function DerniersChronos() {
             key={lap.id}
             className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
           >
-            <span className="font-mono font-bold text-pink-400 text-xl shrink-0">
-              {formatTime(lap.time_ms)}
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="font-mono font-bold text-pink-400 text-xl">
+                {formatTime(lap.time_ms)}
+              </span>
+              {lap.previous_time_ms !== null && lap.previous_time_ms > lap.time_ms && (
+                <span
+                  className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  title={`Record personnel amélioré (ancien temps : ${formatTime(lap.previous_time_ms)})`}
+                >
+                  ▼ {((lap.previous_time_ms - lap.time_ms) / 1000).toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}s
+                </span>
+              )}
+            </div>
 
             <div className="flex-1 min-w-0">
               <p className="font-bold truncate">
@@ -82,7 +95,7 @@ export default function DerniersChronos() {
               )}
             </div>
 
-            <span className="text-xs text-neutral-500 shrink-0">{dateRelative(lap.created_at)}</span>
+            <span className="text-xs text-neutral-500 shrink-0">{dateRelative(lap.recorded_at)}</span>
           </div>
         ))}
       </div>
