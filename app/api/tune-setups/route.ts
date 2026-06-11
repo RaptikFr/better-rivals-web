@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = rateLimit(request, 'tune-setups', 10, 10 * 60_000);
+    if (limited) return limited;
+
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });

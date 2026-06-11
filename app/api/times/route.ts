@@ -227,14 +227,18 @@ async function sendBeatenEmail(opts: {
   }
 }
 
-// Vitesse max ~360 km/h = 100 m/s, vitesse min ~72 km/h = 20 m/s
-// Marge de 20% pour absorber les imprécisions
-function validerTemps(lapTimeMs: number, lengthKm: number | null, isSprint: boolean): boolean {
-  if (isSprint) return true; // Pas de validation de borne pour les sprints
-  if (!lengthKm || lengthKm <= 0) return true;
-  const minMs = (lengthKm * 1000 / 100) * 1000 * 0.8;
-  const maxMs = (lengthKm * 1000 / 20)  * 1000 * 1.2;
-  return lapTimeMs >= minMs && lapTimeMs <= maxMs;
+// Circuits : vitesse moyenne plausible entre 20 m/s (72 km/h) et 100 m/s (360 km/h),
+// marge de 20 % pour absorber les imprécisions.
+// Sprints : bornes volontairement très larges (10 à 150 m/s) — length_km est la
+// distance point à point, parcourue parfois très vite (drags) ou très lentement
+// (cross-country) ; ça filtre au moins les temps absurdes en attendant des
+// records de référence OCR.
+function bornesTempsMs(lengthKm: number, isSprint: boolean): { minMs: number; maxMs: number } {
+  const [vMax, vMin] = isSprint ? [150, 10] : [100, 20];
+  return {
+    minMs: (lengthKm * 1000 / vMax) * 1000 * 0.8,
+    maxMs: (lengthKm * 1000 / vMin) * 1000 * 1.2,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -286,21 +290,29 @@ export async function POST(request: NextRequest) {
     // --- VALIDATION DU TEMPS PAR RAPPORT À LA LONGUEUR DU CIRCUIT ---
     const { data: trackData } = await supabaseAdmin
       .from('tracks')
-      .select('length_km, name')
+      .select('length_km, name, is_sprint')
       .eq('id', numTrackId)
       .maybeSingle();
 
-    if (trackData?.length_km && !validerTemps(newTimeMs, trackData.length_km, is_sprint ?? false)) {
-      const minS = ((trackData.length_km * 1000 / 100) * 0.8).toFixed(0);
-      const maxS = ((trackData.length_km * 1000 / 20)  * 1.2).toFixed(0);
-      return NextResponse.json({
-        error: `Temps aberrant pour ${trackData.name} (${trackData.length_km} km). Attendu entre ${Math.floor(Number(minS)/60)}:${String(Number(minS)%60).padStart(2,'0')} et ${Math.floor(Number(maxS)/60)}:${String(Number(maxS)%60).padStart(2,'0')}.`
-      }, { status: 400 });
+    // is_sprint vient de la base : la valeur du client ne doit pas pouvoir
+    // élargir les bornes de validation
+    const sprint = trackData?.is_sprint ?? is_sprint ?? false;
+
+    if (trackData?.length_km && trackData.length_km > 0) {
+      const { minMs, maxMs } = bornesTempsMs(trackData.length_km, sprint);
+      if (newTimeMs < minMs || newTimeMs > maxMs) {
+        const minS = Math.round(minMs / 1000);
+        const maxS = Math.round(maxMs / 1000);
+        return NextResponse.json({
+          error: `Temps aberrant pour ${trackData.name} (${trackData.length_km} km). Attendu entre ${Math.floor(minS/60)}:${String(minS%60).padStart(2,'0')} et ${Math.floor(maxS/60)}:${String(maxS%60).padStart(2,'0')}.`
+        }, { status: 400 });
+      }
     }
 
     // --- VALIDATION CONTRE LE WORLD RECORD ---
-    // ⚠ La table existe mais est vide à ce jour : la validation ne filtre
-    // rien tant que des temps de référence n'y sont pas insérés.
+    // ⚠ Couverture partielle : seuls les circuits officiels 7-28 ont des
+    // records de référence (classes D→R). Les circuits 29-91 seront couverts
+    // au fur et à mesure (script OCR du propriétaire).
     const { data: worldRecord } = await supabaseAdmin
       .from('world_records')
       .select('time_ms')
@@ -400,7 +412,6 @@ export async function POST(request: NextRequest) {
           car_class,
           car_pi,
           num_cylinders,
-          ...(is_sprint !== undefined && { is_sprint: !!is_sprint }),
         }])
         .select();
 

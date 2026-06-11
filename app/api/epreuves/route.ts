@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { TRACK_CATEGORIES, type TrackCategory } from '@/types/supabase';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = rateLimit(request, 'epreuves', 5, 10 * 60_000);
+    if (limited) return limited;
+
     // Vérification du JWT
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {

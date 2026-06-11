@@ -17,20 +17,18 @@ interface Track {
   event_lab_code: string | null;
   description: string | null;
   is_sprint: boolean | null;
-  votes: { vote: boolean; user_id: string }[];
+  votes: { vote: boolean }[];
 }
 
 
-function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
+function TrackCard({ track, userId, initialVoted }: { track: Track; userId: string | null; initialVoted: boolean }) {
   const router = useRouter();
-  const [voted,      setVoted]      = useState(false);
+  const [justVoted,  setJustVoted]  = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [thumbsUp,   setThumbsUp]   = useState(track.votes.filter(v => v.vote).length);
   const [thumbsDown, setThumbsDown] = useState(track.votes.filter(v => !v.vote).length);
 
-  useEffect(() => {
-    if (userId) setVoted(track.votes.some(v => v.user_id === userId));
-  }, [userId, track.votes]);
+  const voted = justVoted || initialVoted;
 
   async function handleVote(vote: boolean) {
     if (!userId || voted || loading) return;
@@ -43,7 +41,7 @@ function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
       body: JSON.stringify({ track_id: track.id, vote }),
     });
     if (res.ok) {
-      setVoted(true);
+      setJustVoted(true);
       if (vote) setThumbsUp(n => n + 1);
       else setThumbsDown(n => n + 1);
     }
@@ -229,13 +227,14 @@ export default function EpreuvesCommunauteClient() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [filterType,  setFilterType]  = useState('Tous');
   const [searchQuery, setSearchQuery] = useState('');
+  const [votedIds,    setVotedIds]    = useState<Set<number>>(new Set());
 
   async function fetchData() {
     setIsLoading(true);
     setError(null);
     const { data, error } = await supabase
       .from('tracks')
-      .select('id, name, type, length_km, event_lab_code, description, is_sprint, votes(vote, user_id)')
+      .select('id, name, type, length_km, event_lab_code, description, is_sprint, votes(vote)')
       .eq('status', 'approved')
       .eq('is_official', false)
       .order('name', { ascending: true });
@@ -246,6 +245,23 @@ export default function EpreuvesCommunauteClient() {
   }
 
   useEffect(() => { fetchData(); }, []);
+
+  // Les votes de l'utilisateur passent par l'API : user_id n'est plus lisible côté client
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/votes', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!cancelled) setVotedIds(new Set<number>(data.voted_track_ids ?? []));
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   function handleSuccess() {
     setShowModal(false);
@@ -366,7 +382,7 @@ export default function EpreuvesCommunauteClient() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map(track => (
-              <TrackCard key={track.id} track={track} userId={user?.id ?? null} />
+              <TrackCard key={track.id} track={track} userId={user?.id ?? null} initialVoted={!!user && votedIds.has(track.id)} />
             ))}
           </div>
         )}

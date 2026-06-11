@@ -1,11 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
+// Renvoie les épreuves votées par l'utilisateur courant, sans exposer
+// votes.user_id aux autres (la lecture publique de la table est fermée).
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Session invalide.' }, { status: 401 });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('votes')
+      .select('track_id')
+      .eq('user_id', user.id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ voted_track_ids: (data ?? []).map(v => v.track_id) }, { status: 200 });
+
+  } catch {
+    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = rateLimit(request, 'votes', 20, 60_000);
+    if (limited) return limited;
+
     // Vérification du JWT
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {

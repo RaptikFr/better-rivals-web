@@ -2,7 +2,6 @@
 
 import { useState, useEffect, type SyntheticEvent } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlayer } from '@/hooks/usePlayer';
 
@@ -37,17 +36,20 @@ export default function ContactClient() {
     setLoading(true);
     setError(null);
 
-    const { error: insertError } = await supabase
-      .from('contact_messages')
-      .insert([{
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         gamertag: form.gamertag.trim(),
         email:    form.email.trim(),
         sujet:    form.sujet,
         message:  form.message.trim(),
-      }]);
+      }),
+    });
 
-    if (insertError) {
-      setError("Erreur lors de l'envoi. Réessaie dans quelques instants.");
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "Erreur lors de l'envoi. Réessaie dans quelques instants.");
     } else {
       setSuccess(true);
     }
