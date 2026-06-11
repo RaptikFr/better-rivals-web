@@ -51,8 +51,8 @@ export default function StatsClient() {
         { data: lastData },
       ] = await Promise.all([
         supabase.from('lap_times').select('*', { count: 'exact', head: true }),
-        // select('id') et non '*' : les colonnes sensibles de players (pin_code,
-        // user_id) ne sont plus lisibles par tous, un SELECT * serait rejeté
+        // select('id') et non '*' : les colonnes sensibles de players (user_id)
+        // ne sont pas lisibles par tous, un SELECT * serait rejeté
         supabase.from('players').select('id', { count: 'exact', head: true }),
         supabase.from('tracks').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
         // Une seule lecture (paginée) de lap_times pour tous les agrégats (voitures distinctes + tops)

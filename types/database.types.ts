@@ -296,7 +296,6 @@ export type Database = {
           discord_tag: string | null
           email_notifications_enabled: boolean
           id: string
-          pin_code: string | null
           pseudo: string
           user_id: string | null
         }
@@ -305,7 +304,6 @@ export type Database = {
           discord_tag?: string | null
           email_notifications_enabled?: boolean
           id?: string
-          pin_code?: string | null
           pseudo: string
           user_id?: string | null
         }
@@ -314,7 +312,6 @@ export type Database = {
           discord_tag?: string | null
           email_notifications_enabled?: boolean
           id?: string
-          pin_code?: string | null
           pseudo?: string
           user_id?: string | null
         }
