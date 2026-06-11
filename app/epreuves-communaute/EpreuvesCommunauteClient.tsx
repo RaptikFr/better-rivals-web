@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import type { TrackCategory } from '@/types/supabase';
+import { TRACK_CATEGORIES, type TrackCategory } from '@/types/supabase';
 import { TypeBadge } from '@/components/TypeBadge';
 import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 
@@ -20,10 +20,6 @@ interface Track {
   votes: { vote: boolean; user_id: string }[];
 }
 
-const TRACK_TYPES = [
-  'Course sur route', 'Course tous chemins', 'Cross-country',
-  'Touge', 'Course de rue', 'Course de drag',
-];
 
 function TrackCard({ track, userId }: { track: Track; userId: string | null }) {
   const router = useRouter();
@@ -174,7 +170,7 @@ function SoumissionModal({ onClose, onSuccess }: { onClose: () => void; onSucces
               <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Type *</label>
               <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
                 className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 focus:outline-none focus:border-pink-500 transition-colors">
-                {TRACK_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                {TRACK_CATEGORIES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>

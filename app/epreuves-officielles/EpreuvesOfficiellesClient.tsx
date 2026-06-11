@@ -69,7 +69,7 @@ export default function EpreuvesOfficiellesClient() {
       .order('name', { ascending: true });
 
     if (error) setError("Impossible de charger les épreuves.");
-    else setTracks(data ?? []);
+    else setTracks((data ?? []) as Track[]);
     setIsLoading(false);
   }
 

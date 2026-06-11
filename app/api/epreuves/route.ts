@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { TRACK_CATEGORIES, type TrackCategory } from '@/types/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,10 @@ export async function POST(request: NextRequest) {
 
     if (!name || !event_lab_code || !type) {
       return NextResponse.json({ error: 'Nom, code EventLab et type sont obligatoires.' }, { status: 400 });
+    }
+
+    if (!TRACK_CATEGORIES.includes(type as TrackCategory)) {
+      return NextResponse.json({ error: 'Type d\'épreuve invalide.' }, { status: 400 });
     }
 
     // Vérifie si le code EventLab est déjà utilisé
