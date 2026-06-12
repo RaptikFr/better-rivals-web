@@ -272,32 +272,32 @@ export default function ComparaisonClient() {
 
       {/* Stats globales */}
       {stats && player1 && player2 && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 text-center">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-3 sm:p-5 text-center">
             <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2 truncate">
               {player1.pseudo}
             </p>
-            <p className="text-4xl font-extrabold text-green-500">{stats.p1Wins}</p>
+            <p className="text-2xl sm:text-4xl font-extrabold text-green-500">{stats.p1Wins}</p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               circuit{stats.p1Wins !== 1 ? 's' : ''} devant
             </p>
           </div>
 
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 text-center">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-3 sm:p-5 text-center">
             <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
               Égalité
             </p>
-            <p className="text-4xl font-extrabold text-neutral-400 dark:text-neutral-500">{stats.ties}</p>
+            <p className="text-2xl sm:text-4xl font-extrabold text-neutral-400 dark:text-neutral-500">{stats.ties}</p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               circuit{stats.ties !== 1 ? 's' : ''}
             </p>
           </div>
 
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 text-center">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-3 sm:p-5 text-center">
             <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2 truncate">
               {player2.pseudo}
             </p>
-            <p className="text-4xl font-extrabold text-blue-500">{stats.p2Wins}</p>
+            <p className="text-2xl sm:text-4xl font-extrabold text-blue-500">{stats.p2Wins}</p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               circuit{stats.p2Wins !== 1 ? 's' : ''} devant
             </p>

@@ -380,10 +380,10 @@ export default function ProfilClient() {
         </div>
 
         {/* ── ONGLETS ── */}
-        <div className="flex gap-1 mb-6 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-1">
+        <div className="flex gap-1 mb-6 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-1 overflow-x-auto">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
                 activeTab === tab.id
                   ? 'bg-gradient-to-r from-pink-500 to-violet-600 text-white'
                   : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800'

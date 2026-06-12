@@ -114,7 +114,7 @@ export default function GlobalSearch() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[22rem] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-[22rem] max-lg:fixed max-lg:left-4 max-lg:right-4 max-lg:top-16 max-lg:w-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
           <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
             <input
               ref={inputRef}

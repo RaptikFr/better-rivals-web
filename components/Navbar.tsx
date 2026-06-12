@@ -39,6 +39,7 @@ export default function Navbar() {
   const [bellOpen,        setBellOpen]        = useState(false);
   const [epreuvesOpen,    setEpreuvesOpen]    = useState(false);
   const [classementsOpen, setClassementsOpen] = useState(false);
+  const [mobileOpen,      setMobileOpen]      = useState(false);
   const bellRef        = useRef<HTMLDivElement>(null);
   const epreuvesRef    = useRef<HTMLDivElement>(null);
   const classementsRef = useRef<HTMLDivElement>(null);
@@ -63,14 +64,24 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // Ferme le menu mobile à chaque navigation
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
+
   async function handleSignOut() {
     await signOut();
     router.push('/');
   }
 
+  const mobileLinkClass = (href: string) =>
+    `block px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+      pathname === href
+        ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
+    }`;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md">
-      <div className="max-w-screen-2xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
 
         {/* Logo */}
         <Link
@@ -81,7 +92,10 @@ export default function Navbar() {
         </Link>
 
         {/* Navigation */}
-        <nav className="flex items-center gap-1 lg:gap-2 xl:gap-3 2xl:gap-5">
+        <div className="flex items-center gap-1 lg:gap-2 xl:gap-3 2xl:gap-5">
+
+          {/* Liens desktop (cachés sur mobile, repris dans le menu burger) */}
+          <nav className="hidden lg:flex items-center gap-1 lg:gap-2 xl:gap-3 2xl:gap-5">
 
           {/* Dropdown Épreuves */}
           <div ref={epreuvesRef} className="relative">
@@ -174,6 +188,7 @@ export default function Navbar() {
               </Link>
             );
           })}
+          </nav>
 
           {/* Recherche globale */}
           <GlobalSearch />
@@ -224,7 +239,7 @@ export default function Navbar() {
                     </button>
 
                     {bellOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-80 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+                      <div className="absolute right-0 top-full mt-2 w-80 max-lg:fixed max-lg:left-4 max-lg:right-4 max-lg:top-16 max-lg:w-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 overflow-hidden">
                         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
                           <p className="text-sm font-bold text-neutral-900 dark:text-white">Notifications</p>
                           {notifications.length > 0 && (
@@ -268,7 +283,8 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Zone auth */}
+          {/* Zone auth (desktop) */}
+          <div className="hidden lg:flex items-center">
           {loading ? (
             <div className="w-24 h-8 bg-neutral-200 dark:bg-neutral-800 rounded-lg animate-pulse ml-2" />
           ) : user ? (
@@ -318,9 +334,92 @@ export default function Navbar() {
               </Link>
             </div>
           )}
-        </nav>
+          </div>
+
+          {/* Bouton burger (mobile) */}
+          <button
+            onClick={() => setMobileOpen(o => !o)}
+            aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            className="lg:hidden p-2 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              {mobileOpen
+                ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />}
+            </svg>
+          </button>
+        </div>
 
       </div>
+
+      {/* Menu mobile */}
+      {mobileOpen && (
+        <nav className="lg:hidden border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <div className="px-4 py-4 space-y-4">
+
+            <div>
+              <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Épreuves</p>
+              {EPREUVES_LINKS.map(({ href, label }) => (
+                <Link key={href} href={href} onClick={() => setMobileOpen(false)} className={mobileLinkClass(href)}>
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            <div>
+              <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Classements</p>
+              {CLASSEMENTS_LINKS.map(({ href, label }) => (
+                <Link key={href} href={href} onClick={() => setMobileOpen(false)} className={mobileLinkClass(href)}>
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3">
+              {navLinks.map(({ href, label }) => (
+                <Link key={href} href={href} onClick={() => setMobileOpen(false)} className={mobileLinkClass(href)}>
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3">
+              {!loading && (user ? (
+                <>
+                  <Link href="/profil" onClick={() => setMobileOpen(false)} className={mobileLinkClass('/profil')}>
+                    Mon profil
+                  </Link>
+                  {isAdmin(user.email) && (
+                    <Link href="/admin" onClick={() => setMobileOpen(false)} className={mobileLinkClass('/admin')}>
+                      Admin
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => { setMobileOpen(false); handleSignOut(); }}
+                    className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
+                  >
+                    Déconnexion
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/connexion" onClick={() => setMobileOpen(false)} className={mobileLinkClass('/connexion')}>
+                    Connexion
+                  </Link>
+                  <Link
+                    href="/inscription"
+                    onClick={() => setMobileOpen(false)}
+                    className="block mt-1 px-3 py-2.5 rounded-lg text-sm font-bold text-center text-white bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-90 transition-opacity"
+                  >
+                    S&apos;inscrire
+                  </Link>
+                </>
+              ))}
+            </div>
+
+          </div>
+        </nav>
+      )}
     </header>
   );
 }

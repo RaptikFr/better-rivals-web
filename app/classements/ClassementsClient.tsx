@@ -515,7 +515,7 @@ export default function ClassementsClient({
   return (
     <main className="min-h-screen p-6">
       <div className="max-w-screen-2xl mx-auto">
-        <div className="flex items-start justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
               {communityOnly ? 'Classements Communauté' : 'Leaderboards'}
@@ -879,7 +879,7 @@ export default function ClassementsClient({
 
         {/* --- PAGINATION --- */}
         {!isLoading && !error && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-6">
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={safePage === 1}
