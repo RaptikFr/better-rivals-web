@@ -234,6 +234,31 @@ async function sendBeatenEmail(opts: {
   }
 }
 
+// Dernier réglage utilisé par le joueur avec cette voiture (même classe et
+// transmission), tous circuits confondus. Le relais s'en sert pour pré-remplir
+// la popup réglage : le joueur confirme au lieu de retaper le code.
+async function chercherReglagePrecedent(opts: {
+  playerId:   string;
+  carOrdinal: number;
+  carClass:   string;
+  drivetrain: string;
+}): Promise<{ share_code: string; setup_author: string | null; car_pi: number | null } | null> {
+  const { data } = await supabaseAdmin
+    .from('lap_times')
+    .select('share_code, setup_author, car_pi')
+    .eq('player_id',   opts.playerId)
+    .eq('car_ordinal', opts.carOrdinal)
+    .eq('car_class',   opts.carClass)
+    .eq('drivetrain',  opts.drivetrain)
+    .not('share_code', 'is', null)
+    .order('recorded_at', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data?.share_code) return null;
+  return { share_code: data.share_code, setup_author: data.setup_author, car_pi: data.car_pi };
+}
+
 // Circuits : vitesse moyenne plausible entre 20 m/s (72 km/h) et 100 m/s (360 km/h),
 // marge de 20 % pour absorber les imprécisions.
 // Sprints : bornes volontairement très larges (10 à 150 m/s) — length_km est la
@@ -374,7 +399,7 @@ export async function POST(request: NextRequest) {
     // --- GESTION DU CLASSEMENT ---
     const { data: existingTime } = await supabaseAdmin
       .from('lap_times')
-      .select('id, time_ms, car_pi')
+      .select('id, time_ms, car_pi, share_code, setup_author')
       .eq('player_id',   player.id)
       .eq('track_id',    numTrackId)
       .eq('car_ordinal', numCarOrdinal)
@@ -404,7 +429,14 @@ export async function POST(request: NextRequest) {
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
         await notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: existingTime.time_ms });
-        return NextResponse.json({ success: true, is_new_record: true, message: "Nouveau record ! 🏆", data, id: data?.[0]?.id ?? null }, { status: 200 });
+
+        // Réglage précédent pour pré-remplir la popup du relais : en priorité
+        // celui du chrono amélioré (même circuit), sinon celui d'un autre circuit
+        const previousSetup = existingTime.share_code
+          ? { share_code: existingTime.share_code, setup_author: existingTime.setup_author, car_pi: existingTime.car_pi }
+          : await chercherReglagePrecedent({ playerId: player.id, carOrdinal: numCarOrdinal, carClass: car_class, drivetrain });
+
+        return NextResponse.json({ success: true, is_new_record: true, message: "Nouveau record ! 🏆", data, id: data?.[0]?.id ?? null, previous_setup: previousSetup }, { status: 200 });
       } else {
         return NextResponse.json({ success: true, is_new_record: false, message: "Ton record avec cette config est déjà meilleur.", id: existingTime.id }, { status: 200 });
       }
@@ -426,7 +458,12 @@ export async function POST(request: NextRequest) {
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       await notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: null });
-      return NextResponse.json({ success: true, is_new_record: true, message: "Chrono enregistré !", data, id: data?.[0]?.id ?? null }, { status: 201 });
+
+      // Premier chrono sur ce circuit avec cette config : le réglage a pu être
+      // renseigné sur un autre circuit avec la même voiture
+      const previousSetup = await chercherReglagePrecedent({ playerId: player.id, carOrdinal: numCarOrdinal, carClass: car_class, drivetrain });
+
+      return NextResponse.json({ success: true, is_new_record: true, message: "Chrono enregistré !", data, id: data?.[0]?.id ?? null, previous_setup: previousSetup }, { status: 201 });
     }
 
   } catch {
