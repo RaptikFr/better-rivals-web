@@ -35,7 +35,7 @@ export default function TelechargerPage() {
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Télécharger v1.7.1
+            Télécharger v1.8.0
           </a>
           <Link
             href="/inscription"
@@ -169,7 +169,7 @@ export default function TelechargerPage() {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Télécharger v1.7.1
+              Télécharger v1.8.0
             </a>
             <Link
               href="/classements"
