@@ -342,8 +342,8 @@ export async function POST(request: NextRequest) {
     }
 
     // --- VALIDATION CONTRE LE WORLD RECORD ---
-    // ⚠ Couverture partielle : seuls les circuits officiels 7-28 ont des
-    // records de référence (classes D→R). Les circuits 29-91 seront couverts
+    // ⚠ Couverture partielle : les circuits 7-28 et 63-72 ont des records
+    // de référence (classes D→R). Les autres circuits 29-91 seront couverts
     // au fur et à mesure (script OCR du propriétaire).
     const { data: worldRecord } = await supabaseAdmin
       .from('world_records')
