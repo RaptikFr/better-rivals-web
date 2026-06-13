@@ -19,7 +19,25 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ circuits: data }, { status: 200 });
+    // Nombre de records de référence par circuit (sert à l'outil OCR pour ne
+    // proposer que les épreuves encore incomplètes). Les temps restent masqués.
+    const { data: records } = await supabaseAdmin
+      .from('world_records')
+      .select('track_id');
+
+    const compteur = new Map<number, number>();
+    for (const r of records ?? []) {
+      if (r.track_id != null) {
+        compteur.set(r.track_id, (compteur.get(r.track_id) ?? 0) + 1);
+      }
+    }
+
+    const circuits = (data ?? []).map((t) => ({
+      ...t,
+      wr_count: compteur.get(t.id) ?? 0,
+    }));
+
+    return NextResponse.json({ circuits }, { status: 200 });
 
   } catch {
     return NextResponse.json(
