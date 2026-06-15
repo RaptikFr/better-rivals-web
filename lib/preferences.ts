@@ -4,6 +4,7 @@ export type { TimeStyle, DecimalSep };
 export type Density = 'comfortable' | 'compact';
 export type DateStyle = 'relative' | 'absolute';
 export type RankingLayout = 'cards' | 'table';
+export type Accent = 'pink-violet' | 'red-green' | 'blue-yellow';
 
 export interface Preferences {
   /** Format d'affichage des temps au tour. */
@@ -18,6 +19,8 @@ export interface Preferences {
   reduceMotion: boolean;
   /** Disposition des classements : cartes groupées ou tableau en colonnes. */
   rankingLayout: RankingLayout;
+  /** Couleurs d'accentuation du site (dégradés, badges, liens actifs…). */
+  accent: Accent;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -27,6 +30,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   dateStyle: 'relative',
   reduceMotion: false,
   rankingLayout: 'cards',
+  accent: 'pink-violet',
 };
 
 export const PREFERENCES_STORAGE_KEY = 'better-rivals:preferences';
@@ -45,5 +49,6 @@ export function sanitizePreferences(raw: unknown): Preferences {
     dateStyle: pick('dateStyle', ['relative', 'absolute']),
     reduceMotion: typeof r.reduceMotion === 'boolean' ? r.reduceMotion : DEFAULT_PREFERENCES.reduceMotion,
     rankingLayout: pick('rankingLayout', ['cards', 'table']),
+    accent: pick('accent', ['pink-violet', 'red-green', 'blue-yellow']),
   };
 }

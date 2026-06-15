@@ -1,11 +1,13 @@
 ---
 name: feature-couleurs-accent
-description: WIP — option de choix des couleurs d'accentuation du site (rose/violet par défaut) ; approche et étapes de reprise
+description: LIVRÉE le 2026-06-15 — option de choix des couleurs d'accentuation du site (pink-violet par défaut, red-green, blue-yellow)
 metadata:
   type: project
 ---
 
-Fonctionnalité demandée le 2026-06-15 (à reprendre) : permettre à l'utilisateur de **choisir les couleurs d'accentuation** du site. Actuellement tout l'accent est rose → violet (`from-pink-500 to-violet-600`, `text-pink-400`, etc., ~147 occurrences sur 26 fichiers). Exemples de paires voulus par l'utilisateur : rouge+vert, bleu+jaune.
+**LIVRÉ le 2026-06-15** : les 4 étapes ci-dessous ont toutes été codées. `lib/preferences.ts` (type `Accent` + défaut `'pink-violet'` + `pick` dans sanitize), `app/globals.css` (classes `.accent-red-green` / `.accent-blue-yellow` remappant les nuances 50→950 de pink/violet vers red/green et blue/amber), `hooks/usePreferences.tsx` (toggle des classes sur `<html>`), `app/parametres/ParametresClient.tsx` (Segmented dans « Apparence »). Vérifié : build prod OK, lint 0 warning, et le CSS compilé confirme que les utilitaires référencent `var(--color-pink-*)`/`var(--color-violet-*)` et que les palettes cibles existent. **FOUC non traité** (pattern useEffect identique à la densité, accepté par le propriétaire) — si le flash d'accent gêne au rechargement, ajouter le script inline (voir caveat plus bas). Historique de la conception ci-dessous.
+
+Fonctionnalité demandée le 2026-06-15 : permettre à l'utilisateur de **choisir les couleurs d'accentuation** du site. Actuellement tout l'accent est rose → violet (`from-pink-500 to-violet-600`, `text-pink-400`, etc., ~147 occurrences sur 26 fichiers). Exemples de paires voulus par l'utilisateur : rouge+vert, bleu+jaune.
 
 **Approche validée (test de compilation Tailwind fait, concluant) :**
 Tailwind v4.3.1 — les utilitaires de couleur référencent des variables CSS : `.text-pink-500 { color: var(--color-pink-500) }`, et les palettes par défaut (red/green/blue/amber…) sont émises dans `:root`. Donc **pas besoin de toucher les 147 occurrences** : on remappe les palettes `pink` et `violet` sous une classe sur `<html>`, et tout le site se recolore (y compris les modificateurs d'opacité `/20` qui passent par `color-mix`).

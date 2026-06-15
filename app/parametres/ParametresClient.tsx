@@ -103,6 +103,17 @@ export default function ParametresClient() {
             ]}
           />
           <Segmented
+            label="Couleurs d'accentuation"
+            hint="Recolore dégradés, badges et liens actifs de tout le site."
+            value={prefs.accent}
+            onChange={v => setPref('accent', v)}
+            options={[
+              { value: 'pink-violet', label: 'Rose · Violet' },
+              { value: 'red-green', label: 'Rouge · Vert' },
+              { value: 'blue-yellow', label: 'Bleu · Jaune' },
+            ]}
+          />
+          <Segmented
             label="Réduire les animations"
             hint="Désactive transitions et effets de mouvement."
             value={prefs.reduceMotion}

@@ -20,6 +20,63 @@ body {
   padding-bottom: 0.3rem;
 }
 
+/* Préférence « couleurs d'accentuation ».
+   Tout l'accent du site utilise les palettes Tailwind `pink` (couleur primaire) et
+   `violet` (couleur secondaire), dont les utilitaires référencent des variables CSS
+   (`.text-pink-500 { color: var(--color-pink-500) }`). On remappe donc ces deux
+   palettes vers d'autres palettes par défaut sous une classe posée sur <html> : tout
+   le site se recolore (y compris les opacités `/20` via color-mix) sans toucher les
+   ~147 occurrences. Le défaut « pink-violet » = aucune override. */
+.accent-red-green {
+  --color-pink-50: var(--color-red-50);
+  --color-pink-100: var(--color-red-100);
+  --color-pink-200: var(--color-red-200);
+  --color-pink-300: var(--color-red-300);
+  --color-pink-400: var(--color-red-400);
+  --color-pink-500: var(--color-red-500);
+  --color-pink-600: var(--color-red-600);
+  --color-pink-700: var(--color-red-700);
+  --color-pink-800: var(--color-red-800);
+  --color-pink-900: var(--color-red-900);
+  --color-pink-950: var(--color-red-950);
+  --color-violet-50: var(--color-green-50);
+  --color-violet-100: var(--color-green-100);
+  --color-violet-200: var(--color-green-200);
+  --color-violet-300: var(--color-green-300);
+  --color-violet-400: var(--color-green-400);
+  --color-violet-500: var(--color-green-500);
+  --color-violet-600: var(--color-green-600);
+  --color-violet-700: var(--color-green-700);
+  --color-violet-800: var(--color-green-800);
+  --color-violet-900: var(--color-green-900);
+  --color-violet-950: var(--color-green-950);
+}
+
+.accent-blue-yellow {
+  --color-pink-50: var(--color-blue-50);
+  --color-pink-100: var(--color-blue-100);
+  --color-pink-200: var(--color-blue-200);
+  --color-pink-300: var(--color-blue-300);
+  --color-pink-400: var(--color-blue-400);
+  --color-pink-500: var(--color-blue-500);
+  --color-pink-600: var(--color-blue-600);
+  --color-pink-700: var(--color-blue-700);
+  --color-pink-800: var(--color-blue-800);
+  --color-pink-900: var(--color-blue-900);
+  --color-pink-950: var(--color-blue-950);
+  --color-violet-50: var(--color-amber-50);
+  --color-violet-100: var(--color-amber-100);
+  --color-violet-200: var(--color-amber-200);
+  --color-violet-300: var(--color-amber-300);
+  --color-violet-400: var(--color-amber-400);
+  --color-violet-500: var(--color-amber-500);
+  --color-violet-600: var(--color-amber-600);
+  --color-violet-700: var(--color-amber-700);
+  --color-violet-800: var(--color-amber-800);
+  --color-violet-900: var(--color-amber-900);
+  --color-violet-950: var(--color-amber-950);
+}
+
 /* Préférence « réduire les animations » : neutralise transitions et animations. */
 .reduce-motion *,
 .reduce-motion *::before,

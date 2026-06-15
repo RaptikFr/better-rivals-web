@@ -54,6 +54,8 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     const root = document.documentElement;
     root.classList.toggle('density-compact', prefs.density === 'compact');
     root.classList.toggle('reduce-motion', prefs.reduceMotion);
+    root.classList.toggle('accent-red-green', prefs.accent === 'red-green');
+    root.classList.toggle('accent-blue-yellow', prefs.accent === 'blue-yellow');
   }, [prefs, ready]);
 
   const setPref = useCallback(<K extends keyof Preferences>(key: K, value: Preferences[K]) => {

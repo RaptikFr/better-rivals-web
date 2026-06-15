@@ -4,4 +4,4 @@
 - [Lint zéro warning](lint-zero-warning.md) — viser `eslint .` → 0 ; règle react-hooks/set-state-in-effect = disables ciblés justifiés
 - [Panneau d'options /parametres](idee-panneau-options.md) — v1 LIVRÉE (thème, format temps/dates, densité, animations) ; pistes DB-bound restantes pour v2
 - [Roadmap améliorations juin 2026](roadmap-ameliorations-juin-2026.md) — les 6 pistes sont FAITES ; reste juste à appliquer la migration SQL classement_rpc.sql en prod (point 5)
-- [Feature couleurs d'accent](feature-couleurs-accent.md) — WIP à reprendre : option de couleurs d'accentuation (remap palette pink/violet en Tailwind v4) ; approche validée, étapes notées
+- [Feature couleurs d'accent](feature-couleurs-accent.md) — LIVRÉE : option couleurs d'accentuation (pink-violet/red-green/blue-yellow) via remap palette Tailwind v4 sur <html> ; build+lint OK
