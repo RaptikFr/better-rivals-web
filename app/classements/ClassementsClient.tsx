@@ -796,7 +796,7 @@ export default function ClassementsClient({
                             <col className="w-16" />
                           </colgroup>
                           <tbody>
-                            {group.laps.map(lap => (
+                            {group.laps.map((lap, lapIndex) => (
                               <tr
                                 key={lap.id}
                                 data-lap-id={lap.id}
@@ -833,6 +833,12 @@ export default function ClassementsClient({
                                       <>
                                         <span className="text-xs text-neutral-500">Écart leader</span>
                                         <span className="text-xs font-mono text-sky-400">+{((lap.time_ms - group.laps[0].time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
+                                      </>
+                                    )}
+                                    {lap.rank > 2 && lapIndex > 0 && (
+                                      <>
+                                        <span className="text-xs text-neutral-500">Écart préc.</span>
+                                        <span className="text-xs font-mono text-violet-400">+{((lap.time_ms - group.laps[lapIndex - 1].time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
                                       </>
                                     )}
                                   </div>
