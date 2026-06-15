@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRef, useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { isAdmin } from '@/lib/admins';
@@ -34,8 +33,6 @@ export default function Navbar() {
   const router   = useRouter();
   const { user, loading, signOut } = useAuth();
   const { notifications, unreadCount, markAllAsRead, markOneAsRead, deleteAllRead } = useNotifications();
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted,          setMounted]          = useState(false);
   const [bellOpen,        setBellOpen]        = useState(false);
   const [epreuvesOpen,    setEpreuvesOpen]    = useState(false);
   const [classementsOpen, setClassementsOpen] = useState(false);
@@ -43,9 +40,6 @@ export default function Navbar() {
   const bellRef        = useRef<HTMLDivElement>(null);
   const epreuvesRef    = useRef<HTMLDivElement>(null);
   const classementsRef = useRef<HTMLDivElement>(null);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- pattern d'hydratation SSR (détection du montage client)
-  useEffect(() => setMounted(true), []);
 
   // Marque toutes les notifications comme lues à l'ouverture du dropdown
   // (volontairement déclenché sur bellOpen seul : réagir à unreadCount
@@ -194,18 +188,6 @@ export default function Navbar() {
 
           {/* Recherche globale */}
           <GlobalSearch />
-
-          {/* Toggle thème (bascule rapide clair/sombre ; réglage complet dans /parametres) */}
-          {mounted && (
-            <button
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              title={resolvedTheme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
-              aria-label={resolvedTheme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
-              className="ml-1 p-2 rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors text-sm"
-            >
-              {resolvedTheme === 'dark' ? '☀️' : '🌙'}
-            </button>
-          )}
 
           {/* Paramètres */}
           <Link

@@ -3,6 +3,7 @@ import type { TimeStyle, DecimalSep } from '@/components/formatTime';
 export type { TimeStyle, DecimalSep };
 export type Density = 'comfortable' | 'compact';
 export type DateStyle = 'relative' | 'absolute';
+export type RankingLayout = 'cards' | 'table';
 
 export interface Preferences {
   /** Format d'affichage des temps au tour. */
@@ -15,6 +16,8 @@ export interface Preferences {
   dateStyle: DateStyle;
   /** Réduit/désactive les animations et transitions. */
   reduceMotion: boolean;
+  /** Disposition des classements : cartes groupées ou tableau en colonnes. */
+  rankingLayout: RankingLayout;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -23,6 +26,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   density: 'comfortable',
   dateStyle: 'relative',
   reduceMotion: false,
+  rankingLayout: 'cards',
 };
 
 export const PREFERENCES_STORAGE_KEY = 'better-rivals:preferences';
@@ -40,5 +44,6 @@ export function sanitizePreferences(raw: unknown): Preferences {
     density: pick('density', ['comfortable', 'compact']),
     dateStyle: pick('dateStyle', ['relative', 'absolute']),
     reduceMotion: typeof r.reduceMotion === 'boolean' ? r.reduceMotion : DEFAULT_PREFERENCES.reduceMotion,
+    rankingLayout: pick('rankingLayout', ['cards', 'table']),
   };
 }

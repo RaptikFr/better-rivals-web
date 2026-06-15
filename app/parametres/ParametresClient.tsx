@@ -144,6 +144,16 @@ export default function ParametresClient() {
               { value: 'compact', label: 'Compact' },
             ]}
           />
+          <Segmented
+            label="Affichage des classements"
+            hint="« Tableau » aligne tout en colonnes (Catégorie, écarts, réglage…)."
+            value={prefs.rankingLayout}
+            onChange={v => setPref('rankingLayout', v)}
+            options={[
+              { value: 'cards', label: 'Cartes' },
+              { value: 'table', label: 'Tableau' },
+            ]}
+          />
         </Section>
 
         <Section title="Dates">
