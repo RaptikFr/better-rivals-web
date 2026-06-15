@@ -619,46 +619,48 @@ function ShareCodeCell({ lapId, initialCode }: { lapId: string; initialCode: str
 
 function LapTable({ laps, showDate, hideCircuit, isEditable }: { laps: ProfileLap[]; showDate?: boolean; hideCircuit?: boolean; isEditable?: boolean }) {
   return (
-    <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
-      <table className="w-full text-left border-collapse whitespace-nowrap">
-        <thead>
-          <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
-            {showDate && <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">DATE</th>}
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TEMPS</th>
-            {isEditable && <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">RÉGLAGE</th>}
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">VOITURE</th>
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CLASSE / PI</th>
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TRANSMISSION</th>
-            {!hideCircuit && <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CIRCUIT</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {laps.map((lap, i) => (
-            <tr key={lap.id ?? i} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
-              {showDate && <td className="p-4 text-xs text-neutral-500">{formatDate(lap.created_at)}</td>}
-              <td className="p-4 font-mono font-bold text-pink-400 text-lg">{formatTime(lap.time_ms)}</td>
-              {isEditable && (
-                <td className="p-4">
-                  <ShareCodeCell lapId={lap.id} initialCode={lap.share_code ?? null} />
-                </td>
-              )}
-              <td className="p-4 text-neutral-700 dark:text-neutral-300">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</td>
-              <td className="p-4">
-                <span className="px-2 py-1 rounded text-xs font-bold mr-2" style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>
-                  {lap.car_class}
-                </span>
-                <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi}</span>
-              </td>
-              <td className="p-4"><DrivetrainBadge drivetrain={lap.drivetrain} /></td>
-              {!hideCircuit && (
-                <td className="p-4 text-neutral-600 dark:text-neutral-400">
-                  {lap.tracks?.name ?? '—'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden text-sm">
+      {/* En-tête de colonnes (≥ sm) */}
+      <div className="hidden sm:flex items-center gap-3 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">
+        {showDate && <span className="w-36">DATE</span>}
+        <span className="w-24">TEMPS</span>
+        {isEditable && <span className="w-24">RÉGLAGE</span>}
+        <span className="flex-1">VOITURE</span>
+        <span className="w-32">CLASSE / PI</span>
+        <span className="w-28">TRANSMISSION</span>
+        {!hideCircuit && <span className="flex-1">CIRCUIT</span>}
+      </div>
+      {laps.map((lap, i) => (
+        <div
+          key={lap.id ?? i}
+          className="flex flex-col gap-2 px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors
+                     sm:flex-row sm:items-center sm:gap-3"
+        >
+          <div className="flex items-center justify-between gap-3 sm:contents">
+            {showDate && <span className="text-xs text-neutral-500 order-2 sm:order-none sm:w-36">{formatDate(lap.created_at)}</span>}
+            <span className="font-mono font-bold text-pink-400 text-lg order-1 sm:order-none sm:text-base sm:w-24">{formatTime(lap.time_ms)}</span>
+          </div>
+          {isEditable && (
+            <span className="sm:w-24">
+              <span className="sm:hidden text-xs text-neutral-500 mr-2">Réglage :</span>
+              <ShareCodeCell lapId={lap.id} initialCode={lap.share_code ?? null} />
+            </span>
+          )}
+          <span className="text-neutral-700 dark:text-neutral-300 sm:flex-1 sm:truncate">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</span>
+          <span className="sm:w-32 flex items-center gap-2">
+            <span className="px-2 py-1 rounded text-xs font-bold" style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>
+              {lap.car_class}
+            </span>
+            <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi}</span>
+          </span>
+          <span className="sm:w-28"><DrivetrainBadge drivetrain={lap.drivetrain} /></span>
+          {!hideCircuit && (
+            <span className="text-neutral-600 dark:text-neutral-400 sm:flex-1 sm:truncate">
+              {lap.tracks?.name ?? '—'}{lap.tracks?.length_km ? ` (${lap.tracks.length_km} km)` : ''}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -937,60 +939,55 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
 
       <p className="text-sm text-neutral-500">{filtered.length + filteredCurrentBests.length} entrée{(filtered.length + filteredCurrentBests.length) !== 1 ? 's' : ''} dans l&apos;historique</p>
 
-      <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
-        <table className="w-full text-left border-collapse whitespace-nowrap">
-          <thead>
-            <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
-              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">DATE</th>
-              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TEMPS</th>
-              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">VOITURE</th>
-              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CLASSE / PI</th>
-              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TRANSMISSION</th>
-              <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CIRCUIT</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCurrentBests.map(lap => (
-              <tr key={`best-${lap.id}`} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors bg-green-950/10">
-                <td className="p-4 text-xs text-neutral-500">{formatDate(lap.created_at)}</td>
-                <td className="p-4 font-mono">
-                  <span className="font-bold text-green-400">{formatTime(lap.time_ms)}</span>
-                  <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-medium">Record actuel</span>
-                </td>
-                <td className="p-4 text-neutral-700 dark:text-neutral-300">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</td>
-                <td className="p-4">
-                  <span className="px-2 py-1 rounded text-xs font-bold mr-2" style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>{lap.car_class}</span>
-                  <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi ?? '—'}</span>
-                </td>
-                <td className="p-4"><DrivetrainBadge drivetrain={lap.drivetrain} /></td>
-                <td className="p-4 text-neutral-600 dark:text-neutral-400">{lap.tracks?.name ?? '—'}</td>
-              </tr>
-            ))}
-            {filteredWithDiffs.map(h => (
-              <tr key={h.id} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
-                <td className="p-4 text-xs text-neutral-500">{formatDate(h.recorded_at)}</td>
-                <td className="p-4 font-mono">
-                  <span className="font-bold text-neutral-400 dark:text-neutral-500">{formatTime(h.time_ms)}</span>
-                  {h.diffVsBest !== null && (
-                    <span className="ml-2 text-xs text-orange-400" title="Écart avec ton record actuel">
-                      +{(h.diffVsBest / 1000).toFixed(3).replace('.', ',')}s
-                      {h.diffVsNext !== null && (
-                        <span className="text-neutral-500 ml-1" title="Gain par rapport à l'ancien record précédent">(+{(h.diffVsNext / 1000).toFixed(3).replace('.', ',')}s)</span>
-                      )}
-                    </span>
+      <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden text-sm">
+        {/* En-tête de colonnes (≥ sm) */}
+        <div className="hidden sm:flex items-center gap-3 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">
+          <span className="w-36">DATE</span>
+          <span className="w-56">TEMPS</span>
+          <span className="flex-1">VOITURE</span>
+          <span className="w-32">CLASSE / PI</span>
+          <span className="w-28">TRANSMISSION</span>
+          <span className="flex-1">CIRCUIT</span>
+        </div>
+        {filteredCurrentBests.map(lap => (
+          <div key={`best-${lap.id}`} className="flex flex-col gap-2 px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors bg-green-950/10 sm:flex-row sm:items-center sm:gap-3">
+            <span className="text-xs text-neutral-500 sm:w-36">{formatDate(lap.created_at)}</span>
+            <span className="font-mono sm:w-56">
+              <span className="font-bold text-green-400">{formatTime(lap.time_ms)}</span>
+              <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-medium">Record actuel</span>
+            </span>
+            <span className="text-neutral-700 dark:text-neutral-300 sm:flex-1 sm:truncate">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</span>
+            <span className="sm:w-32 flex items-center gap-2">
+              <span className="px-2 py-1 rounded text-xs font-bold" style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>{lap.car_class}</span>
+              <span className="text-sm text-neutral-500 font-mono">PI {lap.car_pi ?? '—'}</span>
+            </span>
+            <span className="sm:w-28"><DrivetrainBadge drivetrain={lap.drivetrain} /></span>
+            <span className="text-neutral-600 dark:text-neutral-400 sm:flex-1 sm:truncate">{lap.tracks?.name ?? '—'}</span>
+          </div>
+        ))}
+        {filteredWithDiffs.map(h => (
+          <div key={h.id} className="flex flex-col gap-2 px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors sm:flex-row sm:items-center sm:gap-3">
+            <span className="text-xs text-neutral-500 sm:w-36">{formatDate(h.recorded_at)}</span>
+            <span className="font-mono sm:w-56">
+              <span className="font-bold text-neutral-400 dark:text-neutral-500">{formatTime(h.time_ms)}</span>
+              {h.diffVsBest !== null && (
+                <span className="ml-2 text-xs text-orange-400" title="Écart avec ton record actuel">
+                  +{(h.diffVsBest / 1000).toFixed(3).replace('.', ',')}s
+                  {h.diffVsNext !== null && (
+                    <span className="text-neutral-500 ml-1" title="Gain par rapport à l'ancien record précédent">(+{(h.diffVsNext / 1000).toFixed(3).replace('.', ',')}s)</span>
                   )}
-                </td>
-                <td className="p-4 text-neutral-700 dark:text-neutral-300">{h.cars?.year} {h.cars?.manufacturer} {h.cars?.name}</td>
-                <td className="p-4">
-                  <span className="px-2 py-1 rounded text-xs font-bold mr-2" style={CLASS_STYLES[h.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>{h.car_class}</span>
-                  <span className="text-sm text-neutral-500 font-mono">PI {h.car_pi ?? '—'}</span>
-                </td>
-                <td className="p-4"><DrivetrainBadge drivetrain={h.drivetrain as Drivetrain} /></td>
-                <td className="p-4 text-neutral-600 dark:text-neutral-400">{h.tracks?.name ?? '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </span>
+              )}
+            </span>
+            <span className="text-neutral-700 dark:text-neutral-300 sm:flex-1 sm:truncate">{h.cars?.year} {h.cars?.manufacturer} {h.cars?.name}</span>
+            <span className="sm:w-32 flex items-center gap-2">
+              <span className="px-2 py-1 rounded text-xs font-bold" style={CLASS_STYLES[h.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>{h.car_class}</span>
+              <span className="text-sm text-neutral-500 font-mono">PI {h.car_pi ?? '—'}</span>
+            </span>
+            <span className="sm:w-28"><DrivetrainBadge drivetrain={h.drivetrain as Drivetrain} /></span>
+            <span className="text-neutral-600 dark:text-neutral-400 sm:flex-1 sm:truncate">{h.tracks?.name ?? '—'}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1010,36 +1007,38 @@ function ClassementsTab({ laps, allLaps, playerId }: { laps: ProfileLap[]; allLa
   if (rankings.length === 0) return <EmptyState message="Aucun classement disponible pour l'instant." />;
 
   return (
-    <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
-      <table className="w-full text-left border-collapse whitespace-nowrap">
-        <thead>
-          <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">POSITION</th>
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CIRCUIT</th>
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">VOITURE</th>
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TRANSMISSION</th>
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TEMPS</th>
-            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">RIVAUX</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rankings.map(({ lap, rivals }, i) => (
-            <tr key={i} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
-              <td className="p-4">
-                <span className={`text-lg font-extrabold ${rivals.rank === 1 ? 'text-yellow-400' : rivals.rank === 2 ? 'text-neutral-400 dark:text-neutral-300' : rivals.rank === 3 ? 'text-amber-600' : 'text-neutral-500'}`}>
-                  {rivals.rank === 1 ? '🥇' : rivals.rank === 2 ? '🥈' : rivals.rank === 3 ? '🥉' : `#${rivals.rank}`}
-                </span>
-                <span className="text-xs text-neutral-400 dark:text-neutral-600 ml-2">/ {rivals.total}</span>
-              </td>
-              <td className="p-4 text-neutral-700 dark:text-neutral-300 font-semibold">{lap.tracks?.name ?? '—'}</td>
-              <td className="p-4 text-neutral-600 dark:text-neutral-400">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</td>
-              <td className="p-4"><DrivetrainBadge drivetrain={lap.drivetrain} /></td>
-              <td className="p-4 font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</td>
-              <td className="p-4"><RivalsCell rivals={rivals} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden text-sm">
+      {/* En-tête de colonnes (≥ sm) */}
+      <div className="hidden sm:flex items-center gap-3 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">
+        <span className="w-24">POSITION</span>
+        <span className="flex-1">CIRCUIT</span>
+        <span className="flex-1">VOITURE</span>
+        <span className="w-28">TRANSMISSION</span>
+        <span className="w-28">TEMPS</span>
+        <span className="w-56">RIVAUX</span>
+      </div>
+      {rankings.map(({ lap, rivals }, i) => (
+        <div
+          key={i}
+          className="flex flex-col gap-2 px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors
+                     sm:flex-row sm:items-center sm:gap-3"
+        >
+          <div className="flex items-center justify-between gap-3 sm:contents">
+            <span className="sm:w-24 flex-shrink-0">
+              <span className={`text-lg font-extrabold ${rivals.rank === 1 ? 'text-yellow-400' : rivals.rank === 2 ? 'text-neutral-400 dark:text-neutral-300' : rivals.rank === 3 ? 'text-amber-600' : 'text-neutral-500'}`}>
+                {rivals.rank === 1 ? '🥇' : rivals.rank === 2 ? '🥈' : rivals.rank === 3 ? '🥉' : `#${rivals.rank}`}
+              </span>
+              <span className="text-xs text-neutral-400 dark:text-neutral-600 ml-2">/ {rivals.total}</span>
+            </span>
+            <span className="font-mono font-bold text-pink-400 sm:hidden">{formatTime(lap.time_ms)}</span>
+          </div>
+          <span className="text-neutral-700 dark:text-neutral-300 font-semibold sm:flex-1 sm:truncate">{lap.tracks?.name ?? '—'}</span>
+          <span className="text-neutral-600 dark:text-neutral-400 sm:flex-1 sm:truncate">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</span>
+          <span className="sm:w-28"><DrivetrainBadge drivetrain={lap.drivetrain} /></span>
+          <span className="hidden sm:block font-mono font-bold text-pink-400 sm:w-28">{formatTime(lap.time_ms)}</span>
+          <span className="sm:w-56"><RivalsCell rivals={rivals} /></span>
+        </div>
+      ))}
     </div>
   );
 }
