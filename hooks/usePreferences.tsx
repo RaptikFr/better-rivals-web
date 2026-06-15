@@ -1,9 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { formatTime as rawFormatTime } from '@/components/formatTime';
 import { dateRelative } from '@/lib/dateRelative';
 import { dateAbsolute } from '@/lib/dateAbsolute';
+import { supabase } from '@/lib/supabase';
+import { usePlayer } from '@/hooks/usePlayer';
+import type { Json } from '@/types/database.types';
 import {
   DEFAULT_PREFERENCES,
   PREFERENCES_STORAGE_KEY,
@@ -31,6 +34,15 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [ready, setReady] = useState(false);
 
+  // Sync cross-device : pour un joueur connecté, les préférences vivent aussi
+  // sur son compte (players.preferences). Anon → localStorage seul.
+  const { player } = usePlayer();
+  const prefsRef = useRef(prefs);
+  useEffect(() => { prefsRef.current = prefs; }, [prefs]);
+  // Passe à true une fois les prefs du compte réconciliées avec le local, pour
+  // ne pas écraser la base avec les défauts avant de l'avoir lue.
+  const dbReconciled = useRef(false);
+
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- lecture localStorage au montage (pattern d'hydratation) */
     try {
@@ -43,7 +55,29 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
-  // Persiste + applique les réglages globaux (densité, animations) sur <html>.
+  // À la connexion : récupère les préférences du compte. Si la base en a, elles
+  // priment (sync depuis un autre appareil) ; sinon on y pousse les prefs locales.
+  useEffect(() => {
+    dbReconciled.current = false;
+    const pid = player?.id;
+    if (!pid) return;
+    let cancelled = false;
+    supabase.from('players').select('preferences').eq('id', pid).maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const db = data?.preferences;
+        if (db && typeof db === 'object' && !Array.isArray(db) && Object.keys(db).length > 0) {
+          setPrefs(sanitizePreferences(db));
+        } else {
+          supabase.from('players').update({ preferences: prefsRef.current as unknown as Json }).eq('id', pid);
+        }
+        dbReconciled.current = true;
+      });
+    return () => { cancelled = true; };
+  }, [player?.id]);
+
+  // Persiste (localStorage + compte si connecté) et applique les réglages
+  // globaux (densité, animations, accent, taille) sur <html>.
   useEffect(() => {
     if (!ready) return;
     try {
@@ -51,13 +85,16 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     } catch {
       /* quota plein ou mode privé : on ignore */
     }
+    if (player?.id && dbReconciled.current) {
+      supabase.from('players').update({ preferences: prefs as unknown as Json }).eq('id', player.id);
+    }
     const root = document.documentElement;
     root.classList.toggle('density-compact', prefs.density === 'compact');
     root.classList.toggle('reduce-motion', prefs.reduceMotion);
     root.classList.toggle('accent-red-green', prefs.accent === 'red-green');
     root.classList.toggle('accent-blue-yellow', prefs.accent === 'blue-yellow');
     root.classList.toggle('text-scale-large', prefs.fontSize === 'large');
-  }, [prefs, ready]);
+  }, [prefs, ready, player?.id]);
 
   const setPref = useCallback(<K extends keyof Preferences>(key: K, value: Preferences[K]) => {
     setPrefs(prev => ({ ...prev, [key]: value }));
