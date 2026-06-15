@@ -42,6 +42,7 @@ next-env.d.ts
 
 # Claude Code — contient des tokens et permissions locaux
 .claude/settings.local.json
+.claude/settings.json
 
 # Supabase CLI — fichiers temporaires locaux
 supabase/.temp/
