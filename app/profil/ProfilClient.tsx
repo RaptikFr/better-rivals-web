@@ -4,14 +4,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
-import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
-import { countPodiums, type Podiums } from '@/lib/podiums';
-import { buildRivalIndex, findRivals } from '@/lib/rivals';
+import type { Podiums } from '@/lib/podiums';
+import type { ConfigRivals } from '@/lib/rivals';
+import { loadPlayerRankings, rivalsFor, type PlayerRankings } from '@/lib/playerRankings';
 import { computeBadges } from '@/lib/badges';
 import { BadgesBar } from '@/components/BadgesBar';
 import { RivalsCell } from '@/components/RivalsCell';
@@ -42,18 +42,6 @@ interface Stats {
   totalVoitures: number;
   classFavorite: string;
   drivetrainFavorite: string;
-}
-
-// Temps de tous les joueurs sur les circuits du joueur courant —
-// sert à la fois aux podiums et à l'onglet « Mes classements »
-interface ConfigLapRow {
-  time_ms:     number;
-  car_ordinal: number;
-  car_class:   string;
-  drivetrain:  string;
-  track_id:    number;
-  player_id:   string;
-  players:     { pseudo: string } | null;
 }
 
 function formatDate(iso: string): string {
@@ -145,7 +133,7 @@ export default function ProfilClient() {
   const [emailNotifs, setEmailNotifs] = useState(false);
   const [playerId,    setPlayerId]    = useState<string | null>(null);
   const [laps,      setLaps]      = useState<ProfileLap[]>([]);
-  const [allTrackLaps, setAllTrackLaps] = useState<ConfigLapRow[]>([]);
+  const [rankings,  setRankings]  = useState<PlayerRankings | null>(null);
   const [podiums,   setPodiums]   = useState<Podiums>({ gold: 0, silver: 0, bronze: 0 });
   const [generalRank,  setGeneralRank]  = useState<number | null>(null);
   const [generalTotal, setGeneralTotal] = useState<number | null>(null);
@@ -193,23 +181,10 @@ export default function ProfilClient() {
     const playerLaps = (lapsData ?? []) as ProfileLap[];
     setLaps(playerLaps);
 
-    // Fetch all laps on the player's tracks (paginated), then rank client-side
-    const trackIds = [...new Set(playerLaps.map(l => l.track_id))].filter(Boolean);
-    if (trackIds.length > 0) {
-      const { data: allLaps } = await fetchAllRows<ConfigLapRow>((from, to) =>
-        supabase
-          .from('lap_times')
-          .select('time_ms, car_ordinal, car_class, drivetrain, track_id, player_id, players(pseudo)')
-          .in('track_id', trackIds)
-          .order('id')
-          .range(from, to)
-      );
-
-      setAllTrackLaps(allLaps);
-      setPodiums(countPodiums(playerLaps, allLaps));
-    } else {
-      setAllTrackLaps([]);
-    }
+    // Rang, total et rivaux par config — calculés côté serveur (RPC)
+    const ranks = await loadPlayerRankings(playerData.id, playerLaps);
+    setRankings(ranks);
+    setPodiums(ranks.podiums);
 
     // Rang au classement général (endpoint mis en cache côté serveur)
     try {
@@ -252,8 +227,8 @@ export default function ProfilClient() {
   const recentLaps = useMemo(() => laps.slice(0, 20), [laps]);
 
   const badges = useMemo(
-    () => computeBadges({ laps, allLaps: allTrackLaps, generalRank, generalTotal }),
-    [laps, allTrackLaps, generalRank, generalTotal]
+    () => computeBadges({ laps, ranked: rankings?.ranked ?? [], generalRank, generalTotal }),
+    [laps, rankings, generalRank, generalTotal]
   );
 
   const filteredLaps = useMemo(() =>
@@ -574,7 +549,7 @@ export default function ProfilClient() {
           </div>
         )}
 
-        {activeTab === 'classements' && <ClassementsTab laps={laps} allLaps={allTrackLaps} playerId={playerId} />}
+        {activeTab === 'classements' && <ClassementsTab laps={laps} rivalsByConfig={rankings?.rivalsByConfig ?? new Map()} />}
         {activeTab === 'suivi'       && playerId !== null && <SuiviTab playerId={playerId} laps={laps} />}
         {activeTab === 'stats'       && <StatsTab stats={stats} laps={laps} />}
 
@@ -1016,16 +991,16 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
   );
 }
 
-function ClassementsTab({ laps, allLaps, playerId }: { laps: ProfileLap[]; allLaps: ConfigLapRow[]; playerId: string | null }) {
-  // Rang, total et rivaux directs calculés à partir des temps déjà téléchargés
-  // pour les podiums — aucune requête supplémentaire.
-  const rankings = useMemo(() => {
-    const index = buildRivalIndex(allLaps);
-    return laps
+function ClassementsTab({ laps, rivalsByConfig }: { laps: ProfileLap[]; rivalsByConfig: Map<string, ConfigRivals> }) {
+  // Rang, total et rivaux directs issus du calcul serveur (RPC) — aucune
+  // requête supplémentaire.
+  const rankings = useMemo(() =>
+    laps
       .filter(lap => lap.tracks?.name)
-      .map(lap => ({ lap, rivals: findRivals(playerId ?? '', lap, index) }))
-      .sort((a, b) => a.rivals.rank - b.rivals.rank);
-  }, [laps, allLaps, playerId]);
+      .map(lap => ({ lap, rivals: rivalsFor(rivalsByConfig, lap) }))
+      .sort((a, b) => a.rivals.rank - b.rivals.rank),
+    [laps, rivalsByConfig]
+  );
 
   if (rankings.length === 0) return <EmptyState message="Aucun classement disponible pour l'instant." />;
 

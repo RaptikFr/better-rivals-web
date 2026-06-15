@@ -514,7 +514,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      player_config_rankings: {
+        Args: { p_player_id: string }
+        Returns: {
+          track_id: number
+          car_ordinal: number
+          car_class: string
+          drivetrain: string
+          time_ms: number
+          rank: number
+          total: number
+          ahead_pseudo: string | null
+          ahead_gap_ms: number | null
+          behind_pseudo: string | null
+          behind_gap_ms: number | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

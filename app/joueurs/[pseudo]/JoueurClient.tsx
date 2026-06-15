@@ -3,12 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { fetchAllRows } from '@/lib/fetchAllRows';
 import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
-import { countPodiums } from '@/lib/podiums';
-import { buildRivalIndex, findRivals, type RivalRow } from '@/lib/rivals';
+import { loadPlayerRankings, rivalsFor, type PlayerRankings } from '@/lib/playerRankings';
 import { computeBadges } from '@/lib/badges';
 import { BadgesBar } from '@/components/BadgesBar';
 import { RivalsCell } from '@/components/RivalsCell';
@@ -37,7 +35,7 @@ interface Circuit {
 export default function JoueurClient({ pseudo }: { pseudo: string }) {
   const [laps,         setLaps]         = useState<Lap[]>([]);
   const [playerId,     setPlayerId]     = useState<string | null>(null);
-  const [allLaps,      setAllLaps]      = useState<RivalRow[]>([]);
+  const [rankings,     setRankings]     = useState<PlayerRankings | null>(null);
   const [podiums,      setPodiums]      = useState({ gold: 0, silver: 0, bronze: 0 });
   const [generalRank,  setGeneralRank]  = useState<number | null>(null);
   const [generalTotal, setGeneralTotal] = useState<number | null>(null);
@@ -78,21 +76,10 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
       setLaps(lapsData);
       setPlayerId(player.id);
 
-      // Podiums + rivaux : compare avec tous les temps (paginés) sur les mêmes circuits
-      const trackIds = [...new Set(lapsData.map(l => l.track_id))].filter(Boolean);
-      if (trackIds.length > 0) {
-        const { data: allLapsData } = await fetchAllRows<RivalRow>((from, to) =>
-          supabase
-            .from('lap_times')
-            .select('time_ms, car_ordinal, car_class, drivetrain, track_id, player_id, players(pseudo)')
-            .in('track_id', trackIds)
-            .order('id')
-            .range(from, to)
-        );
-
-        setAllLaps(allLapsData);
-        setPodiums(countPodiums(lapsData, allLapsData));
-      }
+      // Rang, total et rivaux par config — calculés côté serveur (RPC)
+      const ranks = await loadPlayerRankings(player.id, lapsData);
+      setRankings(ranks);
+      setPodiums(ranks.podiums);
 
       // Rang au classement général (endpoint mis en cache côté serveur)
       try {
@@ -109,11 +96,9 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
     load();
   }, [pseudo]);
 
-  const rivalIndex = useMemo(() => buildRivalIndex(allLaps), [allLaps]);
-
   const badges = useMemo(
-    () => computeBadges({ laps, allLaps, generalRank, generalTotal }),
-    [laps, allLaps, generalRank, generalTotal]
+    () => computeBadges({ laps, ranked: rankings?.ranked ?? [], generalRank, generalTotal }),
+    [laps, rankings, generalRank, generalTotal]
   );
 
   if (loading) return (
@@ -249,7 +234,7 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                         <div className="text-neutral-700 dark:text-neutral-300 sm:flex-1 sm:truncate">{carLabel}</div>
                         <div className="flex items-center justify-between gap-3 sm:contents">
                           <span className="text-neutral-500 font-mono text-xs sm:w-16">PI {lap.car_pi}</span>
-                          <span className="sm:w-56"><RivalsCell rivals={findRivals(playerId ?? '', lap, rivalIndex)} /></span>
+                          <span className="sm:w-56"><RivalsCell rivals={rivalsFor(rankings?.rivalsByConfig ?? new Map(), lap)} /></span>
                         </div>
                       </div>
                     );

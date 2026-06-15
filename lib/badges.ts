@@ -1,5 +1,3 @@
-import { groupByConfig, configKey } from '@/lib/podiums';
-
 // Couleur de la pastille — mappée vers des classes Tailwind dans BadgesBar.
 export type BadgeTone = 'gold' | 'violet' | 'pink' | 'neutral';
 
@@ -11,21 +9,25 @@ export interface Badge {
   tone:   BadgeTone;
 }
 
-// Champs minimaux d'un temps nécessaires au calcul des badges. Compatible avec
-// les `Lap` du profil et de la page joueur (sur-ensemble de ConfigLap).
+// Champs minimaux d'un temps nécessaires au calcul des badges (polyvalence,
+// volume). Compatible avec les `Lap` du profil et de la page joueur.
 export interface BadgeLap {
   track_id:    number;
   car_ordinal: number;
   car_class:   string;
-  drivetrain:  string;
-  time_ms:     number;
+}
+
+// Rang du joueur sur une config (calculé côté serveur), pour les badges podium.
+export interface BadgeRank {
+  track_id: number;
+  rank:     number;
 }
 
 export interface BadgeContext {
   /** Temps du joueur. */
   laps:    BadgeLap[];
-  /** Tous les temps sur les circuits du joueur (sert à classer chaque config). */
-  allLaps: BadgeLap[];
+  /** Rang du joueur par config (podiums dérivés du rang). */
+  ranked:  BadgeRank[];
   /** Rang du joueur au classement général (1 = premier), si connu. */
   generalRank?:  number | null;
   /** Nombre total de pilotes classés, si connu. */
@@ -40,19 +42,16 @@ const plural = (n: number) => (n > 1 ? 's' : '');
  * aucune comparaison aux records du monde.
  */
 export function computeBadges(ctx: BadgeContext): Badge[] {
-  const { laps, allLaps, generalRank, generalTotal } = ctx;
+  const { laps, ranked, generalRank, generalTotal } = ctx;
   const badges: Badge[] = [];
   if (laps.length === 0) return badges;
 
-  // ── Rangs / podiums : position de chaque temps dans sa config ──
-  const byConfig = groupByConfig(allLaps);
+  // ── Rangs / podiums : dérivés du rang par config (calculé côté serveur) ──
   let gold = 0;
   const podiumTracks = new Set<number>();
-  for (const lap of laps) {
-    const times  = byConfig.get(configKey(lap)) ?? [];
-    const better = times.filter(t => t < lap.time_ms).length;
-    if (better === 0) gold++;
-    if (better <= 2)  podiumTracks.add(lap.track_id);
+  for (const r of ranked) {
+    if (r.rank === 1) gold++;
+    if (r.rank <= 3)  podiumTracks.add(r.track_id);
   }
 
   if (gold > 0) {
