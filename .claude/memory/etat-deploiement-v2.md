@@ -11,6 +11,8 @@ Migrations appliquées : `notifications_par_type.sql`, `masquer_discord.sql`, `p
 
 Features livrées : onglet « Mes rivaux » (profil) ; notifications par type (colonnes notify_* + gardes /api/times) ; masquer son tag Discord (colonne générée `discord_tag_public` + RPC `my_discord_tag`, toutes les lectures publiques passent par `discord_tag:discord_tag_public`) ; sync cross-device (`players.preferences jsonb`, réconcilié dans `usePreferences`) ; taille de police + colonnes masquables des classements ; rate limiting Upstash (repli mémoire) ; RPC `general_ranking` (repli JS).
 
+**Upstash ACTIVÉ le 15 juin 2026** : base Redis créée, `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` posés en local (`.env.local`) ET sur Vercel (Production). Connexion + pipeline INCR/EXPIRE testés OK. Le rate limiting partagé est donc opérationnel (repli mémoire conservé en sécurité).
+
 **Note pour le futur** : leçon de rétro — quand un commit lit/écrit une nouvelle colonne, appliquer la migration AVANT de pousser (sinon le `select` casse la prod). C'est ce qui a été respecté ici (push du préfixe sûr, puis du reste après migrations).
 
 **Upstash (rate limiting partagé)** : code prêt, repli mémoire si non configuré. Pour l'activer, créer une base Upstash Redis et poser `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` dans `.env.local` et sur Vercel. Sinon, comportement actuel (mémoire par instance) inchangé.
