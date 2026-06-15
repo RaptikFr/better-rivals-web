@@ -60,8 +60,19 @@ async function notifierRivauxDepasses(opts: {
   });
   const link = `/classements?${params.toString()}`;
 
-  const notifs = (rivalLaps ?? [])
-    .filter(rl => opts.newTimeMs < rl.time_ms && opts.estDepassement(rl.time_ms))
+  const beaten = (rivalLaps ?? [])
+    .filter(rl => opts.newTimeMs < rl.time_ms && opts.estDepassement(rl.time_ms));
+  if (beaten.length === 0) return;
+
+  // Respecte la préférence « notify_rival » de chaque suiveur dépassé.
+  const { data: prefs } = await supabaseAdmin
+    .from('players')
+    .select('id, notify_rival')
+    .in('id', beaten.map(rl => rl.player_id));
+  const allowed = new Set((prefs ?? []).filter(p => p.notify_rival !== false).map(p => p.id));
+
+  const notifs = beaten
+    .filter(rl => allowed.has(rl.player_id))
     .map(rl => ({
       player_id: rl.player_id,
       message:   `🎯 ${opts.pseudo}, que tu suis, vient de te dépasser sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${opts.drivetrain} (${formatTime(opts.newTimeMs)})`,
@@ -73,6 +84,19 @@ async function notifierRivauxDepasses(opts: {
   if (notifs.length > 0) {
     await supabaseAdmin.from('notifications').insert(notifs);
   }
+}
+
+// Le joueur dépassé reçoit-il ce type de notification in-app ? (défaut : oui)
+async function notifTypeActive(
+  playerId: string,
+  column: 'notify_exact' | 'notify_drivetrain' | 'notify_class',
+): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from('players')
+    .select(column)
+    .eq('id', playerId)
+    .maybeSingle();
+  return data ? (data as Record<string, boolean>)[column] !== false : true;
 }
 
 async function notifierRecordBattu(opts: {
@@ -140,13 +164,16 @@ async function notifierRecordBattu(opts: {
       car:       carLabel,
     });
     const link = `/classements?${params.toString()}`;
-    await supabaseAdmin.from('notifications').insert([{
-      player_id: exact.player_id,
-      message:   `🏆 Ton record sur ${opts.trackName} avec ${carLabel} en ${opts.carClass}/${opts.drivetrain} a été battu par ${opts.pseudo} (${formatTime(opts.newTimeMs)})`,
-      type:      'exact',
-      link,
-      read:      false,
-    }]);
+    if (await notifTypeActive(exact.player_id, 'notify_exact')) {
+      await supabaseAdmin.from('notifications').insert([{
+        player_id: exact.player_id,
+        message:   `🏆 Ton record sur ${opts.trackName} avec ${carLabel} en ${opts.carClass}/${opts.drivetrain} a été battu par ${opts.pseudo} (${formatTime(opts.newTimeMs)})`,
+        type:      'exact',
+        link,
+        read:      false,
+      }]);
+    }
+    // L'email reste indépendant (piloté par email_notifications_enabled).
     // En serverless, un envoi non attendu peut être gelé avant d'aboutir
     await sendBeatenEmail({
       beatenPlayerId:  exact.player_id,
@@ -175,18 +202,20 @@ async function notifierRecordBattu(opts: {
     .maybeSingle();
 
   if (diffDrive && opts.newTimeMs < diffDrive.time_ms && estDepassement(diffDrive.time_ms)) {
-    const params = new URLSearchParams({
-      track_id: String(opts.trackId),
-      class:    opts.carClass,
-      car:      carLabel,
-    });
-    await supabaseAdmin.from('notifications').insert([{
-      player_id: diffDrive.player_id,
-      message:   `🔄 Ton record sur ${opts.trackName} avec ${carLabel} en ${opts.carClass}/${diffDrive.drivetrain} a été battu par ${opts.pseudo} en ${opts.drivetrain} (${formatTime(opts.newTimeMs)})`,
-      type:      'drivetrain',
-      link:      `/classements?${params.toString()}`,
-      read:      false,
-    }]);
+    if (await notifTypeActive(diffDrive.player_id, 'notify_drivetrain')) {
+      const params = new URLSearchParams({
+        track_id: String(opts.trackId),
+        class:    opts.carClass,
+        car:      carLabel,
+      });
+      await supabaseAdmin.from('notifications').insert([{
+        player_id: diffDrive.player_id,
+        message:   `🔄 Ton record sur ${opts.trackName} avec ${carLabel} en ${opts.carClass}/${diffDrive.drivetrain} a été battu par ${opts.pseudo} en ${opts.drivetrain} (${formatTime(opts.newTimeMs)})`,
+        type:      'drivetrain',
+        link:      `/classements?${params.toString()}`,
+        read:      false,
+      }]);
+    }
     return;
   }
 
@@ -203,17 +232,19 @@ async function notifierRecordBattu(opts: {
     .maybeSingle();
 
   if (diffCar && opts.newTimeMs < diffCar.time_ms && estDepassement(diffCar.time_ms)) {
-    const params = new URLSearchParams({
-      track_id: String(opts.trackId),
-      class:    opts.carClass,
-    });
-    await supabaseAdmin.from('notifications').insert([{
-      player_id: diffCar.player_id,
-      message:   `⚡ Ton record en classe ${opts.carClass} sur ${opts.trackName} a été battu par ${opts.pseudo} avec ${carLabel} (${formatTime(opts.newTimeMs)})`,
-      type:      'class',
-      link:      `/classements?${params.toString()}`,
-      read:      false,
-    }]);
+    if (await notifTypeActive(diffCar.player_id, 'notify_class')) {
+      const params = new URLSearchParams({
+        track_id: String(opts.trackId),
+        class:    opts.carClass,
+      });
+      await supabaseAdmin.from('notifications').insert([{
+        player_id: diffCar.player_id,
+        message:   `⚡ Ton record en classe ${opts.carClass} sur ${opts.trackName} a été battu par ${opts.pseudo} avec ${carLabel} (${formatTime(opts.newTimeMs)})`,
+        type:      'class',
+        link:      `/classements?${params.toString()}`,
+        read:      false,
+      }]);
+    }
   }
 }
 

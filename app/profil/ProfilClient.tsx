@@ -133,6 +133,8 @@ export default function ProfilClient() {
   const [editDiscord, setEditDiscord] = useState(false);
   const [savingDiscord, setSavingDiscord] = useState(false);
   const [emailNotifs, setEmailNotifs] = useState(false);
+  const [notifPrefs,  setNotifPrefs]  = useState({ exact: true, drivetrain: true, class: true, rival: true });
+  const [showNotifPrefs, setShowNotifPrefs] = useState(false);
   const [playerId,    setPlayerId]    = useState<string | null>(null);
   const [laps,      setLaps]      = useState<ProfileLap[]>([]);
   const [rankings,  setRankings]  = useState<PlayerRankings | null>(null);
@@ -158,7 +160,7 @@ export default function ProfilClient() {
 
     const { data: playerData } = await supabase
       .from('players')
-      .select('id, pseudo, discord_tag, email_notifications_enabled')
+      .select('id, pseudo, discord_tag, email_notifications_enabled, notify_exact, notify_drivetrain, notify_class, notify_rival')
       .eq('user_id', user!.id)
       .single();
 
@@ -166,6 +168,12 @@ export default function ProfilClient() {
     setPseudo(playerData.pseudo);
     setDiscordTag(playerData.discord_tag ?? '');
     setEmailNotifs(playerData.email_notifications_enabled ?? false);
+    setNotifPrefs({
+      exact:      playerData.notify_exact      ?? true,
+      drivetrain: playerData.notify_drivetrain ?? true,
+      class:      playerData.notify_class      ?? true,
+      rival:      playerData.notify_rival      ?? true,
+    });
     setPlayerId(playerData.id);
 
     const { data: lapsData, error: lapsError } = await supabase
@@ -224,6 +232,23 @@ export default function ProfilClient() {
     const next = !emailNotifs;
     setEmailNotifs(next);
     await supabase.from('players').update({ email_notifications_enabled: next }).eq('id', playerId);
+  }
+
+  const NOTIF_COLUMN = {
+    exact:      'notify_exact',
+    drivetrain: 'notify_drivetrain',
+    class:      'notify_class',
+    rival:      'notify_rival',
+  } as const;
+
+  async function toggleNotifPref(key: keyof typeof notifPrefs) {
+    if (!playerId) return;
+    const next = !notifPrefs[key];
+    setNotifPrefs(p => ({ ...p, [key]: next }));
+    const updates: Partial<Record<(typeof NOTIF_COLUMN)[keyof typeof NOTIF_COLUMN], boolean>> = {
+      [NOTIF_COLUMN[key]]: next,
+    };
+    await supabase.from('players').update(updates).eq('id', playerId);
   }
 
   const recentLaps = useMemo(() => laps.slice(0, 20), [laps]);
@@ -352,6 +377,40 @@ export default function ProfilClient() {
                     <span>{emailNotifs ? '🔔' : '🔕'}</span>
                     <span>Notifications email {emailNotifs ? 'activées' : 'désactivées'}</span>
                   </button>
+                </div>
+                <div className="mt-1.5">
+                  <button
+                    onClick={() => setShowNotifPrefs(v => !v)}
+                    aria-expanded={showNotifPrefs}
+                    className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                  >
+                    <span aria-hidden="true">⚙️</span>
+                    <span>Types de notifications</span>
+                    <svg className={`w-3 h-3 transition-transform ${showNotifPrefs ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showNotifPrefs && (
+                    <div className="mt-2 flex flex-col gap-1.5">
+                      {([
+                        { key: 'exact',      label: 'Record battu (config exacte)' },
+                        { key: 'drivetrain', label: 'Record battu (autre transmission)' },
+                        { key: 'class',      label: 'Record battu (autre voiture, même classe)' },
+                        { key: 'rival',      label: 'Un pilote suivi me dépasse' },
+                      ] as const).map(({ key, label }) => (
+                        <label key={key} className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={notifPrefs[key]}
+                            onChange={() => toggleNotifPref(key)}
+                            className="accent-pink-500 w-4 h-4"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                      <p className="text-xs text-neutral-500 mt-0.5">Désélectionne un type pour ne plus recevoir ces notifications (cloche 🔔). L&apos;email reste piloté par le bouton ci-dessus.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

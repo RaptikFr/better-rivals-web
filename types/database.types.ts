@@ -279,6 +279,10 @@ export type Database = {
           discord_tag: string | null
           email_notifications_enabled: boolean
           id: string
+          notify_class: boolean
+          notify_drivetrain: boolean
+          notify_exact: boolean
+          notify_rival: boolean
           pseudo: string
           user_id: string | null
         }
@@ -287,6 +291,10 @@ export type Database = {
           discord_tag?: string | null
           email_notifications_enabled?: boolean
           id?: string
+          notify_class?: boolean
+          notify_drivetrain?: boolean
+          notify_exact?: boolean
+          notify_rival?: boolean
           pseudo: string
           user_id?: string | null
         }
@@ -295,6 +303,10 @@ export type Database = {
           discord_tag?: string | null
           email_notifications_enabled?: boolean
           id?: string
+          notify_class?: boolean
+          notify_drivetrain?: boolean
+          notify_exact?: boolean
+          notify_rival?: boolean
           pseudo?: string
           user_id?: string | null
         }
