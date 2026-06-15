@@ -86,13 +86,17 @@ export default function AdminPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial des éléments en attente
     if (isAdmin(user?.email)) fetchPending();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
     if (adminTab === 'messages' && isAdmin(user?.email) && !messagesFetched) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement des messages à l'ouverture de l'onglet
       fetchMessages();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminTab, user, messagesFetched]);
 
   function notify(text: string, ok: boolean) {

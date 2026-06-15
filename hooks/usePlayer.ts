@@ -34,6 +34,7 @@ export function usePlayer() {
     if (!user) {
       cachedUserId = null;
       cachedPromise = null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset volontaire du profil à la déconnexion
       setPlayer(null);
       setLoading(false);
       return;

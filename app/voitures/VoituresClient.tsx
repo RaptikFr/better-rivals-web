@@ -73,6 +73,7 @@ export default function VoituresClient({ initialSearch }: { initialSearch?: stri
   const safePage   = Math.min(currentPage, totalPages);
   const paginated  = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- retour à la page 1 quand les filtres changent
   useEffect(() => { setCurrentPage(1); }, [search, filterClass, filterType]);
 
   return (

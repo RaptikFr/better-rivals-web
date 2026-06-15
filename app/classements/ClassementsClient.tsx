@@ -258,6 +258,7 @@ export default function ClassementsClient({
   const [currentPage, setCurrentPage] = useState(1);
 
   // Restaure les filtres depuis localStorage (les props URL ont priorité)
+  /* eslint-disable react-hooks/set-state-in-effect -- restauration des filtres au montage (localStorage indisponible en SSR) */
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -277,6 +278,7 @@ export default function ClassementsClient({
     setStorageLoaded(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Sauvegarde les filtres persistants à chaque changement (après la restauration initiale)
   useEffect(() => {
@@ -342,14 +344,18 @@ export default function ClassementsClient({
     setIsLoading(false);
   }, [selectedTrackId, selectedClass, selectedDrivetrain]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- (re)chargement des temps quand les filtres changent
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- retour à la page 1 quand les filtres secondaires changent
   useEffect(() => { setCurrentPage(1); }, [selectedCar, pseudoSearch, myTimesOnly]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- replie les groupes quand on change de circuit
   useEffect(() => { setOpenGroups(new Set()); }, [selectedTrackId]);
 
   // Lit le paramètre ?highlight= à l'arrivée sur la page
   useEffect(() => {
     const h = new URLSearchParams(window.location.search).get('highlight');
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture de l'URL au montage (window indisponible en SSR)
     if (h) setHighlightId(h);
   }, []);
 
@@ -463,6 +469,7 @@ export default function ClassementsClient({
     );
     if (groupIndex === -1) return;
     const targetPage = Math.floor(groupIndex / CIRCUITS_PER_PAGE) + 1;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- saute à la page contenant la ligne mise en évidence
     setCurrentPage(targetPage);
   }, [highlightId, circuitGroups]);
 

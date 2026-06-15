@@ -27,10 +27,12 @@ export default function ContactClient() {
   // Pré-remplissage si connecté
   useEffect(() => {
     if (!user) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pré-remplissage du formulaire depuis la session
     setForm(f => ({ ...f, email: user.email ?? '' }));
   }, [user]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pré-remplissage du gamertag une fois le joueur chargé
     if (player?.pseudo) setForm(f => ({ ...f, gamertag: player.pseudo }));
   }, [player]);
 

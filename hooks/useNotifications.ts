@@ -19,6 +19,7 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset volontaire quand le joueur se déconnecte
     if (!playerId) { setNotifications([]); return; }
 
     supabase

@@ -60,6 +60,7 @@ export default function GlobalSearch() {
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset volontaire de la recherche à la fermeture
     else { setQuery(''); setResults(EMPTY); }
   }, [open]);
 
@@ -68,6 +69,7 @@ export default function GlobalSearch() {
     // Les caractères spéciaux d'ilike et la syntaxe or() de PostgREST sont neutralisés
     const q = query.trim().replace(/[%_,()]/g, ' ').trim();
     if (q.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- vide les résultats tant que la requête est trop courte
       setResults(EMPTY);
       return;
     }

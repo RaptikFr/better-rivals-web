@@ -229,6 +229,7 @@ export default function ProfilClient() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial des données du profil
     if (user) fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);

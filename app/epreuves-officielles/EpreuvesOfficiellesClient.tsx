@@ -73,6 +73,7 @@ export default function EpreuvesOfficiellesClient() {
     setIsLoading(false);
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial des épreuves
   useEffect(() => { fetchData(); }, []);
 
   const allTypes = ['Tous', ...Array.from(new Set(tracks.map(t => t.type))).sort()];

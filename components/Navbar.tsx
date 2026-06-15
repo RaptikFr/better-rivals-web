@@ -44,6 +44,7 @@ export default function Navbar() {
   const epreuvesRef    = useRef<HTMLDivElement>(null);
   const classementsRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- pattern d'hydratation SSR (détection du montage client)
   useEffect(() => setMounted(true), []);
 
   // Marque toutes les notifications comme lues à l'ouverture du dropdown
@@ -65,6 +66,7 @@ export default function Navbar() {
   }, []);
 
   // Ferme le menu mobile à chaque navigation
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reset volontaire du menu au changement de route
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   async function handleSignOut() {

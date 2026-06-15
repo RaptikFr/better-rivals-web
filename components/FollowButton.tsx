@@ -19,6 +19,7 @@ export function FollowButton({ followedPlayerId }: { followedPlayerId: string })
   const [busy,      setBusy]      = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset volontaire avant de recharger l'état de suivi
     if (!meId || isSelf) { setReady(false); return; }
     let cancelled = false;
     supabase

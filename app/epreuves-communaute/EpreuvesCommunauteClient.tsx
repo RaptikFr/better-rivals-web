@@ -244,6 +244,7 @@ export default function EpreuvesCommunauteClient() {
     setIsLoading(false);
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial des épreuves
   useEffect(() => { fetchData(); }, []);
 
   // Les votes de l'utilisateur passent par l'API : user_id n'est plus lisible côté client
