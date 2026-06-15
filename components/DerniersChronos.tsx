@@ -3,11 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { formatTime } from '@/components/formatTime';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
-import { dateRelative } from '@/lib/dateRelative';
+import { usePreferences } from '@/hooks/usePreferences';
 import type { Drivetrain } from '@/types/supabase';
 
 interface Chrono {
@@ -23,6 +22,7 @@ interface Chrono {
 }
 
 export default function DerniersChronos() {
+  const { formatTime, formatDate } = usePreferences();
   const [chronos, setChronos] = useState<Chrono[]>([]);
   const [ready,   setReady]   = useState(false);
 
@@ -95,7 +95,7 @@ export default function DerniersChronos() {
               )}
             </div>
 
-            <span className="text-xs text-neutral-500 shrink-0">{dateRelative(lap.recorded_at)}</span>
+            <span className="text-xs text-neutral-500 shrink-0">{formatDate(lap.recorded_at)}</span>
           </div>
         ))}
       </div>

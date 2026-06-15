@@ -11,3 +11,21 @@
 body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Préférence « densité compacte » : resserre l'espacement vertical des lignes
+   de tableau. Le :is() garde une spécificité supérieure aux utilitaires Tailwind
+   de padding, sans toucher la mise en page mobile en cartes. */
+.density-compact :is(td, th) {
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+}
+
+/* Préférence « réduire les animations » : neutralise transitions et animations. */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}

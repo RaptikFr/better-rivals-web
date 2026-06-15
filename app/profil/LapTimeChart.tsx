@@ -1,7 +1,7 @@
 "use client";
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { formatTime } from '@/components/formatTime';
+import { usePreferences } from '@/hooks/usePreferences';
 
 // Graphique de progression des chronos, isolé pour que recharts ne soit
 // chargé (via next/dynamic) que lorsqu'un graphique est affiché.
@@ -16,6 +16,7 @@ export default function LapTimeChart({
   colors: string[];
   yTickFormatter: (ms: number) => string;
 }) {
+  const { formatTime } = usePreferences();
   return (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>

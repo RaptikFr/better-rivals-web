@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { formatTime } from '@/components/formatTime';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
-import { dateRelative } from '@/lib/dateRelative';
+import { usePreferences } from '@/hooks/usePreferences';
 import type { LeaderFeedItem } from '@/app/api/nouveaux-leaders/route';
 import type { Drivetrain } from '@/types/supabase';
 
 export default function NouveauxLeaders() {
+  const { formatTime, formatDate } = usePreferences();
   const [items, setItems] = useState<LeaderFeedItem[]>([]);
   const [ready, setReady] = useState(false);
 
@@ -86,7 +86,7 @@ export default function NouveauxLeaders() {
                 )}
               </div>
 
-              <span className="text-xs text-neutral-500 shrink-0">{dateRelative(item.recorded_at)}</span>
+              <span className="text-xs text-neutral-500 shrink-0">{formatDate(item.recorded_at)}</span>
             </div>
           );
         })}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { formatTime } from '@/components/formatTime';
+import { usePreferences } from '@/hooks/usePreferences';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { loadPlayerRankings, rivalsFor, type PlayerRankings } from '@/lib/playerRankings';
@@ -33,6 +33,7 @@ interface Circuit {
 }
 
 export default function JoueurClient({ pseudo }: { pseudo: string }) {
+  const { formatTime } = usePreferences();
   const [laps,         setLaps]         = useState<Lap[]>([]);
   const [playerId,     setPlayerId]     = useState<string | null>(null);
   const [rankings,     setRankings]     = useState<PlayerRankings | null>(null);

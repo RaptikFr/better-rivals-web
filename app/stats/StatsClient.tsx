@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { formatTime } from '@/components/formatTime';
+import { usePreferences } from '@/hooks/usePreferences';
 
 interface Stats {
   totalChronos:  number;
@@ -25,6 +25,7 @@ interface LastChrono {
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function StatsClient() {
+  const { formatTime } = usePreferences();
   const [stats,       setStats]       = useState<Stats | null>(null);
   const [topPilotes,  setTopPilotes]  = useState<TopPilote[]>([]);
   const [topCircuits, setTopCircuits] = useState<TopItem[]>([]);

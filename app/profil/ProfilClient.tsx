@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import type { Drivetrain, CarClass } from '@/types/supabase';
-import { formatTime } from '@/components/formatTime';
+import { usePreferences } from '@/hooks/usePreferences';
 import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import type { Podiums } from '@/lib/podiums';
@@ -616,6 +616,7 @@ function ShareCodeCell({ lapId, initialCode }: { lapId: string; initialCode: str
 }
 
 function LapTable({ laps, showDate, hideCircuit, isEditable }: { laps: ProfileLap[]; showDate?: boolean; hideCircuit?: boolean; isEditable?: boolean }) {
+  const { formatTime } = usePreferences();
   return (
     <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden text-sm">
       {/* En-tête de colonnes (≥ sm) */}
@@ -679,6 +680,7 @@ interface HistoryEntry {
 const SUIVI_COLORS = ['#e91e8c', '#7c3aed', '#22c55e', '#f59e0b', '#3b82f6', '#ef4444', '#06b6d4'];
 
 function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) {
+  const { formatTime } = usePreferences();
   const [history,      setHistory]      = useState<HistoryEntry[]>([]);
   const [currentBests, setCurrentBests] = useState<Map<string, number>>(new Map());
   const [loadedAt,     setLoadedAt]     = useState<number | null>(null);
@@ -992,6 +994,7 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
 }
 
 function ClassementsTab({ laps, rivalsByConfig }: { laps: ProfileLap[]; rivalsByConfig: Map<string, ConfigRivals> }) {
+  const { formatTime } = usePreferences();
   // Rang, total et rivaux directs issus du calcul serveur (RPC) — aucune
   // requête supplémentaire.
   const rankings = useMemo(() =>

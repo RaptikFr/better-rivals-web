@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { fetchAllRows } from '@/lib/fetchAllRows';
-import { formatTime } from '@/components/formatTime';
+import { usePreferences } from '@/hooks/usePreferences';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { getTypeIcon } from '@/lib/trackIcons';
 
@@ -152,6 +152,7 @@ function PlayerSearch({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ComparaisonClient() {
+  const { formatTime } = usePreferences();
   const [player1, setPlayer1] = useState<Player | null>(null);
   const [player2, setPlayer2] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);

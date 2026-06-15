@@ -34,7 +34,7 @@ export default function Navbar() {
   const router   = useRouter();
   const { user, loading, signOut } = useAuth();
   const { notifications, unreadCount, markAllAsRead, markOneAsRead, deleteAllRead } = useNotifications();
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted,          setMounted]          = useState(false);
   const [bellOpen,        setBellOpen]        = useState(false);
   const [epreuvesOpen,    setEpreuvesOpen]    = useState(false);
@@ -195,17 +195,31 @@ export default function Navbar() {
           {/* Recherche globale */}
           <GlobalSearch />
 
-          {/* Toggle thème */}
+          {/* Toggle thème (bascule rapide clair/sombre ; réglage complet dans /parametres) */}
           {mounted && (
             <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
-              aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              title={resolvedTheme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+              aria-label={resolvedTheme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
               className="ml-1 p-2 rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors text-sm"
             >
-              {theme === 'dark' ? '☀️' : '🌙'}
+              {resolvedTheme === 'dark' ? '☀️' : '🌙'}
             </button>
           )}
+
+          {/* Paramètres */}
+          <Link
+            href="/parametres"
+            title="Paramètres"
+            aria-label="Paramètres"
+            className={`ml-1 p-2 rounded-full transition-colors text-sm ${
+              pathname === '/parametres'
+                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white'
+                : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700'
+            }`}
+          >
+            ⚙️
+          </Link>
 
           {/* Cloche notifications */}
           {user && (
@@ -388,6 +402,9 @@ export default function Navbar() {
                   {label}
                 </Link>
               ))}
+              <Link href="/parametres" onClick={() => setMobileOpen(false)} className={mobileLinkClass('/parametres')}>
+                ⚙️ Paramètres
+              </Link>
             </div>
 
             <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3">

@@ -7,7 +7,7 @@ import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlayer } from '@/hooks/usePlayer';
 import type { Drivetrain, CarClass } from '@/types/supabase';
-import { formatTime } from '@/components/formatTime';
+import { usePreferences } from '@/hooks/usePreferences';
 import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
@@ -95,6 +95,7 @@ function ReportModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { formatTime } = usePreferences();
   const [raison, setRaison] = useState<Raison>(RAISONS[0]);
   const [details, setDetails] = useState('');
   const [loading, setLoading] = useState(false);
@@ -202,6 +203,7 @@ export default function ClassementsClient({
   communityOnly?:     boolean;
 } = {}) {
 
+  const { formatTime } = usePreferences();
   const { user } = useAuth();
   const { player } = usePlayer();
   const currentPlayerId     = player?.id     ?? null;
