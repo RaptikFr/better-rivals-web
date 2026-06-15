@@ -577,6 +577,7 @@ export default function ClassementsClient({
                 {selectedTrackId !== null && (
                   <button
                     onClick={() => { setSelectedTrackId(null); setTrackSearch(''); }}
+                    aria-label="Effacer le filtre circuit"
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
                   >✕</button>
                 )}
@@ -634,6 +635,7 @@ export default function ClassementsClient({
               {selectedCar !== 'Toutes' && (
                 <button
                   onClick={() => { setSelectedCar('Toutes'); setCarSearch(''); }}
+                  aria-label="Effacer le filtre voiture"
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
                 >✕</button>
               )}
@@ -858,6 +860,7 @@ export default function ClassementsClient({
                                 <button
                                   onClick={() => handleShareRow(lap.id)}
                                   title="Copier le lien vers ce temps"
+                                  aria-label="Copier le lien vers ce temps"
                                   className="text-neutral-400 hover:text-pink-400 transition-colors text-xs"
                                 >
                                   {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
@@ -866,6 +869,7 @@ export default function ClassementsClient({
                                   <button
                                     onClick={() => setReportTarget(lap)}
                                     title="Signaler ce temps comme suspect"
+                                    aria-label="Signaler ce temps comme suspect"
                                     className="text-neutral-500 hover:text-red-400 transition-colors"
                                   >
                                     🚩

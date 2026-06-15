@@ -131,7 +131,7 @@ function SoumissionModal({ onClose, onSuccess }: { onClose: () => void; onSucces
       <div className="w-full max-w-lg bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl">
         <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-800">
           <h2 className="text-xl font-bold">Proposer une épreuve</h2>
-          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white text-xl">✕</button>
+          <button onClick={onClose} aria-label="Fermer" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white text-xl">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
 

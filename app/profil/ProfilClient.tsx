@@ -408,12 +408,14 @@ export default function ProfilClient() {
         <div className="flex gap-1 mb-6 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-1 overflow-x-auto">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              aria-label={tab.label}
+              aria-pressed={activeTab === tab.id}
               className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
                 activeTab === tab.id
                   ? 'bg-gradient-to-r from-pink-500 to-violet-600 text-white'
                   : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800'
               }`}>
-              <span className="mr-1.5">{tab.icon}</span>
+              <span className="mr-1.5" aria-hidden="true">{tab.icon}</span>
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
@@ -447,7 +449,7 @@ export default function ProfilClient() {
                       className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
                     />
                     {filterTrack !== 'Tous' && (
-                      <button onClick={() => { setFilterTrack('Tous'); setFilterTrackSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
+                      <button onClick={() => { setFilterTrack('Tous'); setFilterTrackSearch(''); }} aria-label="Effacer le filtre circuit" className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
                     )}
                   </div>
                   {showTrackFilter && filteredTrackOptions.length > 0 && (
@@ -483,7 +485,7 @@ export default function ProfilClient() {
                     className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
                   />
                   {filterCar !== 'Toutes' && (
-                    <button onClick={() => { setFilterCar('Toutes'); setFilterCarSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
+                    <button onClick={() => { setFilterCar('Toutes'); setFilterCarSearch(''); }} aria-label="Effacer le filtre voiture" className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
                   )}
                 </div>
                 {showCarFilter && filteredCarOptions.length > 0 && (
@@ -916,7 +918,7 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
               className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
             />
             {selectedTrack !== 'Tous' && (
-              <button onClick={() => { setSelectedTrack('Tous'); setTrackSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
+              <button onClick={() => { setSelectedTrack('Tous'); setTrackSearch(''); }} aria-label="Effacer le filtre circuit" className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
             )}
           </div>
           {showTrackDrop && filteredTracks.length > 0 && (
@@ -942,7 +944,7 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
               className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
             />
             {selectedCar !== 'Toutes' && (
-              <button onClick={() => { setSelectedCar('Toutes'); setCarSearch(''); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
+              <button onClick={() => { setSelectedCar('Toutes'); setCarSearch(''); }} aria-label="Effacer le filtre voiture" className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">✕</button>
             )}
           </div>
           {showCarDrop && filteredCars.length > 0 && (

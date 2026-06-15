@@ -200,6 +200,7 @@ export default function Navbar() {
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+              aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
               className="ml-1 p-2 rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors text-sm"
             >
               {theme === 'dark' ? '☀️' : '🌙'}
@@ -233,6 +234,7 @@ export default function Navbar() {
                   <>
                     <button
                       onClick={() => setBellOpen(o => !o)}
+                      aria-label={unreadCount > 0 ? `Notifications (${unreadCount} non lue${unreadCount > 1 ? 's' : ''})` : 'Notifications'}
                       className={`relative p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors ${bellColor}`}
                     >
                       🔔
