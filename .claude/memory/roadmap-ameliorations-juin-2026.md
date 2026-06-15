@@ -21,7 +21,7 @@ Le 2026-06-15, on a passé en revue 6 pistes d'amélioration du site. Contrainte
 
 5. **Scalabilité du calcul de classement** — ⏳ À FAIRE (le user est pour). Aujourd'hui le profil, la page joueur ET la feature rivaux téléchargent tous les temps des circuits côté client (`fetchAllRows`) puis classent en JS. À déplacer vers une fonction Postgres/RPC côté serveur pour réduire la charge réseau quand la base grossit.
 
-6. **Accessibilité** — ⏳ À FAIRE (le user est pour). Ajouter des `aria-label` aux boutons emoji-only (toggle thème, partage 🔗, etc.).
+6. **Accessibilité** — ✅ FAIT (commit `feat(a11y)`). `aria-label` ajoutés sur tous les boutons icône/emoji-only : toggle thème + cloche 🔔 (Navbar), partage 🔗 + signalement 🚩 + ✕ de filtres (Classements), onglets du profil (libellé masqué sous `sm` → aria-label + aria-pressed, emoji en aria-hidden) + ✕ de filtres (profil & Suivi), ✕ de fermeture modale (Épreuves communauté). BadgesBar avait déjà aria-label/aria-expanded. Boutons à texte visible laissés tels quels. Reste éventuel (non demandé) : audit clavier/focus-visible, rôles ARIA des dropdowns.
 
 ## Ordre suggéré pour la suite
-Points restants : 4 (nouveaux leaders), 5 (scalabilité RPC), 6 (accessibilité — partiellement amorcé via BadgesBar).
+Points restants : 4 (nouveaux leaders), 5 (scalabilité RPC). Faits : 1, 2, 3, 6.
