@@ -466,16 +466,20 @@ export default function ClassementsClient({
     return groups.sort((a, b) => a.trackName.localeCompare(b.trackName));
   }, [filteredLaps]);
 
-  // Navigue vers la page contenant la ligne mise en évidence
+  // Navigue vers la page contenant la ligne mise en évidence et déplie sa config
   useEffect(() => {
     if (!highlightId || circuitGroups.length === 0) return;
     const groupIndex = circuitGroups.findIndex(g =>
       g.subGroups.some(sg => sg.laps.some(l => l.id === highlightId))
     );
     if (groupIndex === -1) return;
+    const subGroupKey = circuitGroups[groupIndex].subGroups
+      .find(sg => sg.laps.some(l => l.id === highlightId))?.key;
     const targetPage = Math.floor(groupIndex / CIRCUITS_PER_PAGE) + 1;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- saute à la page contenant la ligne mise en évidence
+    /* eslint-disable react-hooks/set-state-in-effect -- saute à la page et déplie la config contenant la ligne mise en évidence */
     setCurrentPage(targetPage);
+    if (subGroupKey) setOpenGroups(prev => (prev.has(subGroupKey) ? prev : new Set(prev).add(subGroupKey)));
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [highlightId, circuitGroups]);
 
   // Scrolle jusqu'à la ligne mise en évidence — attend la fin du chargement
@@ -768,111 +772,132 @@ export default function ClassementsClient({
                   </span>
                 </div>
 
-                {/* Tableau en colonnes (tout aligné, défilement horizontal si besoin) */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="text-left text-[11px] uppercase tracking-wider text-neutral-500 border-b border-neutral-200 dark:border-neutral-800">
-                        <th className="px-3 py-2 font-bold">Catégorie</th>
-                        <th className="px-3 py-2 font-bold">Transmission</th>
-                        <th className="px-3 py-2 font-bold">Modèle</th>
-                        <th className="px-3 py-2 font-bold text-right">Classement</th>
-                        <th className="px-3 py-2 font-bold">Pseudo</th>
-                        <th className="px-3 py-2 font-bold">Meilleur temps</th>
-                        <th className="px-3 py-2 font-bold">Ancien meilleur temps</th>
-                        <th className="px-3 py-2 font-bold">Différence</th>
-                        <th className="px-3 py-2 font-bold">Écart avec le n°1</th>
-                        <th className="px-3 py-2 font-bold">Écart avec le joueur précédent</th>
-                        <th className="px-3 py-2 font-bold">Écart avec le joueur suivant</th>
-                        <th className="px-3 py-2 font-bold">Indice de Performance</th>
-                        <th className="px-3 py-2 font-bold">Réglage</th>
-                        <th className="px-3 py-2" aria-label="Actions" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {circuit.subGroups.flatMap(group =>
-                        group.laps.map((lap, i) => {
-                          const leader  = group.laps[0];
-                          const prevLap = group.laps[i - 1];
-                          const nextLap = group.laps[i + 1];
-                          return (
-                            <tr
-                              key={lap.id}
-                              data-lap-id={lap.id}
-                              className={`border-b border-neutral-200/60 dark:border-neutral-800/60 last:border-0 hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors ${
-                                lap.id === highlightId ? 'bg-pink-500/20 dark:bg-pink-500/20' : ''
-                              }`}
-                            >
-                              <td className="px-3 py-2">
-                                <span
-                                  className="px-2 py-0.5 rounded text-xs font-bold"
-                                  style={CLASS_STYLES[group.carClass] ?? { backgroundColor: '#555', color: '#fff' }}
-                                >
-                                  {group.carClass}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2"><DrivetrainBadge drivetrain={group.drivetrain} /></td>
-                              <td className="px-3 py-2 text-neutral-700 dark:text-neutral-300 whitespace-nowrap">{group.carLabel}</td>
-                              <td className="px-3 py-2 text-right font-bold text-neutral-500 tabular-nums">{lap.rank}</td>
-                              <td className="px-3 py-2 whitespace-nowrap">
-                                <Link
-                                  href={`/joueurs/${encodeURIComponent(lap.players?.pseudo ?? '')}`}
-                                  className="font-bold text-neutral-900 dark:text-white hover:text-pink-400 transition-colors"
-                                >
-                                  {lap.players?.pseudo ?? 'Inconnu'}
-                                </Link>
-                                <DiscordTag tag={lap.players?.discord_tag} />
-                              </td>
-                              <td className="px-3 py-2 font-mono font-bold text-pink-400 whitespace-nowrap">{formatTime(lap.time_ms)}</td>
-                              <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">
-                                {lap.previous_time_ms ? formatTime(lap.previous_time_ms) : '—'}
-                              </td>
-                              <td className="px-3 py-2 font-mono text-xs text-orange-400 whitespace-nowrap">
-                                {lap.previous_time_ms ? gapStr(lap.previous_time_ms - lap.time_ms) : '—'}
-                              </td>
-                              <td className="px-3 py-2 font-mono text-xs text-sky-400 whitespace-nowrap">
-                                {lap.rank > 1 ? gapStr(lap.time_ms - leader.time_ms) : '—'}
-                              </td>
-                              <td className="px-3 py-2 font-mono text-xs text-violet-400 whitespace-nowrap">
-                                {prevLap ? gapStr(lap.time_ms - prevLap.time_ms) : '—'}
-                              </td>
-                              <td className="px-3 py-2 font-mono text-xs text-emerald-400 whitespace-nowrap">
-                                {nextLap ? gapStr(nextLap.time_ms - lap.time_ms) : '—'}
-                              </td>
-                              <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">PI {lap.car_pi}</td>
-                              <td className="px-3 py-2"><TuneCell lap={lap} /></td>
-                              <td className="px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => handleShareRow(lap.id)}
-                                    title="Copier le lien vers ce temps"
-                                    aria-label="Copier le lien vers ce temps"
-                                    className="text-neutral-400 hover:text-pink-400 transition-colors text-xs"
-                                  >
-                                    {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
-                                  </button>
-                                  {user && currentPlayerId !== null && (
-                                    lap.player_id !== currentPlayerId ? (
-                                      <button
-                                        onClick={() => setReportTarget(lap)}
-                                        title="Signaler ce temps comme suspect"
-                                        aria-label="Signaler ce temps comme suspect"
-                                        className="text-neutral-500 hover:text-red-400 transition-colors"
-                                      >
-                                        🚩
-                                      </button>
-                                    ) : (
-                                      <span aria-hidden="true" className="invisible select-none">🚩</span>
-                                    )
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
+                {/* Configs repliables — chaque config déroule un tableau aligné */}
+                <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                  {circuit.subGroups.map(group => {
+                    const isOpen = openGroups.has(group.key);
+                    return (
+                      <div key={group.key}>
+                        {/* En-tête de config cliquable (Catégorie · Transmission · Modèle) */}
+                        <button
+                          onClick={() => toggleGroup(group.key)}
+                          className="w-full flex items-center gap-2 px-4 py-3 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors text-left"
+                        >
+                          <span
+                            className="px-2 py-0.5 rounded text-xs font-bold flex-shrink-0"
+                            style={CLASS_STYLES[group.carClass] ?? { backgroundColor: '#555', color: '#fff' }}
+                          >
+                            {group.carClass}
+                          </span>
+                          <DrivetrainBadge drivetrain={group.drivetrain} />
+                          <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 truncate">{group.carLabel}</span>
+                          <span className="text-xs text-neutral-500 ml-auto flex-shrink-0 mr-1">
+                            {group.laps.length} pilote{group.laps.length > 1 ? 's' : ''}
+                          </span>
+                          <svg
+                            className={`w-4 h-4 flex-shrink-0 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+
+                        {/* Tableau en colonnes — visible si la config est dépliée */}
+                        {isOpen && (
+                          <div className="overflow-x-auto pb-2">
+                            <table className="w-full text-sm border-collapse">
+                              <thead>
+                                <tr className="text-left text-[11px] uppercase tracking-wider text-neutral-500 border-y border-neutral-200 dark:border-neutral-800">
+                                  <th className="px-3 py-2 font-bold text-right">Classement</th>
+                                  <th className="px-3 py-2 font-bold">Pseudo</th>
+                                  <th className="px-3 py-2 font-bold">Meilleur temps</th>
+                                  <th className="px-3 py-2 font-bold">Ancien meilleur temps</th>
+                                  <th className="px-3 py-2 font-bold">Différence</th>
+                                  <th className="px-3 py-2 font-bold">Écart avec le n°1</th>
+                                  <th className="px-3 py-2 font-bold">Écart avec le joueur précédent</th>
+                                  <th className="px-3 py-2 font-bold">Écart avec le joueur suivant</th>
+                                  <th className="px-3 py-2 font-bold">Indice de Performance</th>
+                                  <th className="px-3 py-2 font-bold">Réglage</th>
+                                  <th className="px-3 py-2" aria-label="Actions" />
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.laps.map((lap, i) => {
+                                  const leader  = group.laps[0];
+                                  const prevLap = group.laps[i - 1];
+                                  const nextLap = group.laps[i + 1];
+                                  return (
+                                    <tr
+                                      key={lap.id}
+                                      data-lap-id={lap.id}
+                                      className={`border-b border-neutral-200/60 dark:border-neutral-800/60 last:border-0 hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors ${
+                                        lap.id === highlightId ? 'bg-pink-500/20 dark:bg-pink-500/20' : ''
+                                      }`}
+                                    >
+                                      <td className="px-3 py-2 text-right font-bold text-neutral-500 tabular-nums">{lap.rank}</td>
+                                      <td className="px-3 py-2 whitespace-nowrap">
+                                        <Link
+                                          href={`/joueurs/${encodeURIComponent(lap.players?.pseudo ?? '')}`}
+                                          className="font-bold text-neutral-900 dark:text-white hover:text-pink-400 transition-colors"
+                                        >
+                                          {lap.players?.pseudo ?? 'Inconnu'}
+                                        </Link>
+                                        <DiscordTag tag={lap.players?.discord_tag} />
+                                      </td>
+                                      <td className="px-3 py-2 font-mono font-bold text-pink-400 whitespace-nowrap">{formatTime(lap.time_ms)}</td>
+                                      <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">
+                                        {lap.previous_time_ms ? formatTime(lap.previous_time_ms) : '—'}
+                                      </td>
+                                      <td className="px-3 py-2 font-mono text-xs text-orange-400 whitespace-nowrap">
+                                        {lap.previous_time_ms ? gapStr(lap.previous_time_ms - lap.time_ms) : '—'}
+                                      </td>
+                                      <td className="px-3 py-2 font-mono text-xs text-sky-400 whitespace-nowrap">
+                                        {lap.rank > 1 ? gapStr(lap.time_ms - leader.time_ms) : '—'}
+                                      </td>
+                                      <td className="px-3 py-2 font-mono text-xs text-violet-400 whitespace-nowrap">
+                                        {prevLap ? gapStr(lap.time_ms - prevLap.time_ms) : '—'}
+                                      </td>
+                                      <td className="px-3 py-2 font-mono text-xs text-emerald-400 whitespace-nowrap">
+                                        {nextLap ? gapStr(nextLap.time_ms - lap.time_ms) : '—'}
+                                      </td>
+                                      <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">PI {lap.car_pi}</td>
+                                      <td className="px-3 py-2"><TuneCell lap={lap} /></td>
+                                      <td className="px-3 py-2">
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            onClick={() => handleShareRow(lap.id)}
+                                            title="Copier le lien vers ce temps"
+                                            aria-label="Copier le lien vers ce temps"
+                                            className="text-neutral-400 hover:text-pink-400 transition-colors text-xs"
+                                          >
+                                            {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
+                                          </button>
+                                          {user && currentPlayerId !== null && (
+                                            lap.player_id !== currentPlayerId ? (
+                                              <button
+                                                onClick={() => setReportTarget(lap)}
+                                                title="Signaler ce temps comme suspect"
+                                                aria-label="Signaler ce temps comme suspect"
+                                                className="text-neutral-500 hover:text-red-400 transition-colors"
+                                              >
+                                                🚩
+                                              </button>
+                                            ) : (
+                                              <span aria-hidden="true" className="invisible select-none">🚩</span>
+                                            )
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
