@@ -31,7 +31,7 @@ export default function DerniersChronos() {
       .from('lap_times')
       // recorded_at (mis à jour à chaque amélioration) plutôt que created_at,
       // pour que les records améliorés remontent dans le flux
-      .select('id, time_ms, previous_time_ms, car_class, drivetrain, recorded_at, players ( pseudo, discord_tag ), cars ( manufacturer, name, year ), tracks ( name )')
+      .select('id, time_ms, previous_time_ms, car_class, drivetrain, recorded_at, players ( pseudo, discord_tag:discord_tag_public ), cars ( manufacturer, name, year ), tracks ( name )')
       .order('recorded_at', { ascending: false })
       .limit(5)
       .then(({ data, error }) => {

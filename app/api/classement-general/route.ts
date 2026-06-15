@@ -34,7 +34,7 @@ async function calculerClassement(): Promise<PlayerRanking[]> {
   const { data: allLaps, error } = await fetchAllRows<RawLap>((from, to) =>
     supabase
       .from('lap_times')
-      .select('time_ms, car_ordinal, car_class, drivetrain, track_id, player_id, players ( pseudo, discord_tag )')
+      .select('time_ms, car_ordinal, car_class, drivetrain, track_id, player_id, players ( pseudo, discord_tag:discord_tag_public )')
       .order('id')
       .range(from, to)
   );

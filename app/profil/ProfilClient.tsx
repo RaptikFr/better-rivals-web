@@ -132,6 +132,7 @@ export default function ProfilClient() {
   const [discordTag,  setDiscordTag]  = useState<string>('');
   const [editDiscord, setEditDiscord] = useState(false);
   const [savingDiscord, setSavingDiscord] = useState(false);
+  const [hideDiscord, setHideDiscord] = useState(false);
   const [emailNotifs, setEmailNotifs] = useState(false);
   const [notifPrefs,  setNotifPrefs]  = useState({ exact: true, drivetrain: true, class: true, rival: true });
   const [showNotifPrefs, setShowNotifPrefs] = useState(false);
@@ -160,13 +161,16 @@ export default function ProfilClient() {
 
     const { data: playerData } = await supabase
       .from('players')
-      .select('id, pseudo, discord_tag, email_notifications_enabled, notify_exact, notify_drivetrain, notify_class, notify_rival')
+      .select('id, pseudo, email_notifications_enabled, hide_discord_tag, notify_exact, notify_drivetrain, notify_class, notify_rival')
       .eq('user_id', user!.id)
       .single();
 
     if (!playerData) { setIsLoading(false); return; }
     setPseudo(playerData.pseudo);
-    setDiscordTag(playerData.discord_tag ?? '');
+    // Le tag brut n'est plus lisible par select (révoqué) : on lit le sien via RPC.
+    const { data: ownTag } = await supabase.rpc('my_discord_tag');
+    setDiscordTag(ownTag ?? '');
+    setHideDiscord(playerData.hide_discord_tag ?? false);
     setEmailNotifs(playerData.email_notifications_enabled ?? false);
     setNotifPrefs({
       exact:      playerData.notify_exact      ?? true,
@@ -225,6 +229,13 @@ export default function ProfilClient() {
     await supabase.from('players').update({ discord_tag: discordTag.trim() || null }).eq('id', playerId);
     setSavingDiscord(false);
     setEditDiscord(false);
+  }
+
+  async function toggleHideDiscord() {
+    if (!playerId) return;
+    const next = !hideDiscord;
+    setHideDiscord(next);
+    await supabase.from('players').update({ hide_discord_tag: next }).eq('id', playerId);
   }
 
   async function toggleEmailNotifs() {
@@ -364,6 +375,21 @@ export default function ProfilClient() {
                     </button>
                   )}
                 </div>
+                {discordTag && !editDiscord && (
+                  <div className="mt-1.5">
+                    <button
+                      onClick={toggleHideDiscord}
+                      aria-pressed={hideDiscord}
+                      className={`flex items-center gap-1.5 text-sm transition-colors ${
+                        hideDiscord ? 'text-pink-400 hover:text-pink-300' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                      }`}
+                      title={hideDiscord ? 'Ton tag Discord est masqué du public' : 'Masquer ton tag Discord des pages publiques'}
+                    >
+                      <span aria-hidden="true">{hideDiscord ? '🙈' : '👁️'}</span>
+                      <span>Tag Discord {hideDiscord ? 'masqué du public' : 'visible publiquement'}</span>
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mt-1.5">
                   <button
                     onClick={toggleEmailNotifs}
@@ -1132,7 +1158,7 @@ function RivauxTab({ playerId }: { playerId: string }) {
       }
       const { data: players } = await supabase
         .from('players')
-        .select('id, pseudo, discord_tag')
+        .select('id, pseudo, discord_tag:discord_tag_public')
         .in('id', ids);
       // On conserve l'ordre des suivis (du plus récent au plus ancien).
       const byId = new Map((players ?? []).map(p => [p.id, p as FollowedPlayer]));

@@ -18,7 +18,7 @@ let cachedPromise: Promise<PlayerProfile | null> | null = null;
 async function fetchPlayer(userId: string): Promise<PlayerProfile | null> {
   const { data } = await supabase
     .from('players')
-    .select('id, pseudo, discord_tag')
+    .select('id, pseudo, discord_tag:discord_tag_public')
     .eq('user_id', userId)
     .single();
   return data ?? null;

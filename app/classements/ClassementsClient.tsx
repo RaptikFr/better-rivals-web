@@ -329,7 +329,7 @@ export default function ClassementsClient({
         .from('lap_times')
         .select(`
           id, time_ms, previous_time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id, share_code,
-          players ( pseudo, discord_tag ),
+          players ( pseudo, discord_tag:discord_tag_public ),
           cars ( manufacturer, name, year ),
           tracks ( name, length_km, type, is_sprint )
         `)

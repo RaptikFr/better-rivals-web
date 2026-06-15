@@ -277,7 +277,9 @@ export type Database = {
         Row: {
           created_at: string
           discord_tag: string | null
+          discord_tag_public: string | null
           email_notifications_enabled: boolean
+          hide_discord_tag: boolean
           id: string
           notify_class: boolean
           notify_drivetrain: boolean
@@ -290,6 +292,7 @@ export type Database = {
           created_at?: string
           discord_tag?: string | null
           email_notifications_enabled?: boolean
+          hide_discord_tag?: boolean
           id?: string
           notify_class?: boolean
           notify_drivetrain?: boolean
@@ -302,6 +305,7 @@ export type Database = {
           created_at?: string
           discord_tag?: string | null
           email_notifications_enabled?: boolean
+          hide_discord_tag?: boolean
           id?: string
           notify_class?: boolean
           notify_drivetrain?: boolean
@@ -541,6 +545,10 @@ export type Database = {
           behind_pseudo: string | null
           behind_gap_ms: number | null
         }[]
+      }
+      my_discord_tag: {
+        Args: Record<string, never>
+        Returns: string
       }
     }
     Enums: {

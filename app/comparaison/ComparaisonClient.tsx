@@ -77,7 +77,7 @@ function PlayerSearch({
     }
     const { data } = await supabase
       .from('players')
-      .select('id, pseudo, discord_tag')
+      .select('id, pseudo, discord_tag:discord_tag_public')
       .ilike('pseudo', `%${q}%`)
       .limit(8);
     const filtered = (data ?? []).filter((p) => p.id !== excludeId);

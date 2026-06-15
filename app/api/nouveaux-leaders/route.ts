@@ -35,7 +35,7 @@ async function computeFeed(): Promise<LeaderFeedItem[]> {
     fetchAllRows<CurrentRow>((from, to) =>
       supabase
         .from('lap_times')
-        .select('player_id, track_id, car_ordinal, car_class, drivetrain, time_ms, recorded_at, players ( pseudo, discord_tag ), cars ( manufacturer, name, year ), tracks ( name )')
+        .select('player_id, track_id, car_ordinal, car_class, drivetrain, time_ms, recorded_at, players ( pseudo, discord_tag:discord_tag_public ), cars ( manufacturer, name, year ), tracks ( name )')
         .order('id')
         .range(from, to)
     ),
