@@ -4,7 +4,14 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Instanciation paresseuse : le constructeur Resend lève si la clé est absente.
+// La créer au niveau module ferait planter `next build` (collecte des routes)
+// dès que RESEND_API_KEY n'est pas définie. On la crée donc à l'usage, et on
+// saute proprement l'envoi d'email si la clé manque (ex. build/dev local).
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY;
+  return key ? new Resend(key) : null;
+}
 
 function formatTime(ms: number): string {
   const minutes      = Math.floor(ms / 60000);
@@ -282,6 +289,9 @@ async function sendBeatenEmail(opts: {
     const { data: authData } = await supabaseAdmin.auth.admin.getUserById(player.user_id);
     const email = authData?.user?.email;
     if (!email) return;
+
+    const resend = getResend();
+    if (!resend) return; // pas de clé Resend configurée → on n'envoie pas d'email
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://better-rivals.gg';
 
