@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import DerniersChronos from '@/components/DerniersChronos';
+import NouveauxLeaders from '@/components/NouveauxLeaders';
 
 export default function Home() {
   return (
@@ -41,6 +42,8 @@ export default function Home() {
           </Link>
         </div>
       </div>
+
+      <NouveauxLeaders />
 
       <DerniersChronos />
 

@@ -1,0 +1,115 @@
+import { NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
+import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAllRows';
+import { computeLeaderChanges, type LeaderLap } from '@/lib/leaders';
+
+const MAX_ITEMS = 8;
+
+interface CurrentRow extends LeaderLap {
+  players: { pseudo: string; discord_tag: string | null } | null;
+  cars:    { manufacturer: string | null; name: string; year: number | null } | null;
+  tracks:  { name: string } | null;
+}
+
+interface PlayerInfo { pseudo: string; discord_tag: string | null; }
+
+export interface LeaderFeedItem {
+  id:          string;
+  newLeader:   PlayerInfo;
+  oldLeader:   PlayerInfo;
+  newTimeMs:   number;
+  oldTimeMs:   number;
+  car:         string;
+  track:       string;
+  car_class:   string;
+  drivetrain:  string;
+  recorded_at: string;
+}
+
+async function computeFeed(): Promise<LeaderFeedItem[]> {
+  // Temps actuels (avec les jointures pour l'affichage) + historique complet.
+  // Comme classement-general, on télécharge tout puis on agrège — à déplacer
+  // côté Postgres/RPC quand la base grossira (cf. roadmap point 5).
+  const [currentRes, historyRes] = await Promise.all([
+    fetchAllRows<CurrentRow>((from, to) =>
+      supabase
+        .from('lap_times')
+        .select('player_id, track_id, car_ordinal, car_class, drivetrain, time_ms, recorded_at, players ( pseudo, discord_tag ), cars ( manufacturer, name, year ), tracks ( name )')
+        .order('id')
+        .range(from, to)
+    ),
+    fetchAllRows<LeaderLap>((from, to) =>
+      supabase
+        .from('lap_times_history')
+        .select('player_id, track_id, car_ordinal, car_class, drivetrain, time_ms, recorded_at')
+        .order('id')
+        .range(from, to)
+    ),
+  ]);
+
+  // Une erreur lancée n'est pas mise en cache : la prochaine requête réessaiera
+  if (currentRes.error) throw new Error(currentRes.error.message);
+  if (historyRes.error) throw new Error(historyRes.error.message);
+
+  const current = currentRes.data;
+
+  // Référentiels construits depuis les temps actuels : chaque joueur et chaque
+  // config y a forcément une ligne (le PB courant).
+  const playerInfo = new Map<string, PlayerInfo>();
+  const configInfo = new Map<string, { car: string; track: string }>();
+  for (const r of current) {
+    if (r.players) playerInfo.set(r.player_id, r.players);
+    const key = `${r.track_id}-${r.car_ordinal}-${r.car_class}-${r.drivetrain}`;
+    if (!configInfo.has(key)) {
+      configInfo.set(key, {
+        car:   r.cars ? `${r.cars.year ?? ''} ${r.cars.manufacturer ?? ''} ${r.cars.name ?? ''}`.trim() || '—' : '—',
+        track: r.tracks?.name ?? '—',
+      });
+    }
+  }
+
+  const changes = computeLeaderChanges([...current, ...historyRes.data]);
+
+  const feed: LeaderFeedItem[] = [];
+  for (const c of changes) {
+    const newLeader = playerInfo.get(c.newLeaderId);
+    const oldLeader = playerInfo.get(c.oldLeaderId);
+    if (!newLeader || !oldLeader) continue; // joueur supprimé → on saute l'événement
+    const info = configInfo.get(c.configKey) ?? { car: '—', track: '—' };
+    feed.push({
+      id:          `${c.configKey}-${c.recorded_at}-${c.newLeaderId}`,
+      newLeader,
+      oldLeader,
+      newTimeMs:   c.newTimeMs,
+      oldTimeMs:   c.oldTimeMs,
+      car:         info.car,
+      track:       info.track,
+      car_class:   c.car_class,
+      drivetrain:  c.drivetrain,
+      recorded_at: c.recorded_at,
+    });
+    if (feed.length >= MAX_ITEMS) break;
+  }
+  return feed;
+}
+
+// Cache serveur partagé (au plus un recalcul complet par minute)
+const feedEnCache = unstable_cache(computeFeed, ['nouveaux-leaders'], {
+  revalidate: 60,
+});
+
+export async function GET() {
+  try {
+    const feed = await feedEnCache();
+    return NextResponse.json({ feed }, {
+      status: 200,
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
+  } catch {
+    return NextResponse.json(
+      { error: 'Impossible de charger les nouveaux leaders.' },
+      { status: 500 }
+    );
+  }
+}
