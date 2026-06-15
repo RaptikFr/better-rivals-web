@@ -213,16 +213,19 @@ export default function Navbar() {
                   ? 'text-neutral-600 dark:text-neutral-400'
                   : latestUnread.type === 'exact'      ? 'text-red-500'
                   : latestUnread.type === 'drivetrain'  ? 'text-orange-400'
+                  : latestUnread.type === 'rival'       ? 'text-emerald-400'
                   : 'text-blue-400';
                 const badgeBg = !latestUnread
                   ? 'bg-neutral-400'
                   : latestUnread.type === 'exact'      ? 'bg-red-500'
                   : latestUnread.type === 'drivetrain'  ? 'bg-orange-400'
+                  : latestUnread.type === 'rival'       ? 'bg-emerald-400'
                   : 'bg-blue-400';
                 const typeBorder: Record<string, string> = {
                   exact:      'border-l-2 border-l-red-500',
                   drivetrain: 'border-l-2 border-l-orange-400',
                   class:      'border-l-2 border-l-blue-400',
+                  rival:      'border-l-2 border-l-emerald-400',
                 };
                 return (
                   <>

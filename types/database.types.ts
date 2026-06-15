@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      follows: {
+        Row: {
+          created_at: string
+          followed_player_id: string
+          follower_player_id: string
+        }
+        Insert: {
+          created_at?: string
+          followed_player_id: string
+          follower_player_id: string
+        }
+        Update: {
+          created_at?: string
+          followed_player_id?: string
+          follower_player_id?: string
+        }
+        Relationships: []
+      }
       cars: {
         Row: {
           add_ons: string | null

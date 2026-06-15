@@ -13,6 +13,61 @@ function formatTime(ms: number): string {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 }
 
+// Notifie les suiveurs de l'auteur du chrono qu'il vient de les dépasser sur
+// la config exacte. `estDepassement` garantit qu'on ne notifie qu'un vrai
+// dépassement (le suiveur était devant l'ancien temps de l'auteur).
+async function notifierRivauxDepasses(opts: {
+  playerId:   string;
+  pseudo:     string;
+  newTimeMs:  number;
+  trackId:    number;
+  carOrdinal: number;
+  carClass:   string;
+  drivetrain: string;
+  trackName:  string;
+  carLabel:   string;
+  estDepassement: (targetTimeMs: number) => boolean;
+}) {
+  const { data: followerRows } = await supabaseAdmin
+    .from('follows')
+    .select('follower_player_id')
+    .eq('followed_player_id', opts.playerId);
+
+  const followerIds = (followerRows ?? []).map(r => r.follower_player_id);
+  if (followerIds.length === 0) return;
+
+  const { data: rivalLaps } = await supabaseAdmin
+    .from('lap_times')
+    .select('player_id, time_ms')
+    .eq('track_id',    opts.trackId)
+    .eq('car_ordinal', opts.carOrdinal)
+    .eq('car_class',   opts.carClass)
+    .eq('drivetrain',  opts.drivetrain)
+    .in('player_id',   followerIds);
+
+  const params = new URLSearchParams({
+    track_id:   String(opts.trackId),
+    class:      opts.carClass,
+    drivetrain: opts.drivetrain,
+    car:        opts.carLabel,
+  });
+  const link = `/classements?${params.toString()}`;
+
+  const notifs = (rivalLaps ?? [])
+    .filter(rl => opts.newTimeMs < rl.time_ms && opts.estDepassement(rl.time_ms))
+    .map(rl => ({
+      player_id: rl.player_id,
+      message:   `🎯 ${opts.pseudo}, que tu suis, vient de te dépasser sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${opts.drivetrain} (${formatTime(opts.newTimeMs)})`,
+      type:      'rival',
+      link,
+      read:      false,
+    }));
+
+  if (notifs.length > 0) {
+    await supabaseAdmin.from('notifications').insert(notifs);
+  }
+}
+
 async function notifierRecordBattu(opts: {
   playerId:   string;
   pseudo:     string;
@@ -40,6 +95,22 @@ async function notifierRecordBattu(opts: {
   const carLabel = carData
     ? `${carData.year ?? ''} ${carData.manufacturer ?? ''} ${carData.name ?? ''}`.trim()
     : opts.carLabel;
+
+  // ── Rivaux : prévenir les joueurs qui SUIVENT l'auteur du chrono et qu'il
+  // vient de dépasser sur la config exacte (toute position, pas seulement la
+  // 1ère). Bloc indépendant des niveaux ci-dessous (qui sortent par return).
+  await notifierRivauxDepasses({
+    playerId:   opts.playerId,
+    pseudo:     opts.pseudo,
+    newTimeMs:  opts.newTimeMs,
+    trackId:    opts.trackId,
+    carOrdinal: opts.carOrdinal,
+    carClass:   opts.carClass,
+    drivetrain: opts.drivetrain,
+    trackName:  opts.trackName,
+    carLabel,
+    estDepassement,
+  });
 
   // Niveau 1 : même voiture + classe + transmission (config exacte)
   const { data: exact } = await supabaseAdmin

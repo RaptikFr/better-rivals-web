@@ -10,6 +10,7 @@ import { CLASS_STYLES } from '@/components/ClassStyles';
 import { countPodiums } from '@/lib/podiums';
 import { buildRivalIndex, findRivals, type RivalRow } from '@/lib/rivals';
 import { RivalsCell } from '@/components/RivalsCell';
+import { FollowButton } from '@/components/FollowButton';
 import type { Drivetrain } from '@/types/supabase';
 
 interface Lap {
@@ -94,6 +95,8 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
     load();
   }, [pseudo]);
 
+  const rivalIndex = useMemo(() => buildRivalIndex(allLaps), [allLaps]);
+
   if (loading) return (
     <main className="min-h-screen flex items-center justify-center">
       <p className="text-neutral-500 animate-pulse">Chargement...</p>
@@ -119,7 +122,6 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
   const totalCircuits = new Set(laps.map(l => l.track_id)).size;
   const totalCars     = new Set(laps.map(l => l.car_ordinal)).size;
   const initial       = pseudo.charAt(0).toUpperCase();
-  const rivalIndex    = buildRivalIndex(allLaps);
 
   // Groupement par circuit, trié par nom
   const byTrack = new Map<number, Lap[]>();
@@ -164,6 +166,11 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
               </div>
             )}
           </div>
+          {playerId && (
+            <div className="self-start flex-shrink-0">
+              <FollowButton followedPlayerId={playerId} />
+            </div>
+          )}
         </div>
 
         {/* Tableau des temps */}
