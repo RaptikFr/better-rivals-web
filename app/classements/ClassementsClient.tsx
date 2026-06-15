@@ -783,96 +783,91 @@ export default function ClassementsClient({
                         </svg>
                       </button>
 
-                      {/* Tableau des temps — visible si ouvert */}
+                      {/* Liste des temps — visible si ouvert.
+                          Lignes empilées en carte sur mobile, alignées en
+                          colonnes sur ≥ sm (sm:contents garde rang + pseudo
+                          comme deux colonnes distinctes). */}
                       {openGroups.has(group.key) && (
-                      <div className="overflow-x-auto px-4 pb-4">
-                        <table className="w-full text-sm border-collapse table-fixed">
-                          <colgroup>
-                            <col className="w-10" />
-                            <col className="w-[220px]" />
-                            <col className="w-[200px]" />
-                            <col className="w-[90px]" />
-                            <col />
-                            <col className="w-16" />
-                          </colgroup>
-                          <tbody>
-                            {group.laps.map((lap, lapIndex) => (
-                              <tr
-                                key={lap.id}
-                                data-lap-id={lap.id}
-                                className={`hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors ${
-                                  lap.id === highlightId ? 'bg-pink-500/20 dark:bg-pink-500/20' : ''
-                                }`}
-                              >
-                                <td className="py-3 px-2 font-bold text-neutral-500 text-right tabular-nums align-top">
-                                  {lap.rank}
-                                </td>
-                                <td className="py-3 px-3 font-bold text-neutral-900 dark:text-white align-top">
-                                  <Link
-                                    href={`/joueurs/${encodeURIComponent(lap.players?.pseudo ?? '')}`}
-                                    className="hover:text-pink-400 transition-colors"
+                      <div className="px-4 pb-4 text-sm">
+                        {group.laps.map((lap, lapIndex) => (
+                          <div
+                            key={lap.id}
+                            data-lap-id={lap.id}
+                            className={`flex flex-col gap-2 rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 mb-2
+                                        sm:flex-row sm:items-start sm:gap-3 sm:rounded-none sm:border-0 sm:border-b sm:last:border-0 sm:p-0 sm:py-3 sm:mb-0
+                                        hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors ${
+                              lap.id === highlightId ? 'bg-pink-500/20 dark:bg-pink-500/20' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 sm:contents">
+                              <span className="font-bold text-neutral-500 tabular-nums sm:w-8 sm:text-right sm:py-0">
+                                {lap.rank}
+                              </span>
+                              <span className="font-bold text-neutral-900 dark:text-white sm:w-44 sm:truncate">
+                                <Link
+                                  href={`/joueurs/${encodeURIComponent(lap.players?.pseudo ?? '')}`}
+                                  className="hover:text-pink-400 transition-colors"
+                                >
+                                  {lap.players?.pseudo ?? 'Inconnu'}
+                                </Link>
+                                <DiscordTag tag={lap.players?.discord_tag} />
+                              </span>
+                            </div>
+                            <div className="sm:flex-1">
+                              <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 whitespace-nowrap">
+                                <span className="text-xs text-neutral-500">Meilleur</span>
+                                <span className="font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</span>
+                                {lap.previous_time_ms && (
+                                  <>
+                                    <span className="text-xs text-neutral-500">Précédent</span>
+                                    <span className="text-xs font-mono text-neutral-500">
+                                      ↑ {formatTime(lap.previous_time_ms)}{' '}
+                                      <span className="text-orange-400">+{((lap.previous_time_ms - lap.time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
+                                    </span>
+                                  </>
+                                )}
+                                {lap.rank > 1 && (
+                                  <>
+                                    <span className="text-xs text-neutral-500">Écart leader</span>
+                                    <span className="text-xs font-mono text-sky-400">+{((lap.time_ms - group.laps[0].time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
+                                  </>
+                                )}
+                                {lap.rank > 2 && lapIndex > 0 && (
+                                  <>
+                                    <span className="text-xs text-neutral-500">Écart préc.</span>
+                                    <span className="text-xs font-mono text-violet-400">+{((lap.time_ms - group.laps[lapIndex - 1].time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-3 sm:contents">
+                              <span className="text-neutral-500 font-mono text-xs whitespace-nowrap sm:w-20">
+                                PI {lap.car_pi}
+                              </span>
+                              <span className="sm:py-0">
+                                <TuneCell lap={lap} />
+                              </span>
+                              <span className="flex items-center justify-end gap-1.5 sm:ml-auto">
+                                <button
+                                  onClick={() => handleShareRow(lap.id)}
+                                  title="Copier le lien vers ce temps"
+                                  className="text-neutral-400 hover:text-pink-400 transition-colors text-xs"
+                                >
+                                  {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
+                                </button>
+                                {user && currentPlayerId !== null && lap.player_id !== currentPlayerId && (
+                                  <button
+                                    onClick={() => setReportTarget(lap)}
+                                    title="Signaler ce temps comme suspect"
+                                    className="text-neutral-500 hover:text-red-400 transition-colors"
                                   >
-                                    {lap.players?.pseudo ?? 'Inconnu'}
-                                  </Link>
-                                  <DiscordTag tag={lap.players?.discord_tag} />
-                                </td>
-                                <td className="py-3 px-3 align-top">
-                                  <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 whitespace-nowrap">
-                                    <span className="text-xs text-neutral-500">Meilleur</span>
-                                    <span className="font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</span>
-                                    {lap.previous_time_ms && (
-                                      <>
-                                        <span className="text-xs text-neutral-500">Précédent</span>
-                                        <span className="text-xs font-mono text-neutral-500">
-                                          ↑ {formatTime(lap.previous_time_ms)}{' '}
-                                          <span className="text-orange-400">+{((lap.previous_time_ms - lap.time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
-                                        </span>
-                                      </>
-                                    )}
-                                    {lap.rank > 1 && (
-                                      <>
-                                        <span className="text-xs text-neutral-500">Écart leader</span>
-                                        <span className="text-xs font-mono text-sky-400">+{((lap.time_ms - group.laps[0].time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
-                                      </>
-                                    )}
-                                    {lap.rank > 2 && lapIndex > 0 && (
-                                      <>
-                                        <span className="text-xs text-neutral-500">Écart préc.</span>
-                                        <span className="text-xs font-mono text-violet-400">+{((lap.time_ms - group.laps[lapIndex - 1].time_ms) / 1000).toFixed(3).replace('.', ',')}s</span>
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="py-3 px-3 text-neutral-500 font-mono text-xs whitespace-nowrap align-top">
-                                  PI {lap.car_pi}
-                                </td>
-                                <td className="py-3 px-3 align-top">
-                                  <TuneCell lap={lap} />
-                                </td>
-                                <td className="py-3 px-2 text-right align-top">
-                                  <div className="flex items-center justify-end gap-1.5">
-                                    <button
-                                      onClick={() => handleShareRow(lap.id)}
-                                      title="Copier le lien vers ce temps"
-                                      className="text-neutral-400 hover:text-pink-400 transition-colors text-xs"
-                                    >
-                                      {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
-                                    </button>
-                                    {user && currentPlayerId !== null && lap.player_id !== currentPlayerId && (
-                                      <button
-                                        onClick={() => setReportTarget(lap)}
-                                        title="Signaler ce temps comme suspect"
-                                        className="text-neutral-500 hover:text-red-400 transition-colors"
-                                      >
-                                        🚩
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                                    🚩
+                                  </button>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                       )}
                     </div>
