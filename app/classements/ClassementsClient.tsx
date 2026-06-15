@@ -204,6 +204,7 @@ export default function ClassementsClient({
 } = {}) {
 
   const { formatTime, prefs } = usePreferences();
+  const cols = prefs.tableColumns;
   const decSep = prefs.decimalSep === 'comma' ? ',' : '.';
   /** Écart formaté (ms → « +1,234s »), respecte le séparateur décimal choisi. */
   const gapStr = (ms: number) => `+${(ms / 1000).toFixed(3).replace('.', decSep)}s`;
@@ -811,13 +812,13 @@ export default function ClassementsClient({
                                   <th className="px-3 py-2 font-bold text-right">Classement</th>
                                   <th className="px-3 py-2 font-bold">Pseudo</th>
                                   <th className="px-3 py-2 font-bold">Meilleur temps</th>
-                                  <th className="px-3 py-2 font-bold">Ancien meilleur temps</th>
-                                  <th className="px-3 py-2 font-bold">Différence</th>
-                                  <th className="px-3 py-2 font-bold">Écart avec le n°1</th>
-                                  <th className="px-3 py-2 font-bold">Écart avec le joueur précédent</th>
-                                  <th className="px-3 py-2 font-bold">Écart avec le joueur suivant</th>
-                                  <th className="px-3 py-2 font-bold">Indice de Performance</th>
-                                  <th className="px-3 py-2 font-bold">Réglage</th>
+                                  {cols.previousTime && <th className="px-3 py-2 font-bold">Ancien meilleur temps</th>}
+                                  {cols.diff && <th className="px-3 py-2 font-bold">Différence</th>}
+                                  {cols.gapLeader && <th className="px-3 py-2 font-bold">Écart avec le n°1</th>}
+                                  {cols.gapPrev && <th className="px-3 py-2 font-bold">Écart avec le joueur précédent</th>}
+                                  {cols.gapNext && <th className="px-3 py-2 font-bold">Écart avec le joueur suivant</th>}
+                                  {cols.pi && <th className="px-3 py-2 font-bold">Indice de Performance</th>}
+                                  {cols.tune && <th className="px-3 py-2 font-bold">Réglage</th>}
                                   <th className="px-3 py-2" aria-label="Actions" />
                                 </tr>
                               </thead>
@@ -842,26 +843,36 @@ export default function ClassementsClient({
                                         >
                                           {lap.players?.pseudo ?? 'Inconnu'}
                                         </Link>
-                                        <DiscordTag tag={lap.players?.discord_tag} />
+                                        {cols.discord && <DiscordTag tag={lap.players?.discord_tag} />}
                                       </td>
                                       <td className="px-3 py-2 font-mono font-bold text-pink-400 whitespace-nowrap">{formatTime(lap.time_ms)}</td>
-                                      <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">
-                                        {lap.previous_time_ms ? formatTime(lap.previous_time_ms) : '—'}
-                                      </td>
-                                      <td className="px-3 py-2 font-mono text-xs text-orange-400 whitespace-nowrap">
-                                        {lap.previous_time_ms ? gapStr(lap.previous_time_ms - lap.time_ms) : '—'}
-                                      </td>
-                                      <td className="px-3 py-2 font-mono text-xs text-sky-400 whitespace-nowrap">
-                                        {lap.rank > 1 ? gapStr(lap.time_ms - leader.time_ms) : '—'}
-                                      </td>
-                                      <td className="px-3 py-2 font-mono text-xs text-violet-400 whitespace-nowrap">
-                                        {prevLap ? gapStr(lap.time_ms - prevLap.time_ms) : '—'}
-                                      </td>
-                                      <td className="px-3 py-2 font-mono text-xs text-emerald-400 whitespace-nowrap">
-                                        {nextLap ? gapStr(nextLap.time_ms - lap.time_ms) : '—'}
-                                      </td>
-                                      <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">PI {lap.car_pi}</td>
-                                      <td className="px-3 py-2"><TuneCell lap={lap} /></td>
+                                      {cols.previousTime && (
+                                        <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">
+                                          {lap.previous_time_ms ? formatTime(lap.previous_time_ms) : '—'}
+                                        </td>
+                                      )}
+                                      {cols.diff && (
+                                        <td className="px-3 py-2 font-mono text-xs text-orange-400 whitespace-nowrap">
+                                          {lap.previous_time_ms ? gapStr(lap.previous_time_ms - lap.time_ms) : '—'}
+                                        </td>
+                                      )}
+                                      {cols.gapLeader && (
+                                        <td className="px-3 py-2 font-mono text-xs text-sky-400 whitespace-nowrap">
+                                          {lap.rank > 1 ? gapStr(lap.time_ms - leader.time_ms) : '—'}
+                                        </td>
+                                      )}
+                                      {cols.gapPrev && (
+                                        <td className="px-3 py-2 font-mono text-xs text-violet-400 whitespace-nowrap">
+                                          {prevLap ? gapStr(lap.time_ms - prevLap.time_ms) : '—'}
+                                        </td>
+                                      )}
+                                      {cols.gapNext && (
+                                        <td className="px-3 py-2 font-mono text-xs text-emerald-400 whitespace-nowrap">
+                                          {nextLap ? gapStr(nextLap.time_ms - lap.time_ms) : '—'}
+                                        </td>
+                                      )}
+                                      {cols.pi && <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">PI {lap.car_pi}</td>}
+                                      {cols.tune && <td className="px-3 py-2"><TuneCell lap={lap} /></td>}
                                       <td className="px-3 py-2">
                                         <div className="flex items-center gap-2">
                                           <button

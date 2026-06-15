@@ -6,6 +6,7 @@ import { usePreferences } from '@/hooks/usePreferences';
 import { formatTime } from '@/components/formatTime';
 import { dateAbsolute } from '@/lib/dateAbsolute';
 import { dateRelative } from '@/lib/dateRelative';
+import type { TableColumns } from '@/lib/preferences';
 
 /** Contrôle segmenté générique (boutons radio stylés). */
 function Segmented<T extends string | boolean>({
@@ -69,6 +70,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 const SAMPLE_MS = 83456; // 1:23.456
 const SAMPLE_DATE = new Date(Date.now() - 2 * 86400 * 1000).toISOString();
 
+const COLUMN_OPTIONS: { key: keyof TableColumns; label: string }[] = [
+  { key: 'previousTime', label: 'Ancien meilleur temps' },
+  { key: 'diff',         label: 'Différence (gain)' },
+  { key: 'gapLeader',    label: 'Écart avec le n°1' },
+  { key: 'gapPrev',      label: 'Écart avec le joueur précédent' },
+  { key: 'gapNext',      label: 'Écart avec le joueur suivant' },
+  { key: 'pi',           label: 'Indice de performance (PI)' },
+  { key: 'tune',         label: 'Réglage (share code)' },
+  { key: 'discord',      label: 'Tag Discord' },
+];
+
 export default function ParametresClient() {
   const { prefs, setPref, reset } = usePreferences();
   const { theme, setTheme } = useTheme();
@@ -111,6 +123,16 @@ export default function ParametresClient() {
               { value: 'pink-violet', label: 'Rose · Violet' },
               { value: 'red-green', label: 'Rouge · Vert' },
               { value: 'blue-yellow', label: 'Bleu · Jaune' },
+            ]}
+          />
+          <Segmented
+            label="Taille du texte"
+            hint="« Grande » agrandit le texte de tout le site (accessibilité)."
+            value={prefs.fontSize}
+            onChange={v => setPref('fontSize', v)}
+            options={[
+              { value: 'normal', label: 'Normale' },
+              { value: 'large', label: 'Grande' },
             ]}
           />
           <Segmented
@@ -165,6 +187,25 @@ export default function ParametresClient() {
               { value: 'table', label: 'Tableau' },
             ]}
           />
+        </Section>
+
+        <Section title="Colonnes des classements (PC)">
+          <p className="text-xs text-neutral-500 -mt-1">
+            S&apos;applique à la vue « Tableau » des classements (réglée ci-dessus). Masque les
+            colonnes dont tu ne veux pas pour alléger le tableau.
+          </p>
+          {COLUMN_OPTIONS.map(col => (
+            <Segmented
+              key={col.key}
+              label={col.label}
+              value={prefs.tableColumns[col.key]}
+              onChange={v => setPref('tableColumns', { ...prefs.tableColumns, [col.key]: v })}
+              options={[
+                { value: true, label: 'Affichée' },
+                { value: false, label: 'Masquée' },
+              ]}
+            />
+          ))}
         </Section>
 
         <Section title="Dates">

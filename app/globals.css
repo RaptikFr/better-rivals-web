@@ -77,6 +77,12 @@ body {
   --color-violet-950: var(--color-amber-950);
 }
 
+/* Préférence « taille de police » : agrandit la base rem → tout le site
+   (textes, espacements en rem) grossit proportionnellement. Défaut = 16px. */
+.text-scale-large {
+  font-size: 18px;
+}
+
 /* Préférence « réduire les animations » : neutralise transitions et animations. */
 .reduce-motion *,
 .reduce-motion *::before,
