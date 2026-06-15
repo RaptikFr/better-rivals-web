@@ -10,7 +10,9 @@ import type { Drivetrain, CarClass } from '@/types/supabase';
 import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
-import { countPodiums, groupByConfig, configKey, type Podiums } from '@/lib/podiums';
+import { countPodiums, type Podiums } from '@/lib/podiums';
+import { buildRivalIndex, findRivals } from '@/lib/rivals';
+import { RivalsCell } from '@/components/RivalsCell';
 
 // recharts (~100 KB gz) n'est chargé que lorsqu'un graphique est affiché
 const LapTimeChart = dynamic(() => import('./LapTimeChart'), {
@@ -48,6 +50,8 @@ interface ConfigLapRow {
   car_class:   string;
   drivetrain:  string;
   track_id:    number;
+  player_id:   string;
+  players:     { pseudo: string } | null;
 }
 
 function formatDate(iso: string): string {
@@ -191,7 +195,7 @@ export default function ProfilClient() {
       const { data: allLaps } = await fetchAllRows<ConfigLapRow>((from, to) =>
         supabase
           .from('lap_times')
-          .select('time_ms, car_ordinal, car_class, drivetrain, track_id')
+          .select('time_ms, car_ordinal, car_class, drivetrain, track_id, player_id, players(pseudo)')
           .in('track_id', trackIds)
           .order('id')
           .range(from, to)
@@ -547,7 +551,7 @@ export default function ProfilClient() {
           </div>
         )}
 
-        {activeTab === 'classements' && <ClassementsTab laps={laps} allLaps={allTrackLaps} />}
+        {activeTab === 'classements' && <ClassementsTab laps={laps} allLaps={allTrackLaps} playerId={playerId} />}
         {activeTab === 'suivi'       && playerId !== null && <SuiviTab playerId={playerId} laps={laps} />}
         {activeTab === 'stats'       && <StatsTab stats={stats} laps={laps} />}
 
@@ -992,20 +996,16 @@ function SuiviTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) 
   );
 }
 
-function ClassementsTab({ laps, allLaps }: { laps: ProfileLap[]; allLaps: ConfigLapRow[] }) {
-  // Rang et total calculés à partir des temps déjà téléchargés pour les
-  // podiums — aucune requête supplémentaire (anciennement 2 requêtes par chrono)
+function ClassementsTab({ laps, allLaps, playerId }: { laps: ProfileLap[]; allLaps: ConfigLapRow[]; playerId: string | null }) {
+  // Rang, total et rivaux directs calculés à partir des temps déjà téléchargés
+  // pour les podiums — aucune requête supplémentaire.
   const rankings = useMemo(() => {
-    const byConfig = groupByConfig(allLaps);
+    const index = buildRivalIndex(allLaps);
     return laps
       .filter(lap => lap.tracks?.name)
-      .map(lap => {
-        const times = byConfig.get(configKey(lap)) ?? [];
-        const rank  = times.filter(t => t < lap.time_ms).length + 1;
-        return { lap, rank, total: Math.max(times.length, 1) };
-      })
-      .sort((a, b) => a.rank - b.rank);
-  }, [laps, allLaps]);
+      .map(lap => ({ lap, rivals: findRivals(playerId ?? '', lap, index) }))
+      .sort((a, b) => a.rivals.rank - b.rivals.rank);
+  }, [laps, allLaps, playerId]);
 
   if (rankings.length === 0) return <EmptyState message="Aucun classement disponible pour l'instant." />;
 
@@ -1019,21 +1019,23 @@ function ClassementsTab({ laps, allLaps }: { laps: ProfileLap[]; allLaps: Config
             <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">VOITURE</th>
             <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TRANSMISSION</th>
             <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TEMPS</th>
+            <th className="p-4 text-xs font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">RIVAUX</th>
           </tr>
         </thead>
         <tbody>
-          {rankings.map(({ lap, rank, total }, i) => (
+          {rankings.map(({ lap, rivals }, i) => (
             <tr key={i} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
               <td className="p-4">
-                <span className={`text-lg font-extrabold ${rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-neutral-400 dark:text-neutral-300' : rank === 3 ? 'text-amber-600' : 'text-neutral-500'}`}>
-                  {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
+                <span className={`text-lg font-extrabold ${rivals.rank === 1 ? 'text-yellow-400' : rivals.rank === 2 ? 'text-neutral-400 dark:text-neutral-300' : rivals.rank === 3 ? 'text-amber-600' : 'text-neutral-500'}`}>
+                  {rivals.rank === 1 ? '🥇' : rivals.rank === 2 ? '🥈' : rivals.rank === 3 ? '🥉' : `#${rivals.rank}`}
                 </span>
-                <span className="text-xs text-neutral-400 dark:text-neutral-600 ml-2">/ {total}</span>
+                <span className="text-xs text-neutral-400 dark:text-neutral-600 ml-2">/ {rivals.total}</span>
               </td>
               <td className="p-4 text-neutral-700 dark:text-neutral-300 font-semibold">{lap.tracks?.name ?? '—'}</td>
               <td className="p-4 text-neutral-600 dark:text-neutral-400">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</td>
               <td className="p-4"><DrivetrainBadge drivetrain={lap.drivetrain} /></td>
               <td className="p-4 font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</td>
+              <td className="p-4"><RivalsCell rivals={rivals} /></td>
             </tr>
           ))}
         </tbody>

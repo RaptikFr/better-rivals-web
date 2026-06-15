@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { fetchAllRows } from '@/lib/fetchAllRows';
@@ -8,6 +8,8 @@ import { formatTime } from '@/components/formatTime';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { countPodiums } from '@/lib/podiums';
+import { buildRivalIndex, findRivals, type RivalRow } from '@/lib/rivals';
+import { RivalsCell } from '@/components/RivalsCell';
 import type { Drivetrain } from '@/types/supabase';
 
 interface Lap {
@@ -31,6 +33,8 @@ interface Circuit {
 
 export default function JoueurClient({ pseudo }: { pseudo: string }) {
   const [laps,         setLaps]         = useState<Lap[]>([]);
+  const [playerId,     setPlayerId]     = useState<string | null>(null);
+  const [allLaps,      setAllLaps]      = useState<RivalRow[]>([]);
   const [podiums,      setPodiums]      = useState({ gold: 0, silver: 0, bronze: 0 });
   const [loading,      setLoading]      = useState(true);
   const [notFound,     setNotFound]     = useState(false);
@@ -67,20 +71,22 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
 
       const lapsData = (playerLaps ?? []) as Lap[];
       setLaps(lapsData);
+      setPlayerId(player.id);
 
-      // Podiums : compare avec tous les temps (paginés) sur les mêmes circuits
+      // Podiums + rivaux : compare avec tous les temps (paginés) sur les mêmes circuits
       const trackIds = [...new Set(lapsData.map(l => l.track_id))].filter(Boolean);
       if (trackIds.length > 0) {
-        const { data: allLaps } = await fetchAllRows<Pick<Lap, 'time_ms' | 'car_ordinal' | 'car_class' | 'drivetrain' | 'track_id'>>((from, to) =>
+        const { data: allLapsData } = await fetchAllRows<RivalRow>((from, to) =>
           supabase
             .from('lap_times')
-            .select('time_ms, car_ordinal, car_class, drivetrain, track_id')
+            .select('time_ms, car_ordinal, car_class, drivetrain, track_id, player_id, players(pseudo)')
             .in('track_id', trackIds)
             .order('id')
             .range(from, to)
         );
 
-        setPodiums(countPodiums(lapsData, allLaps));
+        setAllLaps(allLapsData);
+        setPodiums(countPodiums(lapsData, allLapsData));
       }
 
       setLoading(false);
@@ -113,6 +119,7 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
   const totalCircuits = new Set(laps.map(l => l.track_id)).size;
   const totalCars     = new Set(laps.map(l => l.car_ordinal)).size;
   const initial       = pseudo.charAt(0).toUpperCase();
+  const rivalIndex    = buildRivalIndex(allLaps);
 
   // Groupement par circuit, trié par nom
   const byTrack = new Map<number, Lap[]>();
@@ -200,6 +207,7 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                       <col className="w-20" />
                       <col />
                       <col className="w-16" />
+                      <col />
                     </colgroup>
                     <tbody>
                       {circuit.laps.map((lap, i) => {
@@ -233,6 +241,9 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                             </td>
                             <td className="py-3 px-3 text-neutral-500 font-mono text-xs">
                               PI {lap.car_pi}
+                            </td>
+                            <td className="py-3 px-3">
+                              <RivalsCell rivals={findRivals(playerId ?? '', lap, rivalIndex)} />
                             </td>
                           </tr>
                         );
