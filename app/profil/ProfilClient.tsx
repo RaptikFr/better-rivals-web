@@ -12,6 +12,8 @@ import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/Drivetra
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { countPodiums, type Podiums } from '@/lib/podiums';
 import { buildRivalIndex, findRivals } from '@/lib/rivals';
+import { computeBadges } from '@/lib/badges';
+import { BadgesBar } from '@/components/BadgesBar';
 import { RivalsCell } from '@/components/RivalsCell';
 
 // recharts (~100 KB gz) n'est chargé que lorsqu'un graphique est affiché
@@ -145,6 +147,8 @@ export default function ProfilClient() {
   const [laps,      setLaps]      = useState<ProfileLap[]>([]);
   const [allTrackLaps, setAllTrackLaps] = useState<ConfigLapRow[]>([]);
   const [podiums,   setPodiums]   = useState<Podiums>({ gold: 0, silver: 0, bronze: 0 });
+  const [generalRank,  setGeneralRank]  = useState<number | null>(null);
+  const [generalTotal, setGeneralTotal] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
 
@@ -207,6 +211,16 @@ export default function ProfilClient() {
       setAllTrackLaps([]);
     }
 
+    // Rang au classement général (endpoint mis en cache côté serveur)
+    try {
+      const res = await fetch('/api/classement-general');
+      if (res.ok) {
+        const { ranking } = await res.json() as { ranking: { player_id: string }[] };
+        const idx = ranking.findIndex(r => r.player_id === playerData.id);
+        if (idx !== -1) { setGeneralRank(idx + 1); setGeneralTotal(ranking.length); }
+      }
+    } catch { /* le classement général reste optionnel */ }
+
     setIsLoading(false);
   }
 
@@ -235,6 +249,11 @@ export default function ProfilClient() {
   }
 
   const recentLaps = useMemo(() => laps.slice(0, 20), [laps]);
+
+  const badges = useMemo(
+    () => computeBadges({ laps, allLaps: allTrackLaps, generalRank, generalTotal }),
+    [laps, allTrackLaps, generalRank, generalTotal]
+  );
 
   const filteredLaps = useMemo(() =>
     laps.filter(lap => {
@@ -381,6 +400,7 @@ export default function ProfilClient() {
               ))}
             </div>
           </div>
+          <BadgesBar badges={badges} />
         </div>
 
         {/* ── ONGLETS ── */}

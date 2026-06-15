@@ -1,8 +1,10 @@
 ---
 name: roadmap-ameliorations-juin-2026
 description: Backlog des 6 ameliorations discutees le 2026-06-15 et leur statut (ce qui reste a faire)
-metadata:
+metadata: 
+  node_type: memory
   type: project
+  originSessionId: a5640525-f5aa-459a-8a49-f2fd4bbc3cb9
 ---
 
 Le 2026-06-15, on a passé en revue 6 pistes d'amélioration du site. Contraintes posées par le user : les world records ne servent QUE d'anti-triche (jamais de comparaison de perf au WR), et pas de défi hebdomadaire.
@@ -13,7 +15,7 @@ Le 2026-06-15, on a passé en revue 6 pistes d'amélioration du site. Contrainte
 
 2. **Lisibilité mobile des tableaux** — ✅ FAIT (commits `feat(mobile)`). Cartes empilées sous `sm`, colonnes alignées au-dessus via `sm:contents`. Couvre classements (officiel+communauté), page joueur, classement général, stats, profil (LapTable, ClassementsTab, Suivi). Comparaison était déjà responsive. **Reste** : vérifier visuellement les tables du profil sur mobile (page auth-gated, non screenshotée — compilée/lintée seulement). Mineur.
 
-3. **Badges / accomplissements** — ⏳ À FAIRE, en attente de décision. Le user est intéressé MAIS s'inquiète de la **surcharge visuelle des profils**. Avant de coder : proposer une implémentation discrète (ex. ligne de pastilles repliable plutôt que gros blocs). Badges permanents/descriptifs dérivés des données existantes (« 1er sur N configs », « podium sur 10 circuits », etc.), pas de comparaison aux WR.
+3. **Badges / accomplissements** — ✅ FAIT (commit `feat(badges)`). Format validé par le user : **pastilles repliables** (bouton « 🏅 Badges (N) » discret, détail au dépliage) — `components/BadgesBar.tsx`. Dérivation dans `lib/badges.ts` (`computeBadges`), réutilise `groupByConfig`/`configKey` de podiums. 4 familles validées : rangs/podiums (1ʳᵉ place sur N configs, 👑 >10, podium sur N circuits), polyvalence (circuits/voitures/classes, seuils 3/3/4), volume (paliers 10/25/50/100 chronos), classement général (top 10 seulement, via fetch `/api/classement-general` mis en cache). Intégré au profil ET à la page joueur. Pas de comparaison aux WR. aria-label/aria-expanded déjà posés sur le toggle (avance sur le point 6).
 
 4. **Activité « Nouveaux leaders »** — ⏳ À FAIRE (le user est pour). Fil « X a détrôné Y sur [config] » (accueil ou stats) pour mettre en avant les changements de tête / configs disputées. Distinct du flux « Derniers chronos » qui existe déjà.
 
@@ -22,4 +24,4 @@ Le 2026-06-15, on a passé en revue 6 pistes d'amélioration du site. Contrainte
 6. **Accessibilité** — ⏳ À FAIRE (le user est pour). Ajouter des `aria-label` aux boutons emoji-only (toggle thème, partage 🔗, etc.).
 
 ## Ordre suggéré pour la suite
-Points restants : 3 (badges, après accord sur le format discret), 4 (nouveaux leaders), 5 (scalabilité RPC), 6 (accessibilité). Aucun n'est commencé.
+Points restants : 4 (nouveaux leaders), 5 (scalabilité RPC), 6 (accessibilité — partiellement amorcé via BadgesBar).

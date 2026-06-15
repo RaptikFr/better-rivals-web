@@ -9,6 +9,8 @@ import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { countPodiums } from '@/lib/podiums';
 import { buildRivalIndex, findRivals, type RivalRow } from '@/lib/rivals';
+import { computeBadges } from '@/lib/badges';
+import { BadgesBar } from '@/components/BadgesBar';
 import { RivalsCell } from '@/components/RivalsCell';
 import { FollowButton } from '@/components/FollowButton';
 import type { Drivetrain } from '@/types/supabase';
@@ -37,6 +39,8 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
   const [playerId,     setPlayerId]     = useState<string | null>(null);
   const [allLaps,      setAllLaps]      = useState<RivalRow[]>([]);
   const [podiums,      setPodiums]      = useState({ gold: 0, silver: 0, bronze: 0 });
+  const [generalRank,  setGeneralRank]  = useState<number | null>(null);
+  const [generalTotal, setGeneralTotal] = useState<number | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [notFound,     setNotFound]     = useState(false);
   const [openCircuits, setOpenCircuits] = useState<Set<number>>(new Set());
@@ -90,12 +94,27 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
         setPodiums(countPodiums(lapsData, allLapsData));
       }
 
+      // Rang au classement général (endpoint mis en cache côté serveur)
+      try {
+        const res = await fetch('/api/classement-general');
+        if (res.ok) {
+          const { ranking } = await res.json() as { ranking: { player_id: string }[] };
+          const idx = ranking.findIndex(r => r.player_id === player.id);
+          if (idx !== -1) { setGeneralRank(idx + 1); setGeneralTotal(ranking.length); }
+        }
+      } catch { /* le classement général reste optionnel */ }
+
       setLoading(false);
     }
     load();
   }, [pseudo]);
 
   const rivalIndex = useMemo(() => buildRivalIndex(allLaps), [allLaps]);
+
+  const badges = useMemo(
+    () => computeBadges({ laps, allLaps, generalRank, generalTotal }),
+    [laps, allLaps, generalRank, generalTotal]
+  );
 
   if (loading) return (
     <main className="min-h-screen flex items-center justify-center">
@@ -165,6 +184,7 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                 {podiums.bronze > 0 && <span className="text-sm font-bold">🥉 {podiums.bronze}</span>}
               </div>
             )}
+            <BadgesBar badges={badges} />
           </div>
           {playerId && (
             <div className="self-start flex-shrink-0">
