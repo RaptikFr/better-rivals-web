@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
@@ -111,13 +112,14 @@ function ProgressionChart({ laps, trackName }: { laps: ProfileLap[]; trackName: 
   );
 }
 
-type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'suivi';
+type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'suivi' | 'rivaux';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'recents',     label: 'Récents',        icon: '🕐' },
   { id: 'tous',        label: 'Tous mes temps',  icon: '📋' },
   { id: 'suivi',       label: 'Suivi',           icon: '📈' },
   { id: 'classements', label: 'Mes classements', icon: '🏆' },
+  { id: 'rivaux',      label: 'Mes rivaux',      icon: '👥' },
   { id: 'stats',       label: 'Statistiques',    icon: '📊' },
 ];
 
@@ -551,6 +553,7 @@ export default function ProfilClient() {
 
         {activeTab === 'classements' && <ClassementsTab laps={laps} rivalsByConfig={rankings?.rivalsByConfig ?? new Map()} />}
         {activeTab === 'suivi'       && playerId !== null && <SuiviTab playerId={playerId} laps={laps} />}
+        {activeTab === 'rivaux'      && playerId !== null && <RivauxTab playerId={playerId} />}
         {activeTab === 'stats'       && <StatsTab stats={stats} laps={laps} />}
 
       </div>
@@ -1040,6 +1043,102 @@ function ClassementsTab({ laps, rivalsByConfig }: { laps: ProfileLap[]; rivalsBy
           <span className="sm:w-56"><RivalsCell rivals={rivals} /></span>
         </div>
       ))}
+    </div>
+  );
+}
+
+interface FollowedPlayer {
+  id: string;
+  pseudo: string;
+  discord_tag: string | null;
+}
+
+function RivauxTab({ playerId }: { playerId: string }) {
+  const [followed, setFollowed] = useState<FollowedPlayer[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [busyId,   setBusyId]   = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: rows } = await supabase
+        .from('follows')
+        .select('followed_player_id, created_at')
+        .eq('follower_player_id', playerId)
+        .order('created_at', { ascending: false });
+      const ids = (rows ?? []).map(r => r.followed_player_id);
+      if (ids.length === 0) {
+        if (!cancelled) { setFollowed([]); setLoading(false); }
+        return;
+      }
+      const { data: players } = await supabase
+        .from('players')
+        .select('id, pseudo, discord_tag')
+        .in('id', ids);
+      // On conserve l'ordre des suivis (du plus récent au plus ancien).
+      const byId = new Map((players ?? []).map(p => [p.id, p as FollowedPlayer]));
+      const ordered = ids.map(id => byId.get(id)).filter((p): p is FollowedPlayer => !!p);
+      if (!cancelled) { setFollowed(ordered); setLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [playerId]);
+
+  async function unfollow(id: string) {
+    setBusyId(id);
+    await supabase.from('follows').delete()
+      .eq('follower_player_id', playerId)
+      .eq('followed_player_id', id);
+    setFollowed(prev => prev.filter(p => p.id !== id));
+    setBusyId(null);
+  }
+
+  if (loading) return <p className="text-neutral-500 animate-pulse p-4">Chargement de tes rivaux…</p>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4">
+        <span aria-hidden="true">🔔</span>
+        <p>
+          Tu reçois une notification dès qu&apos;un pilote suivi te dépasse sur une de tes
+          configurations, quelle que soit sa position. Suis un pilote depuis sa page de profil.
+        </p>
+      </div>
+
+      {followed.length === 0 ? (
+        <EmptyState message="Tu ne suis aucun pilote pour l'instant. Va sur le profil d'un joueur et clique sur « + Suivre »." />
+      ) : (
+        <>
+          <p className="text-sm text-neutral-500">{followed.length} pilote{followed.length !== 1 ? 's' : ''} suivi{followed.length !== 1 ? 's' : ''}</p>
+          <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+            {followed.map(p => (
+              <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
+                <div className="w-10 h-10 flex-shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center text-sm font-extrabold text-white">
+                  {p.pseudo.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Link href={`/joueurs/${encodeURIComponent(p.pseudo)}`} className="font-bold text-neutral-900 dark:text-white hover:text-pink-400 transition-colors truncate block">
+                    {p.pseudo}
+                  </Link>
+                  {p.discord_tag && <span className="text-xs text-indigo-400">Discord lié</span>}
+                </div>
+                <Link
+                  href={`/joueurs/${encodeURIComponent(p.pseudo)}`}
+                  className="hidden sm:inline-block px-3 py-1.5 rounded-full text-sm font-semibold text-neutral-600 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-700 hover:border-pink-400 hover:text-pink-400 transition-colors"
+                >
+                  Voir le profil
+                </Link>
+                <button
+                  onClick={() => unfollow(p.id)}
+                  disabled={busyId === p.id}
+                  className="px-3 py-1.5 rounded-full text-sm font-bold text-neutral-700 dark:text-neutral-300 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 hover:border-red-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                >
+                  {busyId === p.id ? '…' : 'Ne plus suivre'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
