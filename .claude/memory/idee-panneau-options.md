@@ -16,8 +16,16 @@ Page **`/parametres`** + `hooks/usePreferences` (Context React adossé à **loca
 - **Réduire les animations** (a11y) : classe `.reduce-motion` sur `<html>`.
 Lien **⚙️ Paramètres** dans la Navbar (desktop + mobile). `eslint .` → 0, `tsc` OK. NB : `app/api/times` casse le `next build` faute de `RESEND_API_KEY` en local — pré-existant, sans rapport.
 
-## Pistes restantes (NON faites — pour une v2 si demandé)
-Idée soumise par le user le 2026-06-15. Points encore ouverts, surtout ceux qui touchent la DB :
+## ✅ v2 LIVRÉE (2026-06-15)
+Le user a validé « les quatre » fonctionnalités DB-bound + UI. Toutes codées (commits du 15 juin, voir [[etat-deploiement-v2]] pour l'état de push/migrations) :
+- **Notifications par type** : 4 colonnes `notify_*` sur players + gardes dans /api/times + panneau dans /profil.
+- **Masquer son tag Discord** : colonne générée `discord_tag_public` (vraie confidentialité) + RPC `my_discord_tag` + toggle profil.
+- **Sync cross-device** : `players.preferences jsonb`, réconciliation à la connexion dans `usePreferences` (DB prime, sinon push local).
+- **Colonnes / police** : taille de police globale (classe `text-scale-large`) + colonnes masquables de la vue tableau des classements (section dans /parametres).
+- Au passage (point 4) : taille de police = a11y ; rate limiting Upstash (repli mémoire) ; RPC `general_ranking`.
+
+## Pistes restantes (anciennes notes — la plupart faites en v2 ci-dessus)
+Points qui touchent la DB :
 
 ## Pistes de réglages proposées (à valider avec lui)
 - **Nb de décimales** des temps (pour l'instant fixé à 3) — facile à ajouter à `formatTime`.

@@ -5,3 +5,4 @@
 - [Panneau d'options /parametres](idee-panneau-options.md) — v1 LIVRÉE (thème, format temps/dates, densité, animations) ; pistes DB-bound restantes pour v2
 - [Roadmap améliorations juin 2026](roadmap-ameliorations-juin-2026.md) — les 6 pistes sont FAITES et la migration RPC (point 5) est appliquée en prod ; plus rien en attente
 - [Feature couleurs d'accent](feature-couleurs-accent.md) — LIVRÉE : option couleurs d'accentuation (pink-violet/red-green/blue-yellow) via remap palette Tailwind v4 sur <html> ; build+lint OK
+- [État déploiement v2](etat-deploiement-v2.md) — features v2 livrées le 15 juin ; ⚠️ 3 commits locaux NON poussés en attente de migrations prod (ordre migration→push obligatoire)
