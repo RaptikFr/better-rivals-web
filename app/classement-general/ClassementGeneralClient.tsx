@@ -75,93 +75,72 @@ export default function ClassementGeneralClient() {
           ))}
         </div>
 
-        {/* Tableau */}
-        <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl">
-          <table className="w-full text-left border-collapse whitespace-nowrap">
-            <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
-                <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">#</th>
-                <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">PILOTE</th>
-                <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">POINTS</th>
-                <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">PODIUMS</th>
-                <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CONFIGS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ranking.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-12 text-center text-neutral-500">
-                    Aucune donnée disponible.
-                  </td>
-                </tr>
-              ) : (
-                ranking.map((player, index) => {
-                  const pos = index + 1;
-                  const isMe = currentPseudo !== null && player.pseudo === currentPseudo;
+        {/* Tableau — cartes empilées sur mobile, colonnes alignées dès sm */}
+        <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl overflow-hidden">
+          {/* En-tête de colonnes (≥ sm) */}
+          <div className="hidden sm:flex items-center gap-3 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider text-sm">
+            <span className="w-12">#</span>
+            <span className="flex-1">PILOTE</span>
+            <span className="w-28">POINTS</span>
+            <span className="w-40">PODIUMS</span>
+            <span className="w-20 text-right">CONFIGS</span>
+          </div>
 
-                  return (
-                    <tr
-                      key={player.player_id}
-                      className={`border-b border-neutral-200/50 dark:border-neutral-800/50 transition-colors ${
-                        isMe
-                          ? 'bg-pink-50 dark:bg-pink-500/10 border-l-2 border-pink-400 dark:border-pink-500'
-                          : 'hover:bg-neutral-200 dark:hover:bg-neutral-800'
-                      }`}
-                    >
-                      <td className="p-4 font-bold text-lg w-16">
-                        {pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : (
-                          <span className="text-neutral-500 text-base">#{pos}</span>
-                        )}
-                      </td>
+          {ranking.length === 0 ? (
+            <p className="p-12 text-center text-neutral-500">Aucune donnée disponible.</p>
+          ) : (
+            ranking.map((player, index) => {
+              const pos = index + 1;
+              const isMe = currentPseudo !== null && player.pseudo === currentPseudo;
+              const noPodium = player.gold === 0 && player.silver === 0 && player.bronze === 0;
 
-                      <td className="p-4 font-bold text-neutral-900 dark:text-white">
-                        <Link
-                          href={`/joueurs/${encodeURIComponent(player.pseudo)}`}
-                          className="hover:text-pink-400 transition-colors"
-                        >
-                          {player.pseudo}
-                        </Link>
-                        {isMe && (
-                          <span className="ml-2 px-1.5 py-0.5 bg-pink-500/20 border border-pink-500/40 text-pink-500 text-xs font-bold rounded">
-                            Toi
-                          </span>
-                        )}
-                        <DiscordTag tag={player.discord_tag} />
-                      </td>
-
-                      <td className="p-4">
-                        <span className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
-                          {player.points}
+              return (
+                <div
+                  key={player.player_id}
+                  className={`flex flex-col gap-2 px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 transition-colors
+                              sm:flex-row sm:items-center sm:gap-3 ${
+                    isMe
+                      ? 'bg-pink-50 dark:bg-pink-500/10 border-l-2 border-l-pink-400 dark:border-l-pink-500'
+                      : 'hover:bg-neutral-200 dark:hover:bg-neutral-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 sm:contents">
+                    <span className="font-bold text-lg w-10 sm:w-12 flex-shrink-0">
+                      {pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : (
+                        <span className="text-neutral-500 text-base">#{pos}</span>
+                      )}
+                    </span>
+                    <span className="font-bold text-neutral-900 dark:text-white flex-1 sm:truncate">
+                      <Link href={`/joueurs/${encodeURIComponent(player.pseudo)}`} className="hover:text-pink-400 transition-colors">
+                        {player.pseudo}
+                      </Link>
+                      {isMe && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-pink-500/20 border border-pink-500/40 text-pink-500 text-xs font-bold rounded">
+                          Toi
                         </span>
-                        <span className="text-neutral-500 text-sm ml-1">pts</span>
-                      </td>
-
-                      <td className="p-4">
-                        <span className="text-sm flex items-center gap-3">
-                          {player.gold > 0 && (
-                            <span className="flex items-center gap-1">🥇 <span className="font-bold">{player.gold}</span></span>
-                          )}
-                          {player.silver > 0 && (
-                            <span className="flex items-center gap-1">🥈 <span className="font-bold">{player.silver}</span></span>
-                          )}
-                          {player.bronze > 0 && (
-                            <span className="flex items-center gap-1">🥉 <span className="font-bold">{player.bronze}</span></span>
-                          )}
-                          {player.gold === 0 && player.silver === 0 && player.bronze === 0 && (
-                            <span className="text-neutral-500">—</span>
-                          )}
-                        </span>
-                      </td>
-
-                      <td className="p-4 text-neutral-600 dark:text-neutral-400 font-mono text-sm">
-                        {player.configs}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                      )}
+                      <DiscordTag tag={player.discord_tag} />
+                    </span>
+                    <span className="sm:w-28 flex-shrink-0">
+                      <span className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">{player.points}</span>
+                      <span className="text-neutral-500 text-sm ml-1">pts</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 sm:contents">
+                    <span className="text-sm flex items-center gap-3 sm:w-40">
+                      {player.gold > 0 && <span className="flex items-center gap-1">🥇 <span className="font-bold">{player.gold}</span></span>}
+                      {player.silver > 0 && <span className="flex items-center gap-1">🥈 <span className="font-bold">{player.silver}</span></span>}
+                      {player.bronze > 0 && <span className="flex items-center gap-1">🥉 <span className="font-bold">{player.bronze}</span></span>}
+                      {noPodium && <span className="text-neutral-500">—</span>}
+                    </span>
+                    <span className="text-neutral-600 dark:text-neutral-400 font-mono text-sm sm:w-20 sm:text-right">
+                      <span className="sm:hidden text-neutral-500">configs : </span>{player.configs}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
       </div>

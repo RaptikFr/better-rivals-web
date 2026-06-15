@@ -170,29 +170,31 @@ export default function StatsClient() {
         {/* SECTION 5 — Derniers chronos */}
         <section>
           <h2 className="text-xl font-bold mb-4">Derniers chronos enregistrés</h2>
-          <div className="overflow-x-auto bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl">
-            <table className="w-full text-left border-collapse whitespace-nowrap">
-              <thead>
-                <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
-                  <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">PILOTE</th>
-                  <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">VOITURE</th>
-                  <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">CIRCUIT</th>
-                  <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">TEMPS</th>
-                  <th className="p-4 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">DATE</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lastChronos.map((lap) => (
-                  <tr key={lap.id} className="border-b border-neutral-200/50 dark:border-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
-                    <td className="p-4 font-bold">{lap.players?.pseudo ?? '—'}</td>
-                    <td className="p-4 text-neutral-700 dark:text-neutral-300">{lap.cars ? `${lap.cars.year} ${lap.cars.manufacturer} ${lap.cars.name}` : '—'}</td>
-                    <td className="p-4 text-neutral-700 dark:text-neutral-300">{lap.tracks?.name ?? '—'}</td>
-                    <td className="p-4 font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</td>
-                    <td className="p-4 text-neutral-500 text-sm">{new Date(lap.created_at).toLocaleDateString('fr-FR')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl overflow-hidden text-sm">
+            {/* En-tête de colonnes (≥ sm) */}
+            <div className="hidden sm:flex items-center gap-3 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 font-bold text-neutral-600 dark:text-neutral-400 tracking-wider">
+              <span className="w-40">PILOTE</span>
+              <span className="flex-1">VOITURE</span>
+              <span className="flex-1">CIRCUIT</span>
+              <span className="w-28">TEMPS</span>
+              <span className="w-24 text-right">DATE</span>
+            </div>
+            {lastChronos.map((lap) => (
+              <div
+                key={lap.id}
+                className="flex flex-col gap-1 px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors
+                           sm:flex-row sm:items-center sm:gap-3"
+              >
+                <div className="flex items-center justify-between gap-3 sm:contents">
+                  <span className="font-bold sm:w-40 sm:truncate">{lap.players?.pseudo ?? '—'}</span>
+                  <span className="font-mono font-bold text-pink-400 sm:hidden">{formatTime(lap.time_ms)}</span>
+                </div>
+                <span className="text-neutral-700 dark:text-neutral-300 sm:flex-1 sm:truncate">{lap.cars ? `${lap.cars.year} ${lap.cars.manufacturer} ${lap.cars.name}` : '—'}</span>
+                <span className="text-neutral-700 dark:text-neutral-300 sm:flex-1 sm:truncate">{lap.tracks?.name ?? '—'}</span>
+                <span className="hidden sm:block font-mono font-bold text-pink-400 sm:w-28">{formatTime(lap.time_ms)}</span>
+                <span className="text-neutral-500 text-xs sm:text-sm sm:w-24 sm:text-right">{new Date(lap.created_at).toLocaleDateString('fr-FR')}</span>
+              </div>
+            ))}
           </div>
         </section>
 

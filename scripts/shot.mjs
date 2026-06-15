@@ -10,7 +10,7 @@ async function shoot(width, height, file) {
   const page = await ctx.newPage();
   await page.goto(URL, { waitUntil: 'networkidle' });
   // Ouvre le premier groupe (en-tête affichant « N pilote(s) »)
-  const headers = page.locator('button:has-text("pilote")');
+  const headers = page.locator('button').filter({ hasText: /pilote|config/ });
   try {
     await headers.first().waitFor({ timeout: 8000 });
     const n = await headers.count();

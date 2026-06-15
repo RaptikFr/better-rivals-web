@@ -203,60 +203,37 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                   </svg>
                 </button>
 
-                {/* Lignes — visibles si ouvert */}
+                {/* Lignes — visibles si ouvert. Cartes empilées sur mobile,
+                    colonnes alignées dès sm (sm:contents). */}
                 {openCircuits.has(circuit.trackId) && (
-                <div className="overflow-x-auto border-t border-neutral-200 dark:border-neutral-800">
-                  <table className="w-full text-sm table-fixed">
-                    <colgroup>
-                      <col className="w-10" />
-                      <col className="w-32" />
-                      <col className="w-14" />
-                      <col className="w-20" />
-                      <col />
-                      <col className="w-16" />
-                      <col />
-                    </colgroup>
-                    <tbody>
-                      {circuit.laps.map((lap, i) => {
-                        const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim() || '—';
-                        return (
-                          <tr
-                            key={i}
-                            className="border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40 transition-colors"
+                <div className="border-t border-neutral-200 dark:border-neutral-800 text-sm">
+                  {circuit.laps.map((lap, i) => {
+                    const carLabel = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim() || '—';
+                    return (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-2 p-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0
+                                   sm:flex-row sm:items-center sm:gap-3 sm:py-3 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 sm:contents">
+                          <span className="font-bold text-neutral-500 tabular-nums sm:w-8 sm:text-right">{i + 1}</span>
+                          <span className="font-mono font-bold text-pink-400 text-base sm:w-28">{formatTime(lap.time_ms)}</span>
+                          <span
+                            className="px-2 py-0.5 rounded text-xs font-bold sm:w-14 sm:text-center"
+                            style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}
                           >
-                            <td className="py-3 px-3 font-bold text-neutral-500 w-8 tabular-nums text-right">
-                              {i + 1}
-                            </td>
-                            <td className="py-3 px-3">
-                              <span className="font-mono font-bold text-pink-400 text-base">
-                                {formatTime(lap.time_ms)}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3">
-                              <span
-                                className="px-2 py-0.5 rounded text-xs font-bold"
-                                style={CLASS_STYLES[lap.car_class] ?? { backgroundColor: '#555', color: '#fff' }}
-                              >
-                                {lap.car_class}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3">
-                              <DrivetrainBadge drivetrain={lap.drivetrain as Drivetrain} />
-                            </td>
-                            <td className="py-3 px-3 text-neutral-700 dark:text-neutral-300 truncate max-w-0">
-                              {carLabel}
-                            </td>
-                            <td className="py-3 px-3 text-neutral-500 font-mono text-xs">
-                              PI {lap.car_pi}
-                            </td>
-                            <td className="py-3 px-3">
-                              <RivalsCell rivals={findRivals(playerId ?? '', lap, rivalIndex)} />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            {lap.car_class}
+                          </span>
+                          <span className="sm:w-20"><DrivetrainBadge drivetrain={lap.drivetrain as Drivetrain} /></span>
+                        </div>
+                        <div className="text-neutral-700 dark:text-neutral-300 sm:flex-1 sm:truncate">{carLabel}</div>
+                        <div className="flex items-center justify-between gap-3 sm:contents">
+                          <span className="text-neutral-500 font-mono text-xs sm:w-16">PI {lap.car_pi}</span>
+                          <span className="sm:w-56"><RivalsCell rivals={findRivals(playerId ?? '', lap, rivalIndex)} /></span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 )}
               </div>
