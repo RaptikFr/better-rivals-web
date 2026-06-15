@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const limited = rateLimit(request, 'epreuves', 5, 10 * 60_000);
+    const limited = await rateLimit(request, 'epreuves', 5, 10 * 60_000);
     if (limited) return limited;
 
     // Vérification du JWT

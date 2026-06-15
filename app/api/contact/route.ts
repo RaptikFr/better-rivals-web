@@ -31,7 +31,7 @@ async function verifierTurnstile(request: NextRequest, token: unknown): Promise<
 
 export async function POST(request: NextRequest) {
   try {
-    const limited = rateLimit(request, 'contact', 3, 10 * 60_000);
+    const limited = await rateLimit(request, 'contact', 3, 10 * 60_000);
     if (limited) return limited;
 
     const body = await request.json();

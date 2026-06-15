@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const limited = rateLimit(request, 'tune-setups', 10, 10 * 60_000);
+    const limited = await rateLimit(request, 'tune-setups', 10, 10 * 60_000);
     if (limited) return limited;
 
     const authHeader = request.headers.get('Authorization');

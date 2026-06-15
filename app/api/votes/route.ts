@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const limited = rateLimit(request, 'votes', 20, 60_000);
+    const limited = await rateLimit(request, 'votes', 20, 60_000);
     if (limited) return limited;
 
     // Vérification du JWT

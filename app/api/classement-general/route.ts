@@ -31,6 +31,13 @@ export interface PlayerRanking {
 }
 
 async function calculerClassement(): Promise<PlayerRanking[]> {
+  // Voie rapide : agrégation côté Postgres (RPC). Repli sur le calcul JS si la
+  // fonction n'est pas déployée (déploiement sans coupure).
+  const { data: rpcData, error: rpcError } = await supabase.rpc('general_ranking');
+  if (!rpcError && rpcData) {
+    return rpcData as PlayerRanking[];
+  }
+
   const { data: allLaps, error } = await fetchAllRows<RawLap>((from, to) =>
     supabase
       .from('lap_times')

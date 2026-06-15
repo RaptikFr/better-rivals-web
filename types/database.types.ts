@@ -553,6 +553,19 @@ export type Database = {
         Args: Record<string, never>
         Returns: string
       }
+      general_ranking: {
+        Args: Record<string, never>
+        Returns: {
+          player_id: string
+          pseudo: string
+          discord_tag: string | null
+          points: number
+          gold: number
+          silver: number
+          bronze: number
+          configs: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
