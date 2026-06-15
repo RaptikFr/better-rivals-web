@@ -1,29 +1,32 @@
 ---
 name: idee-panneau-options
-description: "Idée à travailler plus tard — un panneau de préférences/options (thème, affichage des temps/tableaux sur PC, etc.)"
+description: "Panneau de préférences /parametres — v1 LIVRÉE le 2026-06-15 (thème, format temps/dates, densité, animations) ; reste des pistes DB-bound non faites"
 metadata: 
   node_type: memory
   type: project
   originSessionId: a5640525-f5aa-459a-8a49-f2fd4bbc3cb9
 ---
 
-Idée soumise par le user le 2026-06-15, à creuser **ultérieurement** (pas encore commencé) : un **panneau d'options / préférences** centralisé pour personnaliser le site. Points de départ qu'il a cités : choix du **thème**, et la **façon dont les temps et autres infos sont affichés (sur PC)**. Il est ouvert à d'autres idées pour enrichir ce panneau.
+## ✅ v1 LIVRÉE (2026-06-15, commit `feat(parametres)`)
+Page **`/parametres`** + `hooks/usePreferences` (Context React adossé à **localStorage**, préférences par appareil, sans compte) + `lib/preferences` (types/défauts/sanitize). Réglages câblés dans tous les composants d'affichage des temps (classements, profil, joueur, stats, comparaison, DerniersChronos, NouveauxLeaders, LapTimeChart) :
+- **Thème** : clair / sombre / **système** (next-themes `enableSystem` activé ; le toggle Navbar reste une bascule rapide via `resolvedTheme`).
+- **Format des temps** : `1:23.456` vs `83.456 s` + **séparateur décimal** `.` / `,` (`formatTime(ms, {style, decimalSep})`).
+- **Densité des tableaux** : confortable / compact (classe `.density-compact` sur `<html>`, CSS `:is(td,th)` resserre le padding vertical).
+- **Format des dates** : relatif / absolu (`lib/dateAbsolute`).
+- **Réduire les animations** (a11y) : classe `.reduce-motion` sur `<html>`.
+Lien **⚙️ Paramètres** dans la Navbar (desktop + mobile). `eslint .` → 0, `tsc` OK. NB : `app/api/times` casse le `next build` faute de `RESEND_API_KEY` en local — pré-existant, sans rapport.
+
+## Pistes restantes (NON faites — pour une v2 si demandé)
+Idée soumise par le user le 2026-06-15. Points encore ouverts, surtout ceux qui touchent la DB :
 
 ## Pistes de réglages proposées (à valider avec lui)
-- **Thème** : clair / sombre / **système** (centralise le toggle déjà présent dans la Navbar via next-themes ; ajoute l'option « système »).
-- **Format des temps** : `1:23.456` vs `83,456 s`, séparateur décimal, nb de décimales (centraliser dans `components/formatTime.ts`).
-- **Densité des tableaux (PC)** : confortable / compact.
-- **Colonnes visibles** dans les classements (PC) : PI, transmission, tag Discord, rivaux — pouvoir masquer celles dont on ne veut pas.
-- **Dates** : relatives (« il y a 2 j ») vs absolues.
-- **Notifications** : granularité par type (exact / transmission / classe / rival) au lieu du seul toggle email actuel (colonne `email_notifications_enabled` sur `players`).
-- **Accessibilité** : réduire les animations, taille de police/contraste (prolonge le point 6 de la roadmap).
-- **Confidentialité** : masquer son tag Discord publiquement.
-
-## Architecture suggérée
-- Hook `usePreferences` adossé à **localStorage** (instantané, marche pour les visiteurs anonymes) pour les prefs d'affichage.
-- Pour les utilisateurs connectés, option de **synchroniser** via une colonne `preferences jsonb` sur `players` (cross-device) — comme l'est déjà `email_notifications_enabled`.
-- UI : page dédiée `/parametres` ou modale accessible depuis la Navbar / le profil. Penser aria-label (cf. [[lint-zero-warning]] pour garder 0 warning, et l'effort accessibilité déjà fait).
+- **Nb de décimales** des temps (pour l'instant fixé à 3) — facile à ajouter à `formatTime`.
+- **Colonnes visibles** dans les classements (PC) : PI, transmission, tag Discord, rivaux — pouvoir masquer celles dont on ne veut pas (plus lourd : touche le rendu de chaque tableau).
+- **Notifications** : granularité par type (exact / transmission / classe / rival) au lieu du seul toggle email actuel (colonne `email_notifications_enabled` sur `players`) → **DB-bound**.
+- **Accessibilité** : taille de police / contraste (en plus du « réduire les animations » déjà livré).
+- **Confidentialité** : masquer son tag Discord publiquement → **DB-bound**.
+- **Sync cross-device** pour les connectés : colonne `preferences jsonb` sur `players` (comme `email_notifications_enabled`) au lieu du seul localStorage → **DB-bound** (nécessite migration).
 
 **Why:** Le user veut laisser chaque pilote adapter l'affichage à son écran/ses goûts, surtout sur PC où les tableaux sont denses.
 
-**How to apply:** Quand on s'y met, commencer par cadrer le périmètre v1 avec lui (probablement thème + format des temps + densité), choisir localStorage vs DB, puis livrer petit. Voir la roadmap [[roadmap-ameliorations-juin-2026]] (terminée) pour le style de livraison incrémentale attendu.
+**How to apply:** v1 (affichage en localStorage) livrée. Pour la v2, cadrer avec lui les pistes DB-bound ci-dessus (migration `players.preferences jsonb` + chargement via [[usePlayer]] ou équivalent). Garder 0 warning (cf. [[lint-zero-warning]]) et livrer petit comme la [[roadmap-ameliorations-juin-2026]].
