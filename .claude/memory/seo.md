@@ -14,4 +14,4 @@ Audit SEO complet livré le 2026-06-16 (objectif : ressortir sur Google pour « 
 
 L'utilisateur a soumis le sitemap à **Google Search Console**. Plus rien à coder ; l'indexation est désormais une affaire de patience (jours→semaines).
 
-**Piste si besoin plus tard :** pas de `metadata` dédiée sur `/connexion` et `/inscription` (faible enjeu, héritent du défaut du layout).
+**Métadonnées dédiées `/connexion` et `/inscription` : ABANDONNÉ** (décision user 2026-06-16) — intérêt SEO nul (pages auth qu'on ne veut pas indexer), elles héritent du défaut du layout. Ne pas reproposer.

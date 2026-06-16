@@ -28,7 +28,7 @@ Le user a validé « les quatre » fonctionnalités DB-bound + UI. Toutes codée
 Points qui touchent la DB :
 
 ## Pistes de réglages proposées (à valider avec lui)
-- **Nb de décimales** des temps (pour l'instant fixé à 3) — facile à ajouter à `formatTime`.
+- ~~**Nb de décimales** des temps~~ — ABANDONNÉ (décision user 2026-06-16) : reste fixé à 3, ne pas reproposer.
 - **Colonnes visibles** dans les classements (PC) : PI, transmission, tag Discord, rivaux — pouvoir masquer celles dont on ne veut pas (plus lourd : touche le rendu de chaque tableau).
 - **Notifications** : granularité par type (exact / transmission / classe / rival) au lieu du seul toggle email actuel (colonne `email_notifications_enabled` sur `players`) → **DB-bound**.
 - **Accessibilité** : taille de police / contraste (en plus du « réduire les animations » déjà livré).
