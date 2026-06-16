@@ -1,6 +1,6 @@
 ---
 name: idee-panneau-options
-description: "Panneau de préférences /parametres — v1 ET v2 LIVRÉES et déployées (15 juin 2026). Seul reliquat mineur : option de contraste a11y. Rien d'autre en attente."
+description: "Panneau de préférences /parametres — v1 + v2 + option de contraste a11y LIVRÉS et déployés. Plus rien en attente."
 metadata: 
   node_type: memory
   type: project
@@ -24,8 +24,11 @@ Le user a validé « les quatre » fonctionnalités DB-bound + UI. Toutes codée
 - **Colonnes / police** : taille de police globale (classe `text-scale-large`) + colonnes masquables de la vue tableau des classements (section dans /parametres).
 - Au passage (point 4) : taille de police = a11y ; rate limiting Upstash (repli mémoire) ; RPC `general_ranking`.
 
-## Pistes restantes (anciennes notes — quasiment tout fait en v2 ci-dessus)
-Seul reliquat réel : **option de contraste a11y** (la taille de police est déjà livrée). Le reste de la liste ci-dessous est soit fait en v2, soit abandonné.
+## ✅ Contraste a11y LIVRÉ (2026-06-16, commit `081989d`)
+Préférence `contrast: 'normal' | 'high'` ; classe `.contrast-high` sur `<html>` (comme reduce-motion) renforçant textes secondaires neutral-400/500 + bordures en clair/sombre, sans toucher l'accent. Contrôle dans la section Accessibilité de /parametres. lint+tsc OK, poussé sur main.
+
+## Pistes restantes
+**Plus rien.** Tout est fait (v1, v2, contraste) ou abandonné (nb de décimales). La liste ci-dessous est conservée pour mémoire de ce qui a été couvert.
 
 ## Pistes de réglages proposées (état)
 - ~~**Nb de décimales** des temps~~ — ABANDONNÉ (décision user 2026-06-16) : reste fixé à 3, ne pas reproposer.
