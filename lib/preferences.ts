@@ -6,6 +6,7 @@ export type DateStyle = 'relative' | 'absolute';
 export type RankingLayout = 'cards' | 'table';
 export type Accent = 'pink-violet' | 'red-green' | 'blue-yellow';
 export type FontSize = 'normal' | 'large';
+export type Contrast = 'normal' | 'high';
 
 /** Colonnes facultatives de la vue tableau des classements (PC). */
 export interface TableColumns {
@@ -36,6 +37,8 @@ export interface Preferences {
   accent: Accent;
   /** Taille de police globale (accessibilité). */
   fontSize: FontSize;
+  /** Contraste renforcé des textes secondaires et bordures (accessibilité). */
+  contrast: Contrast;
   /** Colonnes facultatives affichées dans la vue tableau des classements. */
   tableColumns: TableColumns;
 }
@@ -60,6 +63,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   rankingLayout: 'cards',
   accent: 'pink-violet',
   fontSize: 'normal',
+  contrast: 'normal',
   tableColumns: DEFAULT_TABLE_COLUMNS,
 };
 
@@ -81,6 +85,7 @@ export function sanitizePreferences(raw: unknown): Preferences {
     rankingLayout: pick('rankingLayout', ['cards', 'table']),
     accent: pick('accent', ['pink-violet', 'red-green', 'blue-yellow']),
     fontSize: pick('fontSize', ['normal', 'large']),
+    contrast: pick('contrast', ['normal', 'high']),
     tableColumns: sanitizeTableColumns(r.tableColumns),
   };
 }

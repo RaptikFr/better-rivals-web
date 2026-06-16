@@ -92,3 +92,20 @@ body {
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
 }
+
+/* Préférence « contraste élevé » (a11y) : assombrit (clair) / éclaircit (sombre)
+   les textes secondaires (neutral-400/500, beaucoup utilisés pour les libellés
+   et indices) et renforce les bordures, pour une meilleure lisibilité. Les
+   couleurs d'accent (pink/violet) ne sont pas touchées. */
+.contrast-high :is(.text-neutral-400, .text-neutral-500) {
+  color: var(--color-neutral-700) !important;
+}
+.dark.contrast-high :is(.text-neutral-400, .text-neutral-500) {
+  color: var(--color-neutral-200) !important;
+}
+.contrast-high :is(.border-neutral-100, .border-neutral-200, .border-neutral-300) {
+  border-color: var(--color-neutral-400) !important;
+}
+.dark.contrast-high :is(.border-neutral-700, .border-neutral-800, .border-neutral-900) {
+  border-color: var(--color-neutral-500) !important;
+}

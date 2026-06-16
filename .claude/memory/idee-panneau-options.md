@@ -1,6 +1,6 @@
 ---
 name: idee-panneau-options
-description: "Panneau de préférences /parametres — v1 LIVRÉE le 2026-06-15 (thème, format temps/dates, densité, animations) ; reste des pistes DB-bound non faites"
+description: "Panneau de préférences /parametres — v1 ET v2 LIVRÉES et déployées (15 juin 2026). Seul reliquat mineur : option de contraste a11y. Rien d'autre en attente."
 metadata: 
   node_type: memory
   type: project
@@ -24,10 +24,10 @@ Le user a validé « les quatre » fonctionnalités DB-bound + UI. Toutes codée
 - **Colonnes / police** : taille de police globale (classe `text-scale-large`) + colonnes masquables de la vue tableau des classements (section dans /parametres).
 - Au passage (point 4) : taille de police = a11y ; rate limiting Upstash (repli mémoire) ; RPC `general_ranking`.
 
-## Pistes restantes (anciennes notes — la plupart faites en v2 ci-dessus)
-Points qui touchent la DB :
+## Pistes restantes (anciennes notes — quasiment tout fait en v2 ci-dessus)
+Seul reliquat réel : **option de contraste a11y** (la taille de police est déjà livrée). Le reste de la liste ci-dessous est soit fait en v2, soit abandonné.
 
-## Pistes de réglages proposées (à valider avec lui)
+## Pistes de réglages proposées (état)
 - ~~**Nb de décimales** des temps~~ — ABANDONNÉ (décision user 2026-06-16) : reste fixé à 3, ne pas reproposer.
 - **Colonnes visibles** dans les classements (PC) : PI, transmission, tag Discord, rivaux — pouvoir masquer celles dont on ne veut pas (plus lourd : touche le rendu de chaque tableau).
 - **Notifications** : granularité par type (exact / transmission / classe / rival) au lieu du seul toggle email actuel (colonne `email_notifications_enabled` sur `players`) → **DB-bound**.

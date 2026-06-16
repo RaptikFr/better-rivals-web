@@ -77,7 +77,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   }, [player?.id]);
 
   // Persiste (localStorage + compte si connecté) et applique les réglages
-  // globaux (densité, animations, accent, taille) sur <html>.
+  // globaux (densité, animations, accent, taille, contraste) sur <html>.
   useEffect(() => {
     if (!ready) return;
     try {
@@ -94,6 +94,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     root.classList.toggle('accent-red-green', prefs.accent === 'red-green');
     root.classList.toggle('accent-blue-yellow', prefs.accent === 'blue-yellow');
     root.classList.toggle('text-scale-large', prefs.fontSize === 'large');
+    root.classList.toggle('contrast-high', prefs.contrast === 'high');
   }, [prefs, ready, player?.id]);
 
   const setPref = useCallback(<K extends keyof Preferences>(key: K, value: Preferences[K]) => {

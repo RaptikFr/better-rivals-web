@@ -145,6 +145,16 @@ export default function ParametresClient() {
               { value: true, label: 'Oui' },
             ]}
           />
+          <Segmented
+            label="Contraste élevé"
+            hint="Renforce les textes secondaires et les bordures (accessibilité)."
+            value={prefs.contrast}
+            onChange={v => setPref('contrast', v)}
+            options={[
+              { value: 'normal', label: 'Normal' },
+              { value: 'high', label: 'Élevé' },
+            ]}
+          />
         </Section>
 
         <Section title="Tableaux & temps">
