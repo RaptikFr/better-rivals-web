@@ -32,9 +32,30 @@ Idée proposée par l'utilisateur le 2026-06-16 (à explorer plus tard, pas dém
 - **Code saisi à la main** par le joueur, via deux points d'entrée : son **profil** (champ éditable `ShareCodeCell` dans l'onglet « Tous mes temps », PATCH `/api/times/[id]`) **ou le relais** (BetterRivals.exe l'envoie avec le chrono). → les `lap_times.share_code` sont donc déjà bien alimentés (bonne couverture pour la dérivation). Prévoir quand même normalisation (trim/format) et tolérer les codes absents/fautés.
 - Plusieurs codes peuvent coexister pour un même modèle (un par pilote) ; `is_original` distingue le créateur de ceux qui ont recopié le code.
 
+## Niveau de détail = PROGRESSIF (choisi 2026-06-16)
+- Le **code de partage suffit** pour publier un réglage (socle, évite la page vide). Les **champs détaillés sont optionnels** : quand l'auteur les renseigne, la **fiche tableau complète** se débloque ; sinon on n'affiche qu'une carte « code seul ».
+- Implique deux niveaux d'affichage : carte « code seul » (dont tous les dérivés `lap_times`, qui n'ont QUE le code) vs carte « fiche complète » (valeurs saisies).
+
+## Champs proposés pour le formulaire (PROPOSÉ par moi 2026-06-16, PAS encore validé par lui)
+Tous optionnels, regroupés comme l'écran de tuning FH6 :
+- **Pneus** : pression Avant · Arrière (psi)
+- **Boîte** : rapport final + 1 valeur par rapport (1re, 2e, … nombre variable 5–10 selon voiture)
+- **Alignement** : carrossage AV · AR · pincement AV · AR · chasse (°)
+- **Barres antiroulis** : avant · arrière
+- **Ressorts** : raideur AV · AR · hauteur de caisse AV · AR (lb/in · cm/in)
+- **Amortisseurs** : détente AV · AR · compression AV · AR
+- **Aéro** : appui avant · arrière (kgf/lbf)
+- **Freins** : équilibrage · pression (%)
+- **Différentiel** : accel · décel (%) [+ accel/décel AR + répartition centrale si transmission intégrale]
+
+## 3 points en attente de SA validation (reprendre la conversation ici)
+1. **Boîte à nombre de rapports variable** → ma proposition : boîte optionnelle en bloc ; si renseignée, saisie dynamique de N rapports (champ « nombre de rapports »).
+2. **Unités** : ma proposition = un seul interrupteur impérial/métrique par réglage, on stocke les nombres + ce drapeau, affichage dans l'unité d'origine.
+3. **Stockage** : ma proposition = colonne JSON `tune_values` sur `tune_setups` (souple, gère le nb variable de rapports, n'impacte pas l'existant) ; `share_code`/`label`/`is_original` restent en colonnes.
+→ Aucun des 3 n'est tranché par lui. Ne rien coder avant validation.
+
 ## Reste à trancher au moment du build
 - Attribution d'un code **dérivé** non revendiqué (auteur = pilote le plus rapide ? ou « non revendiqué » jusqu'à ce que quelqu'un le revendique).
-- Champs exacts du formulaire de soumission.
 
 ## À construire (l'API POST existe déjà)
 - Une couche data serveur cachée `lib/reglages.ts` (fusion tune_setups + dérivés lap_times, dédup, meilleur temps).
