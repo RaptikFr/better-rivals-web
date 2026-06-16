@@ -1,193 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlayer } from '@/hooks/usePlayer';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 import { usePreferences } from '@/hooks/usePreferences';
-import { DrivetrainBadge, DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
-import { CLASS_STYLES } from '@/components/ClassStyles';
-import { DiscordTag } from '@/components/DiscordTag';
-import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
-
-interface LapTime {
-  id: string;
-  time_ms: number;
-  car_class: CarClass;
-  car_pi: number;
-  car_ordinal: number;
-  player_id: string;
-  track_id: number;
-  drivetrain: Drivetrain;
-  share_code: string | null;
-  previous_time_ms: number | null;
-  players: { pseudo: string; discord_tag: string | null } | null;
-  cars: { manufacturer: string | null; name: string; year: number | null } | null;
-  tracks: { name: string; length_km: number | null; type: string | null; is_sprint: boolean | null } | null;
-}
-
-interface Track {
-  id: number;
-  name: string;
-  is_official?: boolean;
-}
-
-interface RankedLap extends LapTime {
-  rank: number;
-}
-
-interface SubGroup {
-  key: string;
-  carClass: CarClass;
-  drivetrain: Drivetrain;
-  carLabel: string;
-  laps: RankedLap[];
-}
-
-interface CircuitGroup {
-  trackId: number;
-  trackName: string;
-  trackLengthKm: number | null;
-  trackType: string | null;
-  trackIsSprint: boolean | null;
-  subGroups: SubGroup[];
-}
-
-const CAR_CLASS_ORDER = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R', 'X'];
-const CIRCUITS_PER_PAGE = 5;
-const STORAGE_KEY = 'br_classements_filters';
-const CAR_CLASSES: Array<"Toutes" | CarClass> = ["Toutes", "D", "C", "B", "A", "S1", "S2", "R", "X"];
-const DRIVETRAIN_OPTIONS: Array<"Tous" | Drivetrain> = ["Tous", "AWD", "RWD", "FWD"];
-const RAISONS = ['Temps impossible', 'Mauvais circuit sélectionné', 'Autre'] as const;
-type Raison = typeof RAISONS[number];
-
-function TuneCell({ lap }: { lap: LapTime }) {
-  const [copied, setCopied] = useState(false);
-
-  if (!lap.share_code) return <span className="text-neutral-600">—</span>;
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(lap.share_code!);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  return (
-    <button
-      onClick={handleCopy}
-      title="Copier le code de réglage"
-      className="font-mono text-sm text-neutral-700 dark:text-neutral-300 hover:text-pink-400 transition-colors"
-    >
-      {copied ? <span className="text-green-400 font-bold not-italic">Copié !</span> : lap.share_code}
-    </button>
-  );
-}
-
-function ReportModal({
-  lap,
-  onClose,
-  onSuccess,
-}: {
-  lap: LapTime;
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const { formatTime } = usePreferences();
-  const [raison, setRaison] = useState<Raison>(RAISONS[0]);
-  const [details, setDetails] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit() {
-    setLoading(true);
-    setError(null);
-    const { data: { session } } = await supabase.auth.getSession();
-    const res = await fetch('/api/reports', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token}`,
-      },
-      body: JSON.stringify({
-        lap_time_id: lap.id,
-        raison,
-        details: details.trim() || null,
-      }),
-    });
-    const json = await res.json();
-    if (res.ok) {
-      onSuccess();
-    } else {
-      setError(json.error ?? 'Erreur lors du signalement.');
-    }
-    setLoading(false);
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-5">
-        <div>
-          <h2 className="text-lg font-extrabold text-neutral-900 dark:text-white mb-1">🚩 Signaler un temps suspect</h2>
-          <p className="text-sm text-neutral-500">Ce signalement sera examiné par l&apos;équipe Better Rivals.</p>
-        </div>
-        <div className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-1.5 text-sm">
-          <p><span className="text-neutral-500">Pilote :</span> <span className="text-neutral-900 dark:text-white font-bold ml-1">{lap.players?.pseudo ?? '—'}</span></p>
-          <p><span className="text-neutral-500">Voiture :</span> <span className="text-neutral-700 dark:text-neutral-300 ml-1">{lap.cars?.year} {lap.cars?.manufacturer} {lap.cars?.name}</span></p>
-          <p><span className="text-neutral-500">Circuit :</span> <span className="text-neutral-700 dark:text-neutral-300 ml-1">{lap.tracks?.name ?? '—'}</span></p>
-          <p><span className="text-neutral-500">Temps :</span> <span className="font-mono font-bold text-pink-400 ml-1">{formatTime(lap.time_ms)}</span></p>
-        </div>
-        <div>
-          <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Raison</label>
-          <select
-            value={raison}
-            onChange={e => setRaison(e.target.value as Raison)}
-            className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-pink-500 transition-colors"
-          >
-            {RAISONS.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
-            Détails <span className="text-neutral-500 font-normal">(optionnel)</span>
-          </label>
-          <textarea
-            value={details}
-            onChange={e => setDetails(e.target.value)}
-            placeholder="Précise ce qui te semble suspect..."
-            rows={3}
-            className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors resize-none"
-          />
-        </div>
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-        <div className="flex gap-3 justify-end pt-1">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-400 text-sm font-bold rounded-lg hover:bg-red-500/30 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Envoi...' : '🚩 Signaler'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
+import {
+  type LapTime, type Track, type RankedLap, type SubGroup, type CircuitGroup,
+  CAR_CLASS_ORDER, CIRCUITS_PER_PAGE, STORAGE_KEY, CAR_CLASSES, DRIVETRAIN_OPTIONS,
+  ReportModal,
+} from './classementsShared';
+import { RankingTableView, RankingCardView } from './RankingViews';
 
 export default function ClassementsClient({
   initialTrackId,
@@ -752,319 +578,34 @@ export default function ClassementsClient({
             <p className="text-neutral-500 font-medium">Aucun temps ne correspond à ces filtres.</p>
           </div>
         ) : prefs.rankingLayout === 'table' ? (
-          <div className="space-y-6">
-            {paginatedGroups.map(circuit => (
-              <div
-                key={circuit.trackId}
-                className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden"
-              >
-                {/* En-tête de circuit */}
-                <div className="px-5 py-4 bg-neutral-200/60 dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="font-extrabold text-lg text-neutral-900 dark:text-white">
-                      {getTypeIcon(circuit.trackType ?? '')} {getSprintIcon(circuit.trackIsSprint ?? false)} {circuit.trackName}
-                    </h2>
-                    {circuit.trackLengthKm && (
-                      <span className="text-sm text-neutral-500">· {circuit.trackLengthKm} km</span>
-                    )}
-                  </div>
-                  <span className="text-xs text-neutral-500 font-mono flex-shrink-0">
-                    {circuit.subGroups.length} config{circuit.subGroups.length > 1 ? 's' : ''}
-                  </span>
-                </div>
-
-                {/* Configs repliables — chaque config déroule un tableau aligné */}
-                <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                  {circuit.subGroups.map(group => {
-                    const isOpen = openGroups.has(group.key);
-                    return (
-                      <div key={group.key}>
-                        {/* En-tête de config cliquable (Catégorie · Transmission · Modèle) */}
-                        <button
-                          onClick={() => toggleGroup(group.key)}
-                          className="w-full flex items-center gap-2 px-4 py-3 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors text-left"
-                        >
-                          <span
-                            className="px-2 py-0.5 rounded text-xs font-bold flex-shrink-0"
-                            style={CLASS_STYLES[group.carClass] ?? { backgroundColor: '#555', color: '#fff' }}
-                          >
-                            {group.carClass}
-                          </span>
-                          <DrivetrainBadge drivetrain={group.drivetrain} />
-                          <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 truncate">{group.carLabel}</span>
-                          <span className="text-xs text-neutral-500 ml-auto flex-shrink-0 mr-1">
-                            {group.laps.length} pilote{group.laps.length > 1 ? 's' : ''}
-                          </span>
-                          <svg
-                            className={`w-4 h-4 flex-shrink-0 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-
-                        {/* Tableau en colonnes — visible si la config est dépliée */}
-                        {isOpen && (
-                          <div className="overflow-x-auto pb-2">
-                            <table className="w-full text-sm border-collapse">
-                              <thead>
-                                <tr className="text-left text-[11px] uppercase tracking-wider text-neutral-500 border-y border-neutral-200 dark:border-neutral-800">
-                                  <th className="px-3 py-2 font-bold text-right">Classement</th>
-                                  <th className="px-3 py-2 font-bold">Pseudo</th>
-                                  <th className="px-3 py-2 font-bold">Meilleur temps</th>
-                                  {cols.previousTime && <th className="px-3 py-2 font-bold">Ancien meilleur temps</th>}
-                                  {cols.diff && <th className="px-3 py-2 font-bold">Différence</th>}
-                                  {cols.gapLeader && <th className="px-3 py-2 font-bold">Écart avec le n°1</th>}
-                                  {cols.gapPrev && <th className="px-3 py-2 font-bold">Écart avec le joueur précédent</th>}
-                                  {cols.gapNext && <th className="px-3 py-2 font-bold">Écart avec le joueur suivant</th>}
-                                  {cols.pi && <th className="px-3 py-2 font-bold">Indice de Performance</th>}
-                                  {cols.tune && <th className="px-3 py-2 font-bold">Réglage</th>}
-                                  <th className="px-3 py-2" aria-label="Actions" />
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {group.laps.map((lap, i) => {
-                                  const leader  = group.laps[0];
-                                  const prevLap = group.laps[i - 1];
-                                  const nextLap = group.laps[i + 1];
-                                  return (
-                                    <tr
-                                      key={lap.id}
-                                      data-lap-id={lap.id}
-                                      className={`border-b border-neutral-200/60 dark:border-neutral-800/60 last:border-0 hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors ${
-                                        lap.id === highlightId ? 'bg-pink-500/20 dark:bg-pink-500/20' : ''
-                                      }`}
-                                    >
-                                      <td className="px-3 py-2 text-right font-bold text-neutral-500 tabular-nums">{lap.rank}</td>
-                                      <td className="px-3 py-2 whitespace-nowrap">
-                                        <Link
-                                          href={`/joueurs/${encodeURIComponent(lap.players?.pseudo ?? '')}`}
-                                          className="font-bold text-neutral-900 dark:text-white hover:text-pink-400 transition-colors"
-                                        >
-                                          {lap.players?.pseudo ?? 'Inconnu'}
-                                        </Link>
-                                        {cols.discord && <DiscordTag tag={lap.players?.discord_tag} />}
-                                      </td>
-                                      <td className="px-3 py-2 font-mono font-bold text-pink-400 whitespace-nowrap">{formatTime(lap.time_ms)}</td>
-                                      {cols.previousTime && (
-                                        <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">
-                                          {lap.previous_time_ms ? formatTime(lap.previous_time_ms) : '—'}
-                                        </td>
-                                      )}
-                                      {cols.diff && (
-                                        <td className="px-3 py-2 font-mono text-xs text-orange-400 whitespace-nowrap">
-                                          {lap.previous_time_ms ? gapStr(lap.previous_time_ms - lap.time_ms) : '—'}
-                                        </td>
-                                      )}
-                                      {cols.gapLeader && (
-                                        <td className="px-3 py-2 font-mono text-xs text-sky-400 whitespace-nowrap">
-                                          {lap.rank > 1 ? gapStr(lap.time_ms - leader.time_ms) : '—'}
-                                        </td>
-                                      )}
-                                      {cols.gapPrev && (
-                                        <td className="px-3 py-2 font-mono text-xs text-violet-400 whitespace-nowrap">
-                                          {prevLap ? gapStr(lap.time_ms - prevLap.time_ms) : '—'}
-                                        </td>
-                                      )}
-                                      {cols.gapNext && (
-                                        <td className="px-3 py-2 font-mono text-xs text-emerald-400 whitespace-nowrap">
-                                          {nextLap ? gapStr(nextLap.time_ms - lap.time_ms) : '—'}
-                                        </td>
-                                      )}
-                                      {cols.pi && <td className="px-3 py-2 font-mono text-xs text-neutral-500 whitespace-nowrap">PI {lap.car_pi}</td>}
-                                      {cols.tune && <td className="px-3 py-2"><TuneCell lap={lap} /></td>}
-                                      <td className="px-3 py-2">
-                                        <div className="flex items-center gap-2">
-                                          <button
-                                            onClick={() => handleShareRow(lap.id)}
-                                            title="Copier le lien vers ce temps"
-                                            aria-label="Copier le lien vers ce temps"
-                                            className="text-neutral-400 hover:text-pink-400 transition-colors text-xs"
-                                          >
-                                            {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
-                                          </button>
-                                          {user && currentPlayerId !== null && (
-                                            lap.player_id !== currentPlayerId ? (
-                                              <button
-                                                onClick={() => setReportTarget(lap)}
-                                                title="Signaler ce temps comme suspect"
-                                                aria-label="Signaler ce temps comme suspect"
-                                                className="text-neutral-500 hover:text-red-400 transition-colors"
-                                              >
-                                                🚩
-                                              </button>
-                                            ) : (
-                                              <span aria-hidden="true" className="invisible select-none">🚩</span>
-                                            )
-                                          )}
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+          <RankingTableView
+            groups={paginatedGroups}
+            openGroups={openGroups}
+            toggleGroup={toggleGroup}
+            highlightId={highlightId}
+            formatTime={formatTime}
+            gapStr={gapStr}
+            isAuthed={!!user}
+            currentPlayerId={currentPlayerId}
+            copiedRowId={copiedRowId}
+            onShareRow={handleShareRow}
+            onReport={setReportTarget}
+            cols={cols}
+          />
         ) : (
-          <div className="space-y-6">
-            {paginatedGroups.map(circuit => (
-              <div
-                key={circuit.trackId}
-                className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden"
-              >
-                {/* En-tête de circuit */}
-                <div className="px-5 py-4 bg-neutral-200/60 dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="font-extrabold text-lg text-neutral-900 dark:text-white">
-                      {getTypeIcon(circuit.trackType ?? '')} {getSprintIcon(circuit.trackIsSprint ?? false)} {circuit.trackName}
-                    </h2>
-                    {circuit.trackLengthKm && (
-                      <span className="text-sm text-neutral-500">· {circuit.trackLengthKm} km</span>
-                    )}
-                  </div>
-                  <span className="text-xs text-neutral-500 font-mono flex-shrink-0">
-                    {circuit.subGroups.length} config{circuit.subGroups.length > 1 ? 's' : ''}
-                  </span>
-                </div>
-
-                {/* Sous-groupes */}
-                <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                  {circuit.subGroups.map(group => (
-                    <div key={group.key}>
-
-                      {/* En-tête cliquable */}
-                      <button
-                        onClick={() => toggleGroup(group.key)}
-                        className="w-full flex items-center gap-2 px-4 py-3 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors text-left"
-                      >
-                        <span
-                          className="px-2 py-0.5 rounded text-xs font-bold flex-shrink-0"
-                          style={CLASS_STYLES[group.carClass] ?? { backgroundColor: '#555', color: '#fff' }}
-                        >
-                          {group.carClass}
-                        </span>
-                        <DrivetrainBadge drivetrain={group.drivetrain} />
-                        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 truncate">{group.carLabel}</span>
-                        <span className="text-xs text-neutral-500 ml-auto flex-shrink-0 mr-1">
-                          {group.laps.length} pilote{group.laps.length > 1 ? 's' : ''}
-                        </span>
-                        <svg
-                          className={`w-4 h-4 flex-shrink-0 text-neutral-400 transition-transform ${openGroups.has(group.key) ? 'rotate-180' : ''}`}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-
-                      {/* Liste des temps — visible si ouvert.
-                          Lignes empilées en carte sur mobile, alignées en
-                          colonnes sur ≥ sm (sm:contents garde rang + pseudo
-                          comme deux colonnes distinctes). */}
-                      {openGroups.has(group.key) && (
-                      <div className="px-4 pb-4 text-sm">
-                        {group.laps.map((lap, lapIndex) => (
-                          <div
-                            key={lap.id}
-                            data-lap-id={lap.id}
-                            className={`flex flex-col gap-2 rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 mb-2
-                                        sm:flex-row sm:items-start sm:gap-3 sm:rounded-none sm:border-0 sm:border-b sm:last:border-0 sm:p-0 sm:py-3 sm:mb-0
-                                        hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors ${
-                              lap.id === highlightId ? 'bg-pink-500/20 dark:bg-pink-500/20' : ''
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 sm:contents">
-                              <span className="font-bold text-neutral-500 tabular-nums sm:w-8 sm:text-right sm:py-0">
-                                {lap.rank}
-                              </span>
-                              <span className="font-bold text-neutral-900 dark:text-white sm:w-44 sm:truncate">
-                                <Link
-                                  href={`/joueurs/${encodeURIComponent(lap.players?.pseudo ?? '')}`}
-                                  className="hover:text-pink-400 transition-colors"
-                                >
-                                  {lap.players?.pseudo ?? 'Inconnu'}
-                                </Link>
-                                <DiscordTag tag={lap.players?.discord_tag} />
-                              </span>
-                            </div>
-                            <div className="sm:flex-1">
-                              <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 whitespace-nowrap">
-                                <span className="text-xs text-neutral-500">Meilleur</span>
-                                <span className="font-mono font-bold text-pink-400">{formatTime(lap.time_ms)}</span>
-                                {lap.previous_time_ms && (
-                                  <>
-                                    <span className="text-xs text-neutral-500">Précédent</span>
-                                    <span className="text-xs font-mono text-neutral-500">
-                                      ↑ {formatTime(lap.previous_time_ms)}{' '}
-                                      <span className="text-orange-400">{gapStr(lap.previous_time_ms - lap.time_ms)}</span>
-                                    </span>
-                                  </>
-                                )}
-                                {lap.rank > 1 && (
-                                  <>
-                                    <span className="text-xs text-neutral-500">Écart leader</span>
-                                    <span className="text-xs font-mono text-sky-400">{gapStr(lap.time_ms - group.laps[0].time_ms)}</span>
-                                  </>
-                                )}
-                                {lap.rank > 2 && lapIndex > 0 && (
-                                  <>
-                                    <span className="text-xs text-neutral-500">Écart préc.</span>
-                                    <span className="text-xs font-mono text-violet-400">{gapStr(lap.time_ms - group.laps[lapIndex - 1].time_ms)}</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between gap-3 sm:contents">
-                              <span className="text-neutral-500 font-mono text-xs whitespace-nowrap sm:w-20">
-                                PI {lap.car_pi}
-                              </span>
-                              <span className="sm:py-0">
-                                <TuneCell lap={lap} />
-                              </span>
-                              <span className="flex items-center justify-end gap-1.5 sm:ml-auto">
-                                <button
-                                  onClick={() => handleShareRow(lap.id)}
-                                  title="Copier le lien vers ce temps"
-                                  aria-label="Copier le lien vers ce temps"
-                                  className="text-neutral-400 hover:text-pink-400 transition-colors text-xs"
-                                >
-                                  {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
-                                </button>
-                                {/* Slot signalement : réservé même pour ses propres temps
-                                    (placeholder invisible) afin de garder le 🔗 aligné d'une ligne à l'autre. */}
-                                {user && currentPlayerId !== null && (
-                                  lap.player_id !== currentPlayerId ? (
-                                    <button
-                                      onClick={() => setReportTarget(lap)}
-                                      title="Signaler ce temps comme suspect"
-                                      aria-label="Signaler ce temps comme suspect"
-                                      className="text-neutral-500 hover:text-red-400 transition-colors"
-                                    >
-                                      🚩
-                                    </button>
-                                  ) : (
-                                    <span aria-hidden="true" className="invisible select-none">🚩</span>
-                                  )
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <RankingCardView
+            groups={paginatedGroups}
+            openGroups={openGroups}
+            toggleGroup={toggleGroup}
+            highlightId={highlightId}
+            formatTime={formatTime}
+            gapStr={gapStr}
+            isAuthed={!!user}
+            currentPlayerId={currentPlayerId}
+            copiedRowId={copiedRowId}
+            onShareRow={handleShareRow}
+            onReport={setReportTarget}
+          />
         )}
 
         {/* --- PAGINATION --- */}
