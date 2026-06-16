@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { siteUrl } from '@/lib/site';
 import { getIndexableCircuits, circuitSlug } from '@/lib/circuitRankings';
+import { getIndexableCars } from '@/lib/carRankings';
+import { carSlug } from '@/lib/carSlug';
 
 // Pages publiques et indexables. Les pages privées/personnelles
 // (/profil, /parametres, /admin, /connexion, /inscription) sont
@@ -30,14 +32,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority,
   }));
 
-  // Pages circuit avec assez de temps pour être indexées (cf. MIN_TIMES_INDEXABLE).
-  const circuits = await getIndexableCircuits().catch(() => []);
+  // Pages circuit + voiture avec assez de temps pour être indexées
+  // (cf. MIN_TIMES_INDEXABLE dans chaque lib).
+  const [circuits, cars] = await Promise.all([
+    getIndexableCircuits().catch(() => []),
+    getIndexableCars().catch(() => []),
+  ]);
   const circuitEntries: MetadataRoute.Sitemap = circuits.map(c => ({
     url: `${siteUrl}/circuits/${circuitSlug(c.id, c.name)}`,
     lastModified,
     changeFrequency: 'daily',
     priority: 0.7,
   }));
+  const carEntries: MetadataRoute.Sitemap = cars.map(c => ({
+    url: `${siteUrl}/voitures/${carSlug(c.ordinal, c.manufacturer, c.name)}`,
+    lastModified,
+    changeFrequency: 'daily',
+    priority: 0.6,
+  }));
 
-  return [...staticEntries, ...circuitEntries];
+  return [...staticEntries, ...circuitEntries, ...carEntries];
 }

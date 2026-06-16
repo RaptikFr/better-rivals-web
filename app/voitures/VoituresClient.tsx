@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { fetchAllRows } from '@/lib/fetchAllRows';
 import { CLASS_STYLES } from '@/components/ClassStyles';
+import { carSlug } from '@/lib/carSlug';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -11,6 +13,7 @@ const ALL_CLASSES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R', 'X'] as const;
 
 interface Car {
   id: number;
+  car_ordinal: number | null;
   manufacturer: string;
   name: string;
   year: number;
@@ -34,7 +37,7 @@ export default function VoituresClient({ initialSearch }: { initialSearch?: stri
       const { data, error } = await fetchAllRows<Car>((from, to) =>
         supabase
           .from('cars')
-          .select('id, manufacturer, name, year, car_type, initial_class, collection, add_ons')
+          .select('id, car_ordinal, manufacturer, name, year, car_type, initial_class, collection, add_ons')
           .order('manufacturer')
           .order('name')
           .order('id')
@@ -196,7 +199,16 @@ export default function VoituresClient({ initialSearch }: { initialSearch?: stri
                         {car.manufacturer}
                       </td>
                       <td className="px-4 py-3 text-neutral-900 dark:text-white font-bold">
-                        {car.name}
+                        {car.car_ordinal != null ? (
+                          <Link
+                            href={`/voitures/${carSlug(car.car_ordinal, car.manufacturer, car.name)}`}
+                            className="hover:text-pink-400 transition-colors"
+                          >
+                            {car.name}
+                          </Link>
+                        ) : (
+                          car.name
+                        )}
                       </td>
                       <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400">
                         {car.year}
