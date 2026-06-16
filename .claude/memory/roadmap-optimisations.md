@@ -13,8 +13,8 @@ Audit technique du 2026-06-16. Constat : base saine (next/image partout, 0 `any`
 ## 🥈 Uniformiser la récupération des données — ✅ FAIT (avec le 🥇)
 `DerniersChronos` ne tape plus Supabase en direct côté navigateur : il reçoit ses données du fetch serveur caché (`lib/derniersChronos.ts`). Reste à vérifier si d'autres composants client tapent Supabase directement sans cache (ex. dans les pages `/classement-general`, `/stats`, `/profil` — la plupart passent par des API cachées).
 
-## 🥉 Lazy-load recharts — À FAIRE
-`recharts` n'est utilisé que sur `/profil` (`app/profil/LapTimeChart.tsx` + `ProfilClient.tsx`) mais alourdit le bundle. Le charger via `next/dynamic` (`ssr: false`) le sort du chargement initial. *Impact moyen sur /profil, effort faible.*
+## 🥉 Lazy-load recharts — ✅ DÉJÀ FAIT (constaté 2026-06-16)
+Faux positif de l'audit initial : `recharts` est déjà isolé dans `app/profil/LapTimeChart.tsx` et chargé via `next/dynamic` (`ssr: false` + loading) dans `ProfilClient.tsx`. Il n'est donc pas dans le bundle initial. Rien à faire.
 
 ## 🛠️ Découper les gros fichiers client — À FAIRE
 `app/profil/ProfilClient.tsx` (~1296 lignes) et `app/classements/ClassementsClient.tsx` (~1144) sont monolithiques. Les scinder en sous-composants pour la maintenabilité. *Impact faible court terme.*
