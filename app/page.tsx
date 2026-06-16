@@ -2,10 +2,28 @@ import Link from 'next/link';
 import Image from 'next/image';
 import DerniersChronos from '@/components/DerniersChronos';
 import NouveauxLeaders from '@/components/NouveauxLeaders';
+import { siteUrl } from '@/lib/site';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Better Rivals FH6',
+  alternateName: ['Better Rivals', 'Better Rivals Forza Horizon 6'],
+  url: siteUrl,
+  description:
+    "Le classement alternatif, équitable et par modèle de voiture pour Forza Horizon 6. Battez-vous à armes égales.",
+  inLanguage: 'fr-FR',
+};
 
 export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-start p-6 pb-24">
+
+      {/* Données structurées pour Google */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* --- SECTION HAUT (En-tête) --- */}
       <div className="max-w-4xl text-center space-y-8 mt-0">
@@ -13,12 +31,20 @@ export default function Home() {
         {/* Bannière */}
         <Image
           src="/og-image.jpg"
-          alt="Better Rivals FH6"
+          alt="Better Rivals FH6 — classement Forza Horizon 6"
           width={1280}
           height={512}
           priority
           className="w-full rounded-2xl"
         />
+
+        {/* Titre principal (H1) — mots-clés pour le référencement */}
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+          Better Rivals FH6 — le classement de{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
+            Forza Horizon 6
+          </span>
+        </h1>
 
         {/* Le sous-titre */}
         <p className="text-xl md:text-2xl text-neutral-600 dark:text-neutral-400 font-medium max-w-2xl mx-auto">
