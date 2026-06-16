@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -323,8 +324,6 @@ async function sendBeatenEmail(opts: {
 
     const resend = getResend();
     if (!resend) return; // pas de clé Resend configurée → on n'envoie pas d'email
-
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://better-rivals.gg';
 
     await resend.emails.send({
       from:    process.env.RESEND_FROM_EMAIL ?? 'Better Rivals <noreply@better-rivals.gg>',
