@@ -16,8 +16,8 @@ Audit technique du 2026-06-16. Constat : base saine (next/image partout, 0 `any`
 ## 🥉 Lazy-load recharts — ✅ DÉJÀ FAIT (constaté 2026-06-16)
 Faux positif de l'audit initial : `recharts` est déjà isolé dans `app/profil/LapTimeChart.tsx` et chargé via `next/dynamic` (`ssr: false` + loading) dans `ProfilClient.tsx`. Il n'est donc pas dans le bundle initial. Rien à faire.
 
-## 🛠️ Découper les gros fichiers client — À FAIRE
-`app/profil/ProfilClient.tsx` (~1296 lignes) et `app/classements/ClassementsClient.tsx` (~1144) sont monolithiques. Les scinder en sous-composants pour la maintenabilité. *Impact faible court terme.*
+## 🛠️ Découper les gros fichiers client — ✅ FAIT le 2026-06-16
+ProfilClient 1297 → 549 l. (profilShared.tsx, SuiviTab.tsx, ProfilTabs.tsx) ; ClassementsClient 1145 → 685 l. (classementsShared.tsx + RankingViews.tsx pour les vues tableau/cartes). Comportement inchangé, tsc/eslint/build OK.
 
 ## 💡 SEO de contenu (ambitieux) — À FAIRE
 - Rendre `/classements` indexable côté serveur (noms voitures/circuits/temps absents du HTML aujourd'hui) → viser des recherches « meilleur temps [voiture] Forza Horizon 6 ». *Impact SEO potentiellement fort, effort élevé.*
