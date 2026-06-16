@@ -12,12 +12,26 @@ Idée proposée par l'utilisateur le 2026-06-16 (à explorer plus tard, pas dém
 - **Une table `tune_setups` existe déjà** : `player_id, car_ordinal, share_code, label, track_id, track_type, is_original`. Route `POST /api/tune-setups` (`app/api/tune-setups/route.ts`) : soumission d'un réglage avec **revendication d'originalité** (`is_original`) + détection de conflit (un même code ne peut être revendiqué original que par un seul joueur). Rate-limitée.
 - Manque : aucun **GET / aucune UI de consultation** des tune_setups — la table est alimentée mais pas exploitée à l'affichage.
 
-## Pistes pour la section (à cadrer avec lui)
-- Page/section dédiée listant les réglages par voiture (et/ou par circuit/type), avec : label, auteur (pseudo → /joueurs), original vs copié, code copiable, éventuellement lien vers les chronos obtenus avec.
-- Intégration naturelle dans les **pages voiture** (cf. [[roadmap-optimisations]] phase 2) : un onglet/bloc « Réglages » par voiture = contenu supplémentaire + SEO.
-- Crédit d'originalité mis en avant (le `is_original` est déjà géré côté API).
-- Voir s'il faut un formulaire de soumission côté UI (l'API POST existe déjà) et un `GET /api/tune-setups`.
+## Décisions de design prises avec lui (2026-06-16, brainstorm)
+- **Emplacement : page dédiée `/reglages`** (annuaire global avec filtres), PAS un simple bloc dans les pages voiture. (Un bloc « Réglages de cette voiture » sur /voitures/[slug] reste possible plus tard en réutilisant la même donnée.)
+- **Source des données : HYBRIDE.** Agréger les `tune_setups` riches (label, ⭐ original, contexte circuit) ET dériver les `share_code` déjà présents sur les `lap_times`, dédupliqués par (car_ordinal, share_code), avec le meilleur temps obtenu. → page pleine dès le lancement ; un auteur peut ensuite « enrichir/revendiquer » un code dérivé (réutilise `is_original` + le contrôle de conflit de l'API POST existante).
 
-**Why :** le réglage est une info à forte valeur pour les joueurs FH6 (un bon tune fait gagner des secondes) ; aujourd'hui réduit à un code brut peu engageant.
+## Présentation cible de /reglages
+- En-tête + bouton **« Partager un réglage »** (si connecté).
+- Filtres : Voiture · Classe · Transmission · Type de circuit · ⭐ Originaux uniquement · recherche label/auteur. Tri : récents / plus rapides / originaux d'abord.
+- Cartes : voiture (→ page voiture), classe+PI, transmission, label, auteur (→ /joueurs), badge ⭐ Original, « optimisé pour [circuit/type] », **code copiable**, et pour les codes dérivés « utilisé par N pilotes · meilleur temps X ».
+- État vide par filtre + encart « comment partager ton réglage ».
 
-**How to apply :** repartir de la table `tune_setups` + de l'API POST existantes ; livrer petit (cf. [[lint-zero-warning]]) ; garder le rendu serveur/SEO si on l'accroche aux pages voiture.
+## Reste à trancher au moment du build
+- Attribution d'un code **dérivé** non revendiqué (auteur = pilote le plus rapide ? ou « non revendiqué » jusqu'à ce que quelqu'un le revendique).
+- Granularité du regroupement : (voiture+code) seul, ou (voiture+code+classe) — un même code peut servir sur plusieurs classes.
+- Champs exacts du formulaire de soumission.
+
+## À construire (l'API POST existe déjà)
+- Une couche data serveur cachée `lib/reglages.ts` (fusion tune_setups + dérivés lap_times, dédup, meilleur temps).
+- `app/reglages/page.tsx` (+ probablement un client pour filtres/tri) ; lien Navbar + footer.
+- Un `GET /api/tune-setups` ou fetch serveur ; un formulaire/modale de soumission ; action « revendiquer » (réutilise POST is_original).
+
+**Why :** le réglage est une info à forte valeur pour les joueurs FH6 (un bon tune fait gagner des secondes) ; aujourd'hui réduit à un code brut peu engageant. L'hybride évite l'écueil de la page vide.
+
+**How to apply :** repartir de `tune_setups` + API POST existantes ; livrer petit (cf. [[lint-zero-warning]]). NB : page interactive (filtres) donc faible SEO en soi — l'angle SEO viendrait plutôt d'un futur bloc réglages sur les pages voiture (cf. [[roadmap-optimisations]]).
