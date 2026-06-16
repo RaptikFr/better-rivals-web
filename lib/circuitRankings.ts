@@ -3,6 +3,9 @@ import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { fetchAllRows } from '@/lib/fetchAllRows';
 
+// Ré-export pour les imports historiques (`from '@/lib/circuitRankings'`).
+export { circuitSlug, parseCircuitId } from '@/lib/circuitSlug';
+
 // Ordre d'affichage des classes (repris de la vue classements).
 const CAR_CLASS_ORDER = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R', 'X'];
 
@@ -45,24 +48,6 @@ export interface CircuitRanking {
   track: CircuitMeta | null;
   configs: CircuitConfig[];
   totalTimes: number;
-}
-
-/** Slug stable d'un circuit : « {id}-{nom-en-kebab} ». L'id en tête sert de
- *  source de vérité (pas de colonne slug en base) et permet de rediriger les
- *  anciennes URL après un renommage. */
-export function circuitSlug(id: number, name: string): string {
-  const kebab = name
-    .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return kebab ? `${id}-${kebab}` : String(id);
-}
-
-/** Extrait l'id numérique en tête d'un slug (« 42-route » → 42). */
-export function parseCircuitId(slug: string): number | null {
-  const m = slug.match(/^(\d+)/);
-  return m ? Number(m[1]) : null;
 }
 
 async function fetchApprovedCircuits(): Promise<CircuitMeta[]> {

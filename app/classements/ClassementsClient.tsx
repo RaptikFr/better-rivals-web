@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { circuitSlug } from '@/lib/circuitSlug';
 import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlayer } from '@/hooks/usePlayer';
@@ -540,6 +542,18 @@ export default function ClassementsClient({
             {' · '}{totalSubGroups} configuration{totalSubGroups !== 1 ? 's' : ''}
             {hasFilters ? ' avec les filtres actuels' : ''}
             {totalPages > 1 && ` — page ${safePage} / ${totalPages}`}
+          </p>
+        )}
+
+        {/* Lien vers la page dédiée du circuit (contenu indexable) */}
+        {selectedTrackId !== null && selectedTrackName && (
+          <p className="text-sm mb-4 -mt-2">
+            <Link
+              href={`/circuits/${circuitSlug(selectedTrackId, selectedTrackName)}`}
+              className="text-pink-400 hover:text-pink-300 font-semibold"
+            >
+              📄 Voir la page dédiée de {selectedTrackName} →
+            </Link>
           </p>
         )}
 
