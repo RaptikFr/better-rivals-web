@@ -19,8 +19,17 @@ Faux positif de l'audit initial : `recharts` est déjà isolé dans `app/profil/
 ## 🛠️ Découper les gros fichiers client — ✅ FAIT le 2026-06-16
 ProfilClient 1297 → 549 l. (profilShared.tsx, SuiviTab.tsx, ProfilTabs.tsx) ; ClassementsClient 1145 → 685 l. (classementsShared.tsx + RankingViews.tsx pour les vues tableau/cartes). Comportement inchangé, tsc/eslint/build OK.
 
-## 💡 SEO de contenu (ambitieux) — À FAIRE
-- Rendre `/classements` indexable côté serveur (noms voitures/circuits/temps absents du HTML aujourd'hui) → viser des recherches « meilleur temps [voiture] Forza Horizon 6 ». *Impact SEO potentiellement fort, effort élevé.*
-- Pages dédiées par circuit / par voiture avec URL indexable (contenu long tail).
+## 💡 SEO de contenu (ambitieux) — À FAIRE, PLAN VALIDÉ le 2026-06-16
+Objectif : ressortir sur la longue traîne (« meilleur temps [voiture] FH6 », « classement [circuit] FH6 »). `/classements` est interactif → contenu chargé client, invisible pour Google, pas d'URL stable par circuit/voiture.
+
+**Approche retenue : créer des pages serveur dédiées, NE PAS refondre /classements** (laissé comme outil interactif).
+
+Données : table `tracks` (id, name, length_km, type, is_official, is_sprint, status='approved', PAS de colonne slug) ; `cars` (id, manufacturer, name, year, car_ordinal). Modèle de route : `/joueurs/[pseudo]` (page serveur + generateMetadata + client).
+
+- **Phase 1 — pages circuits (prioritaire, plus gros gain) :** `/circuits/[slug]` avec slug = `{id}-{kebab(nom)}` (parser l'id en tête, pas de colonne slug). Créer `app/circuits/page.tsx` (index serveur), `app/circuits/[slug]/page.tsx` (generateStaticParams + ISR + generateMetadata + rendu serveur du meilleur temps par config, pseudos → /joueurs, bouton → /classements?track_id=…), `lib/circuitRankings.ts` (requête+groupement serveur caché via unstable_cache, en déplaçant la logique de groupement inline de ClassementsClient).
+- **Phase 2 — pages voitures :** `/voitures/[slug]` (`{ordinal}-{marque-modèle}`), meilleurs temps de la voiture tous circuits ; /voitures devient l'index. Calque de la phase 1.
+- **Phase 3 — maillage + sitemap dynamique :** `app/sitemap.ts` devient async et liste circuits+voitures depuis Supabase (aujourd'hui liste statique de 12 URLs) ; liens internes depuis /classements, /voitures, /circuits, footer.
+
+**Qualité :** exclure du sitemap + noindex les pages < 3 temps (anti contenu mince) ; ISR pour la fraîcheur ; pseudos déjà publics, discord déjà masqué via discord_tag_public. **Risques :** renommage circuit → redirection 301 via l'id ; catalogue voitures volumineux → éventuellement dynamicParams + cache au lieu de tout prégénérer. **Effort :** P1 ~½ j, P2 ~2-3 h, P3 ~1-2 h ; livrer phase par phase, eslint 0 warning. Suivre l'indexation dans Search Console après mise en ligne.
 
 **How to apply :** livrer petit, garder `eslint .` → 0 (cf. [[lint-zero-warning]]) et `tsc` OK. Vérifier le rendu via `next build` (l'absence de `RESEND_API_KEY` en local n'empêche pas le build).
