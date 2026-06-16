@@ -8,3 +8,4 @@
 - [État déploiement v2](etat-deploiement-v2.md) — features v2 livrées le 15 juin : 4 migrations appliquées + tout poussé sur main (df20aae). Plus rien en attente
 - [Domaine & Resend](domaine-et-resend.md) — RÉSOLU : domaine canonique better-rivals-fh6.org partout ; domaine vérifié dans Resend, e-mails OK. Plus rien en attente
 - [SEO](seo.md) — LIVRÉ (16 juin) : h1 accueil, sitemap.ts, robots.ts, JSON-LD, lib/site.ts. Sitemap soumis à Google Search Console
+- [Roadmap optimisations](roadmap-optimisations.md) — pistes perf/SEO-contenu/maintenabilité (16 juin) : 🥇 accueil en server components (en cours), 🥈 uniformiser fetch, 🥉 lazy-load recharts, découpe gros fichiers, SEO contenu /classements

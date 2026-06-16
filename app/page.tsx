@@ -3,6 +3,8 @@ import Image from 'next/image';
 import DerniersChronos from '@/components/DerniersChronos';
 import NouveauxLeaders from '@/components/NouveauxLeaders';
 import { siteUrl } from '@/lib/site';
+import { getDerniersChronos } from '@/lib/derniersChronos';
+import { getNouveauxLeaders } from '@/lib/leadersFeed';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -15,7 +17,15 @@ const jsonLd = {
   inLanguage: 'fr-FR',
 };
 
-export default function Home() {
+export default async function Home() {
+  // Récupération serveur (cachée 60 s) : le contenu est dans le HTML initial
+  // — meilleur SEO et affichage immédiat, sans waterfall côté client.
+  // Un flux en échec ne doit pas casser la page d'accueil.
+  const [chronos, leaders] = await Promise.all([
+    getDerniersChronos().catch(() => []),
+    getNouveauxLeaders().catch(() => []),
+  ]);
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-start p-6 pb-24">
 
@@ -69,9 +79,9 @@ export default function Home() {
         </div>
       </div>
 
-      <NouveauxLeaders />
+      <NouveauxLeaders items={leaders} />
 
-      <DerniersChronos />
+      <DerniersChronos chronos={chronos} />
 
       {/* --- SECTION MODE D'EMPLOI --- */}
       <div className="mt-24 max-w-5xl mx-auto text-left w-full border-t border-neutral-200 dark:border-neutral-800 pt-16">

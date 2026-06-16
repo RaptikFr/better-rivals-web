@@ -1,46 +1,16 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { usePreferences } from '@/hooks/usePreferences';
+import type { Chrono } from '@/lib/derniersChronos';
 import type { Drivetrain } from '@/types/supabase';
 
-interface Chrono {
-  id:               string;
-  time_ms:          number;
-  previous_time_ms: number | null;
-  car_class:        string;
-  drivetrain:       string | null;
-  recorded_at:      string;
-  players:          { pseudo: string; discord_tag: string | null } | null;
-  cars:             { manufacturer: string | null; name: string; year: number | null } | null;
-  tracks:           { name: string } | null;
-}
-
-export default function DerniersChronos() {
+export default function DerniersChronos({ chronos }: { chronos: Chrono[] }) {
   const { formatTime, formatDate } = usePreferences();
-  const [chronos, setChronos] = useState<Chrono[]>([]);
-  const [ready,   setReady]   = useState(false);
 
-  useEffect(() => {
-    supabase
-      .from('lap_times')
-      // recorded_at (mis à jour à chaque amélioration) plutôt que created_at,
-      // pour que les records améliorés remontent dans le flux
-      .select('id, time_ms, previous_time_ms, car_class, drivetrain, recorded_at, players ( pseudo, discord_tag:discord_tag_public ), cars ( manufacturer, name, year ), tracks ( name )')
-      .order('recorded_at', { ascending: false })
-      .limit(5)
-      .then(({ data, error }) => {
-        if (!error && data) setChronos(data as Chrono[]);
-        setReady(true);
-      });
-  }, []);
-
-  if (!ready) return null;
   if (chronos.length === 0) return null;
 
   return (

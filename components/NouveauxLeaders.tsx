@@ -1,28 +1,17 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { usePreferences } from '@/hooks/usePreferences';
-import type { LeaderFeedItem } from '@/app/api/nouveaux-leaders/route';
+import type { LeaderFeedItem } from '@/lib/leadersFeed';
 import type { Drivetrain } from '@/types/supabase';
 
-export default function NouveauxLeaders() {
+export default function NouveauxLeaders({ items }: { items: LeaderFeedItem[] }) {
   const { formatTime, formatDate } = usePreferences();
-  const [items, setItems] = useState<LeaderFeedItem[]>([]);
-  const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/nouveaux-leaders')
-      .then(res => res.ok ? res.json() : { feed: [] })
-      .then(({ feed }) => setItems(feed ?? []))
-      .catch(() => {})
-      .finally(() => setReady(true));
-  }, []);
-
-  if (!ready || items.length === 0) return null;
+  if (items.length === 0) return null;
 
   return (
     <div className="mt-24 max-w-5xl mx-auto w-full border-t border-neutral-200 dark:border-neutral-800 pt-16">
