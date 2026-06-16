@@ -14,6 +14,7 @@ const navLinks = [
   { href: '/classement-general', label: 'Classement général' },
   { href: '/stats',              label: 'Stats'              },
   { href: '/voitures',           label: 'Voitures'           },
+  { href: '/circuits',           label: 'Circuits'           },
   { href: '/telecharger',         label: 'Télécharger'        },
   { href: '/contact',            label: 'Contact'            },
 ];

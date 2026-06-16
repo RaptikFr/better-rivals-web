@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { siteUrl } from '@/lib/site';
+import { getIndexableCircuits, circuitSlug } from '@/lib/circuitRankings';
 
 // Pages publiques et indexables. Les pages privées/personnelles
 // (/profil, /parametres, /admin, /connexion, /inscription) sont
@@ -11,6 +12,7 @@ const routes: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: '/classement-general',   priority: 0.8, changeFrequency: 'daily' },
   { path: '/comparaison',          priority: 0.7, changeFrequency: 'weekly' },
   { path: '/voitures',             priority: 0.7, changeFrequency: 'weekly' },
+  { path: '/circuits',             priority: 0.8, changeFrequency: 'weekly' },
   { path: '/stats',                priority: 0.7, changeFrequency: 'weekly' },
   { path: '/epreuves-officielles', priority: 0.7, changeFrequency: 'weekly' },
   { path: '/epreuves-communaute',  priority: 0.7, changeFrequency: 'weekly' },
@@ -19,12 +21,23 @@ const routes: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: '/contact',              priority: 0.4, changeFrequency: 'yearly' },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
-  return routes.map(({ path, priority, changeFrequency }) => ({
+  const staticEntries: MetadataRoute.Sitemap = routes.map(({ path, priority, changeFrequency }) => ({
     url: `${siteUrl}${path}`,
     lastModified,
     changeFrequency,
     priority,
   }));
+
+  // Pages circuit avec assez de temps pour être indexées (cf. MIN_TIMES_INDEXABLE).
+  const circuits = await getIndexableCircuits().catch(() => []);
+  const circuitEntries: MetadataRoute.Sitemap = circuits.map(c => ({
+    url: `${siteUrl}/circuits/${circuitSlug(c.id, c.name)}`,
+    lastModified,
+    changeFrequency: 'daily',
+    priority: 0.7,
+  }));
+
+  return [...staticEntries, ...circuitEntries];
 }

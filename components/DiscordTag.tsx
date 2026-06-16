@@ -1,3 +1,5 @@
+"use client";
+
 export function DiscordTag({ tag }: { tag: string | null | undefined }) {
   if (!tag) return null;
 
