@@ -22,9 +22,13 @@ Idée proposée par l'utilisateur le 2026-06-16 (à explorer plus tard, pas dém
 - Cartes : voiture (→ page voiture), classe+PI, transmission, label, auteur (→ /joueurs), badge ⭐ Original, « optimisé pour [circuit/type] », **code copiable**, et pour les codes dérivés « utilisé par N pilotes · meilleur temps X ».
 - État vide par filtre + encart « comment partager ton réglage ».
 
+## Règles métier confirmées par lui (2026-06-16)
+- **Un seul code de partage par modèle de voiture** (par joueur) : le réglage est lié à la voiture, pas à une classe/transmission → **regroupement par `car_ordinal`** (la question de granularité par classe est tranchée : NON). Classe/PI deviennent des métadonnées des temps obtenus (peuvent varier).
+- **Code saisi à la main** (pas capté par le relais) → prévoir normalisation (trim/format) et tolérer codes absents/fautés à la dérivation.
+- Plusieurs codes peuvent coexister pour un même modèle (un par pilote) ; `is_original` distingue le créateur de ceux qui ont recopié le code.
+
 ## Reste à trancher au moment du build
 - Attribution d'un code **dérivé** non revendiqué (auteur = pilote le plus rapide ? ou « non revendiqué » jusqu'à ce que quelqu'un le revendique).
-- Granularité du regroupement : (voiture+code) seul, ou (voiture+code+classe) — un même code peut servir sur plusieurs classes.
 - Champs exacts du formulaire de soumission.
 
 ## À construire (l'API POST existe déjà)
