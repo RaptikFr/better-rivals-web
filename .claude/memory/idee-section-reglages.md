@@ -24,7 +24,7 @@ Idée proposée par l'utilisateur le 2026-06-16 (à explorer plus tard, pas dém
 
 ## Règles métier confirmées par lui (2026-06-16)
 - **Un seul code de partage par modèle de voiture** (par joueur) : le réglage est lié à la voiture, pas à une classe/transmission → **regroupement par `car_ordinal`** (la question de granularité par classe est tranchée : NON). Classe/PI deviennent des métadonnées des temps obtenus (peuvent varier).
-- **Code saisi à la main** (pas capté par le relais) → prévoir normalisation (trim/format) et tolérer codes absents/fautés à la dérivation.
+- **Code saisi à la main** par le joueur, via deux points d'entrée : son **profil** (champ éditable `ShareCodeCell` dans l'onglet « Tous mes temps », PATCH `/api/times/[id]`) **ou le relais** (BetterRivals.exe l'envoie avec le chrono). → les `lap_times.share_code` sont donc déjà bien alimentés (bonne couverture pour la dérivation). Prévoir quand même normalisation (trim/format) et tolérer les codes absents/fautés.
 - Plusieurs codes peuvent coexister pour un même modèle (un par pilote) ; `is_original` distingue le créateur de ceux qui ont recopié le code.
 
 ## Reste à trancher au moment du build
