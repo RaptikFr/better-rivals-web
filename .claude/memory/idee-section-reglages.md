@@ -1,8 +1,10 @@
 ---
 name: idee-section-reglages
 description: Idée à explorer plus tard — une vraie section « Réglages » (tunes) plus développée que le simple code de partage
-metadata:
+metadata: 
+  node_type: memory
   type: project
+  originSessionId: ea976657-3959-4dcf-8199-9dad96ddfe69
 ---
 
 Idée proposée par l'utilisateur le 2026-06-16 (à explorer plus tard, pas démarrée) : développer une section **« Réglages »** où cet aspect serait plus riche que le simple code de partage actuellement affiché.
@@ -13,7 +15,10 @@ Idée proposée par l'utilisateur le 2026-06-16 (à explorer plus tard, pas dém
 - Manque : aucun **GET / aucune UI de consultation** des tune_setups — la table est alimentée mais pas exploitée à l'affichage.
 
 ## Décisions de design prises avec lui (2026-06-16, brainstorm)
-- **Emplacement : page dédiée `/reglages`** (annuaire global avec filtres), PAS un simple bloc dans les pages voiture. (Un bloc « Réglages de cette voiture » sur /voitures/[slug] reste possible plus tard en réutilisant la même donnée.)
+- **Emplacement : page dédiée `/reglages`** (annuaire global avec filtres), PAS un simple bloc dans les pages voiture. (Un bloc « Réglages de cette voiture » sur /voitures/[slug] reste possible plus tard en réutilisant la même donnée.) **Confirmé 2026-06-16 : `/reglages` d'abord, bloc voiture en v2.**
+- **Affichage d'une fiche = « tableau groupé » (choisi 2026-06-16).** Reproduit l'écran de tuning FH6 : regroupé par catégorie, colonnes Avant/Arrière. Le plus simple à construire ; écarté pour l'instant : cartes+jauges (nécessite les bornes min/max de chaque réglage) et silhouette voiture annotée (SVG, plus de travail) — à reconsidérer en v2.
+- **Pas de lecture d'image par IA/LLM** (vision-LLM écarté 2026-06-16 : coût par image non maîtrisable si le site grossit). **Saisie manuelle** des valeurs par le joueur. Piste v2 sans coût serveur : **OCR côté navigateur (Tesseract.js)** pour *pré-remplir* le formulaire depuis une capture (0 € car tourne chez l'utilisateur ; moins précis ; l'humain valide).
+- **Conséquence à trancher :** la fiche tableau affiche les ~20 champs FH6 (pneus AV/AR, boîte: final + chaque rapport, alignement carrossage/pincement/chasse, barres antiroulis, ressorts + hauteur, amortisseurs détente/compression, aéro, freins équilibrage/pression, différentiel accel/décel +balance si intégrale). Or `tune_setups` ne stocke aujourd'hui QUE `share_code/label/...`, pas ces valeurs → il faudra **étendre `tune_setups` (ou nouvelle table) pour stocker ces champs numériques** + un **formulaire de saisie**. À cadrer : tout détailler, ou un sous-ensemble léger.
 - **Source des données : HYBRIDE.** Agréger les `tune_setups` riches (label, ⭐ original, contexte circuit) ET dériver les `share_code` déjà présents sur les `lap_times`, dédupliqués par (car_ordinal, share_code), avec le meilleur temps obtenu. → page pleine dès le lancement ; un auteur peut ensuite « enrichir/revendiquer » un code dérivé (réutilise `is_original` + le contrôle de conflit de l'API POST existante).
 
 ## Présentation cible de /reglages
