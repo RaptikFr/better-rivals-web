@@ -326,7 +326,7 @@ async function sendBeatenEmail(opts: {
     if (!resend) return; // pas de clé Resend configurée → on n'envoie pas d'email
 
     await resend.emails.send({
-      from:    process.env.RESEND_FROM_EMAIL ?? 'Better Rivals <noreply@better-rivals.gg>',
+      from:    process.env.RESEND_FROM_EMAIL ?? 'Better Rivals <noreply@better-rivals-fh6.org>',
       to:      email,
       subject: `Tu viens de te faire dépasser sur ${opts.trackName}`,
       html:    buildBeatenEmailHtml({
