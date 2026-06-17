@@ -12,13 +12,10 @@ Lot de 4 améliorations site livrées et poussées le 17 juin 2026 (après le `<
 3. **Image OG dynamique du profil** : `app/joueurs/[pseudo]/opengraph-image.tsx` (next/og). Complète l'OG `/api/og/classement` préexistant.
 4. **Récap hebdo email opt-in** : `lib/weeklyRecap.ts` + `/api/cron/weekly-recap`.
 
-**⚠️ Récap hebdo PAS encore actif en prod — 3 étapes manuelles restantes :**
-- Appliquer la migration `supabase/migrations/recap_hebdomadaire.sql` (colonne opt-in `notify_weekly`, défaut false, + grants par colonne).
-- Définir l'env `CRON_SECRET` (sans lui, l'endpoint répond 401 → rien ne part).
-- Brancher un planificateur qui appelle `GET /api/cron/weekly-recap` avec header `Authorization: Bearer <CRON_SECRET>` (pas de `vercel.json` dans le repo ; choix hébergement/cadence à décider). Tester d'abord avec `?dry=1` (liste les destinataires sans envoyer).
+**Récap hebdo — état au 17/06 soir :** migration `recap_hebdomadaire.sql` APPLIQUÉE ✅ ; planificateur Vercel Cron en place (`vercel.json`, lundi 18:00 UTC, commit b75b00b). **Reste UNIQUEMENT : définir l'env `CRON_SECRET` sur Vercel** (sans lui l'endpoint répond 401 → rien ne part ; Vercel injecte ce Bearer automatiquement dans ses appels cron). Tester avec `GET /api/cron/weekly-recap?dry=1` + `Authorization: Bearer <secret>` (liste sans envoyer).
 
 Opt-in **dédié** voulu par l'utilisateur : case « Recevoir le récap hebdomadaire », distincte de `email_notifications_enabled`. Voir [[relais-serveur-et-rang]].
 
 **Suite (17 juin, commit 99b273f) :**
 - **Gestion des notifications déplacée** de `/profil` vers `/parametres` (composant `components/NotificationSettings.tsx`) ; le profil ne garde qu'un lien.
-- **⚠️ Sync cross-device des préférences cassée en prod** : le code (`hooks/usePreferences.tsx`) écrit bien `players.preferences`, mais l'utilisateur constate des réglages différents entre 2 PC du même compte. Cause quasi certaine : la migration **`supabase/migrations/preferences_sync.sql` (colonne + grants par colonne) n'a jamais été appliquée** en prod → l'écriture échoue en silence. **À FAIRE : exécuter ce SQL dans Supabase.** Les échecs sont maintenant loggués en `console.warn` pour confirmer.
+- **Sync cross-device des préférences** : était cassée car la migration `preferences_sync.sql` (colonne `preferences` + grants par colonne) n'était pas appliquée → écriture silencieusement rejetée. **SQL APPLIQUÉE le 17/06 soir ✅** → devrait désormais synchroniser (au login, la base prime sur le local). NB : 2 PC avec prefs locales divergentes → le 1er qui sauvegarde après coup peuple la base, l'autre s'aligne au reload. Échecs éventuels loggués en `console.warn` dans `hooks/usePreferences.tsx`.
