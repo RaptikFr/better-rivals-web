@@ -9,4 +9,6 @@
 - [Domaine & Resend](domaine-et-resend.md) — RÉSOLU : domaine canonique better-rivals-fh6.org partout ; domaine vérifié dans Resend, e-mails OK. Plus rien en attente
 - [SEO](seo.md) — LIVRÉ (16 juin) : h1 accueil, sitemap.ts, robots.ts, JSON-LD, lib/site.ts. Sitemap soumis à Google Search Console
 - [Idée section Réglages](idee-section-reglages.md) — à explorer plus tard : vraie UI des réglages (tune_setups existe déjà en base + API POST) au lieu du simple code de partage ; à accrocher aux pages voiture
+- [Relais serveur & rang](relais-serveur-et-rang.md) — code relais Python PAS sur ce PC ; POST /api/times optimisé (after/parallèle, commit b7e6c7e) ; idée « rang dans la réponse » en attente (nécessite d'adapter le relais)
+- [Features site juin 2026](features-site-juin-2026.md) — 4 features livrées le 17/06 (stats batailles, comparateur partageable, OG profil, récap hebdo) ; récap hebdo PAS activé : migration + CRON_SECRET + planificateur à faire
 - [Roadmap optimisations](roadmap-optimisations.md) — perf/SEO-contenu/maintenabilité (16 juin) : 🥇 accueil server components ✅ + 🥈 uniformiser fetch ✅ ; 🥉 recharts + 🛠️ découpe gros fichiers faits ; SEO contenu PHASES 1 (/circuits) + 2 (/voitures) + 3 (maillage) TOUTES ✅. Roadmap optimisations entièrement livrée
