@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import ComparaisonClient from './ComparaisonClient';
 
 export const metadata: Metadata = {
@@ -7,5 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function ComparaisonPage() {
-  return <ComparaisonClient />;
+  // Suspense requis : ComparaisonClient lit l'URL (useSearchParams).
+  return (
+    <Suspense>
+      <ComparaisonClient />
+    </Suspense>
+  );
 }

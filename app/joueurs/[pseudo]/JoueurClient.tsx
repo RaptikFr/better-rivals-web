@@ -173,8 +173,14 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
             <BadgesBar badges={badges} />
           </div>
           {playerId && (
-            <div className="self-start flex-shrink-0">
+            <div className="self-start flex-shrink-0 flex flex-col items-end gap-2">
               <FollowButton followedPlayerId={playerId} />
+              <Link
+                href={`/comparaison?j1=${encodeURIComponent(pseudo)}`}
+                className="text-sm font-semibold text-pink-400 hover:text-pink-300 transition-colors"
+              >
+                ⚔️ Comparer
+              </Link>
             </div>
           )}
         </div>

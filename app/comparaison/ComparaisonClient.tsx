@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { fetchAllRows } from '@/lib/fetchAllRows';
 import { usePreferences } from '@/hooks/usePreferences';
@@ -153,27 +154,32 @@ function PlayerSearch({
 
 export default function ComparaisonClient() {
   const { formatTime } = usePreferences();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [player1, setPlayer1] = useState<Player | null>(null);
   const [player2, setPlayer2] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MatchResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function compare() {
-    if (!player1 || !player2) return;
+  async function compare(p1: Player | null = player1, p2: Player | null = player2) {
+    if (!p1 || !p2) return;
     setLoading(true);
     setError(null);
     setResults(null);
+
+    // URL partageable : la comparaison se retrouve via /comparaison?j1=&j2=
+    router.replace(`/comparaison?j1=${encodeURIComponent(p1.pseudo)}&j2=${encodeURIComponent(p2.pseudo)}`, { scroll: false });
 
     const fields =
       'time_ms, car_class, car_ordinal, player_id, track_id, drivetrain, tracks(name, type, is_sprint), cars(manufacturer, name, year)';
 
     const [{ data: laps1, error: e1 }, { data: laps2, error: e2 }] = await Promise.all([
       fetchAllRows<LapWithJoins>((from, to) =>
-        supabase.from('lap_times').select(fields).eq('player_id', player1.id).order('id').range(from, to)
+        supabase.from('lap_times').select(fields).eq('player_id', p1.id).order('id').range(from, to)
       ),
       fetchAllRows<LapWithJoins>((from, to) =>
-        supabase.from('lap_times').select(fields).eq('player_id', player2.id).order('id').range(from, to)
+        supabase.from('lap_times').select(fields).eq('player_id', p2.id).order('id').range(from, to)
       ),
     ]);
 
@@ -220,6 +226,30 @@ export default function ComparaisonClient() {
     return { p1Wins, p2Wins, ties, total: results.length };
   }, [results]);
 
+  // Pré-remplissage depuis l'URL (?j1=&j2=) : permet de partager une
+  // comparaison ou d'arriver directement depuis un profil joueur.
+  useEffect(() => {
+    const j1 = searchParams.get('j1');
+    const j2 = searchParams.get('j2');
+    if (!j1 || !j2 || j1 === j2) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('players')
+        .select('id, pseudo, discord_tag:discord_tag_public')
+        .in('pseudo', [j1, j2]);
+      if (cancelled || !data) return;
+      const p1 = data.find((p) => p.pseudo === j1) ?? null;
+      const p2 = data.find((p) => p.pseudo === j2) ?? null;
+      if (p1) setPlayer1(p1);
+      if (p2) setPlayer2(p2);
+      if (p1 && p2) compare(p1, p2);
+    })();
+    return () => { cancelled = true; };
+    // Au montage uniquement : on lit l'URL initiale, pas à chaque navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="max-w-screen-xl mx-auto px-4 py-8 space-y-8">
 
@@ -255,7 +285,7 @@ export default function ComparaisonClient() {
           />
 
           <button
-            onClick={compare}
+            onClick={() => compare()}
             disabled={!player1 || !player2 || loading}
             className="flex-shrink-0 px-6 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           >
