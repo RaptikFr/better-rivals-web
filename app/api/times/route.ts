@@ -2,6 +2,13 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { siteUrl } from '@/lib/site';
+import {
+  formatTime,
+  bornesTempsMs,
+  identifiantsValides,
+  tempsDansBornes,
+  plusRapideQueRecord,
+} from '@/lib/lap-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,13 +19,6 @@ export const dynamic = 'force-dynamic';
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY;
   return key ? new Resend(key) : null;
-}
-
-function formatTime(ms: number): string {
-  const minutes      = Math.floor(ms / 60000);
-  const seconds      = Math.floor((ms % 60000) / 1000);
-  const milliseconds = ms % 1000;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 }
 
 // Notifie les suiveurs de l'auteur du chrono qu'il vient de les dépasser sur
@@ -370,20 +370,6 @@ async function chercherReglagePrecedent(opts: {
   return { share_code: data.share_code, setup_author: data.setup_author, car_pi: data.car_pi };
 }
 
-// Circuits : vitesse moyenne plausible entre 20 m/s (72 km/h) et 100 m/s (360 km/h),
-// marge de 20 % pour absorber les imprécisions.
-// Sprints : bornes volontairement très larges (10 à 150 m/s) — length_km est la
-// distance point à point, parcourue parfois très vite (drags) ou très lentement
-// (cross-country) ; ça filtre au moins les temps absurdes en attendant des
-// records de référence OCR.
-function bornesTempsMs(lengthKm: number, isSprint: boolean): { minMs: number; maxMs: number } {
-  const [vMax, vMin] = isSprint ? [150, 10] : [100, 20];
-  return {
-    minMs: (lengthKm * 1000 / vMax) * 1000 * 0.8,
-    maxMs: (lengthKm * 1000 / vMin) * 1000 * 1.2,
-  };
-}
-
 export async function POST(request: NextRequest) {
   try {
     // --- VÉRIFICATION DU TOKEN JWT ---
@@ -419,13 +405,7 @@ export async function POST(request: NextRequest) {
     const numTrackId    = parseInt(track_id);
     const numCarOrdinal = parseInt(car_id);
 
-    // Garde-fous numériques : un id ou un temps non numérique partirait sinon
-    // en NaN dans les filtres Supabase (résultats silencieusement vides).
-    if (
-      !Number.isInteger(numTrackId)    || numTrackId    <= 0 ||
-      !Number.isInteger(numCarOrdinal) || numCarOrdinal <= 0 ||
-      !Number.isFinite(newTimeMs)      || newTimeMs      <= 0
-    ) {
+    if (!identifiantsValides({ trackId: numTrackId, carOrdinal: numCarOrdinal, timeMs: newTimeMs })) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
@@ -455,19 +435,18 @@ export async function POST(request: NextRequest) {
     // élargir les bornes de validation
     const sprint = trackData?.is_sprint ?? is_sprint ?? false;
 
-    if (trackData?.length_km && trackData.length_km > 0) {
+    if (trackData?.length_km && trackData.length_km > 0 &&
+        !tempsDansBornes(newTimeMs, trackData.length_km, sprint)) {
       const { minMs, maxMs } = bornesTempsMs(trackData.length_km, sprint);
-      if (newTimeMs < minMs || newTimeMs > maxMs) {
-        const minS = Math.round(minMs / 1000);
-        const maxS = Math.round(maxMs / 1000);
-        return NextResponse.json({
-          error: `Temps aberrant pour ${trackData.name} (${trackData.length_km} km). Attendu entre ${Math.floor(minS/60)}:${String(minS%60).padStart(2,'0')} et ${Math.floor(maxS/60)}:${String(maxS%60).padStart(2,'0')}.`
-        }, { status: 400 });
-      }
+      const minS = Math.round(minMs / 1000);
+      const maxS = Math.round(maxMs / 1000);
+      return NextResponse.json({
+        error: `Temps aberrant pour ${trackData.name} (${trackData.length_km} km). Attendu entre ${Math.floor(minS/60)}:${String(minS%60).padStart(2,'0')} et ${Math.floor(maxS/60)}:${String(maxS%60).padStart(2,'0')}.`
+      }, { status: 400 });
     }
 
     // --- VALIDATION CONTRE LE WORLD RECORD ---
-    if (worldRecord && newTimeMs < worldRecord.time_ms * 0.985) {
+    if (plusRapideQueRecord(newTimeMs, worldRecord?.time_ms)) {
       return NextResponse.json(
         { error: 'Temps impossible — trop rapide par rapport au record de référence.' },
         { status: 400 }
