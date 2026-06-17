@@ -49,3 +49,6 @@ supabase/.temp/
 
 # Relais desktop (outil local, jamais envoyé sur GitHub)
 /relais/
+relais*.py
+__pycache__/
+*.pyc
