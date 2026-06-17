@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { usePreferences } from '@/hooks/usePreferences';
+import { CLASS_STYLES } from '@/components/ClassStyles';
+import { DrivetrainBadge } from '@/components/DrivetrainBadge';
+import type { Drivetrain } from '@/types/supabase';
+import type { LeaderStats } from '@/lib/leaderStats';
 
 interface Stats {
   totalChronos:  number;
@@ -31,6 +36,7 @@ export default function StatsClient() {
   const [topCircuits, setTopCircuits] = useState<TopItem[]>([]);
   const [topVoitures, setTopVoitures] = useState<TopItem[]>([]);
   const [lastChronos, setLastChronos] = useState<LastChrono[]>([]);
+  const [leaderStats, setLeaderStats] = useState<LeaderStats | null>(null);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState<string | null>(null);
 
@@ -47,6 +53,7 @@ export default function StatsClient() {
         setTopCircuits(data.topCircuits);
         setTopVoitures(data.topVoitures);
         setLastChronos(data.lastChronos);
+        setLeaderStats(data.leaderStats ?? null);
       } catch {
         setError('Impossible de charger les statistiques.');
       }
@@ -108,6 +115,71 @@ export default function StatsClient() {
             ))}
           </div>
         </section>
+
+        {/* SECTION 1bis — Batailles de leaders */}
+        {leaderStats && (leaderStats.mostContested || leaderStats.biggestGapMonth) && (
+          <section>
+            <h2 className="text-xl font-bold mb-4">Batailles de leaders</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {leaderStats.mostContested && (
+                <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-neutral-500">🔥 Config la plus disputée</span>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-pink-500/15 text-pink-600 dark:text-pink-400">
+                      {leaderStats.mostContested.changes} détrônage{leaderStats.mostContested.changes > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <p className="font-bold leading-snug">
+                    {leaderStats.mostContested.car}
+                    <span className="text-neutral-500 font-normal"> · {leaderStats.mostContested.track}</span>
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-xs font-bold" style={CLASS_STYLES[leaderStats.mostContested.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>
+                      {leaderStats.mostContested.car_class}
+                    </span>
+                    {leaderStats.mostContested.drivetrain && (
+                      <DrivetrainBadge drivetrain={leaderStats.mostContested.drivetrain as Drivetrain} />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {leaderStats.biggestGapMonth && (
+                <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-neutral-500">⚡ Plus gros écart du mois</span>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      −{(leaderStats.biggestGapMonth.gapMs / 1000).toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}s
+                    </span>
+                  </div>
+                  <p className="font-bold leading-snug">
+                    <Link href={`/joueurs/${encodeURIComponent(leaderStats.biggestGapMonth.newLeader)}`} className="hover:text-pink-400 transition-colors">
+                      {leaderStats.biggestGapMonth.newLeader}
+                    </Link>
+                    <span className="text-neutral-500 font-normal"> a détrôné </span>
+                    <Link href={`/joueurs/${encodeURIComponent(leaderStats.biggestGapMonth.oldLeader)}`} className="font-semibold text-neutral-600 dark:text-neutral-400 hover:text-pink-400 transition-colors">
+                      {leaderStats.biggestGapMonth.oldLeader}
+                    </Link>
+                  </p>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {leaderStats.biggestGapMonth.car} · {leaderStats.biggestGapMonth.track}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-pink-400">{formatTime(leaderStats.biggestGapMonth.newTimeMs)}</span>
+                    <span className="px-2 py-0.5 rounded text-xs font-bold" style={CLASS_STYLES[leaderStats.biggestGapMonth.car_class] ?? { backgroundColor: '#555', color: '#fff' }}>
+                      {leaderStats.biggestGapMonth.car_class}
+                    </span>
+                    {leaderStats.biggestGapMonth.drivetrain && (
+                      <DrivetrainBadge drivetrain={leaderStats.biggestGapMonth.drivetrain as Drivetrain} />
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </section>
+        )}
 
         {/* SECTION 2 — Podium pilotes */}
         <section>

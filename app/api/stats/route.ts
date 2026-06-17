@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { fetchAllRows } from '@/lib/fetchAllRows';
+import { getLeaderStats } from '@/lib/leaderStats';
 
 interface LapRow {
   car_ordinal: number;
@@ -77,8 +78,10 @@ const statsEnCache = unstable_cache(calculerStats, ['stats'], {
 
 export async function GET() {
   try {
-    const payload = await statsEnCache();
-    return NextResponse.json(payload, {
+    // Deux caches indépendants (chiffres clés + batailles de leaders) lus en
+    // parallèle ; chacun se rafraîchit au plus une fois par minute.
+    const [payload, leaderStats] = await Promise.all([statsEnCache(), getLeaderStats()]);
+    return NextResponse.json({ ...payload, leaderStats }, {
       status: 200,
       headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
     });
