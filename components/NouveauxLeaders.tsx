@@ -19,7 +19,7 @@ export default function NouveauxLeaders({ items }: { items: LeaderFeedItem[] }) 
         👑 Nouveaux leaders
       </h2>
       <p className="text-neutral-600 dark:text-neutral-400 text-center mb-10">
-        Les derniers changements de tête sur les configurations les plus disputées.
+        Les changements de leader les plus récents, toutes configurations confondues.
       </p>
 
       <div className="flex flex-col gap-3">
