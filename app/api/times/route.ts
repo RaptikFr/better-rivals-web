@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { siteUrl } from '@/lib/site';
@@ -398,17 +398,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide ou expiré. Reconnecte-toi.' }, { status: 401 });
     }
 
-    // --- RÉCUPÉRATION DU JOUEUR ---
-    const { data: player, error: playerError } = await supabaseAdmin
-      .from('players')
-      .select('id, pseudo')
-      .eq('user_id', user.id)
-      .single();
-
-    if (playerError || !player) {
-      return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
-    }
-
     // --- VALIDATION DES DONNÉES ---
     const body = await request.json();
     const {
@@ -426,17 +415,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Données incomplètes.' }, { status: 400 });
     }
 
-    const newTimeMs     = Math.round(lap_time * 1000);
+    const newTimeMs     = Math.round(Number(lap_time) * 1000);
     const numTrackId    = parseInt(track_id);
     const numCarOrdinal = parseInt(car_id);
 
-    // --- VALIDATION DU TEMPS PAR RAPPORT À LA LONGUEUR DU CIRCUIT ---
-    const { data: trackData } = await supabaseAdmin
-      .from('tracks')
-      .select('length_km, name, is_sprint')
-      .eq('id', numTrackId)
-      .maybeSingle();
+    // Garde-fous numériques : un id ou un temps non numérique partirait sinon
+    // en NaN dans les filtres Supabase (résultats silencieusement vides).
+    if (
+      !Number.isInteger(numTrackId)    || numTrackId    <= 0 ||
+      !Number.isInteger(numCarOrdinal) || numCarOrdinal <= 0 ||
+      !Number.isFinite(newTimeMs)      || newTimeMs      <= 0
+    ) {
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
+    }
 
+    // --- LECTURES INDÉPENDANTES EN PARALLÈLE ---
+    // Joueur (par user), circuit, world record et existence de la voiture ne
+    // dépendent que du token déjà vérifié et du body : on les groupe au lieu de
+    // les enchaîner en série pour répondre plus vite au relais.
+    const [playerRes, trackRes, worldRecordRes, existingCarRes] = await Promise.all([
+      supabaseAdmin.from('players').select('id, pseudo').eq('user_id', user.id).single(),
+      supabaseAdmin.from('tracks').select('length_km, name, is_sprint').eq('id', numTrackId).maybeSingle(),
+      // ⚠ World records : couverture partielle (circuits 7-28 et 63-72, classes
+      // D→R) ; les autres seront couverts au fur et à mesure (script OCR).
+      supabaseAdmin.from('world_records').select('time_ms').eq('track_id', numTrackId).eq('car_class', car_class).maybeSingle(),
+      supabaseAdmin.from('cars').select('car_ordinal').eq('car_ordinal', numCarOrdinal).maybeSingle(),
+    ]);
+
+    const { data: player, error: playerError } = playerRes;
+    if (playerError || !player) {
+      return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
+    }
+    const trackData   = trackRes.data;
+    const worldRecord = worldRecordRes.data;
+    const existingCar = existingCarRes.data;
+
+    // --- VALIDATION DU TEMPS PAR RAPPORT À LA LONGUEUR DU CIRCUIT ---
     // is_sprint vient de la base : la valeur du client ne doit pas pouvoir
     // élargir les bornes de validation
     const sprint = trackData?.is_sprint ?? is_sprint ?? false;
@@ -453,16 +467,6 @@ export async function POST(request: NextRequest) {
     }
 
     // --- VALIDATION CONTRE LE WORLD RECORD ---
-    // ⚠ Couverture partielle : les circuits 7-28 et 63-72 ont des records
-    // de référence (classes D→R). Les autres circuits 29-91 seront couverts
-    // au fur et à mesure (script OCR du propriétaire).
-    const { data: worldRecord } = await supabaseAdmin
-      .from('world_records')
-      .select('time_ms')
-      .eq('track_id',  numTrackId)
-      .eq('car_class', car_class)
-      .maybeSingle();
-
     if (worldRecord && newTimeMs < worldRecord.time_ms * 0.985) {
       return NextResponse.json(
         { error: 'Temps impossible — trop rapide par rapport au record de référence.' },
@@ -471,12 +475,10 @@ export async function POST(request: NextRequest) {
     }
 
     // --- GESTION DE LA VOITURE ---
-    const { data: existingCar } = await supabaseAdmin
-      .from('cars')
-      .select('car_ordinal')
-      .eq('car_ordinal', numCarOrdinal)
-      .maybeSingle();
-
+    // L'existence de la voiture a déjà été lue plus haut (lecture parallèle).
+    // Une voiture inconnue doit exister avant d'enregistrer le chrono → insert
+    // dans le chemin critique. L'enrichissement du nom (catalogue « Inconnu »)
+    // n'est pas nécessaire à la réponse : il part en tâche après-réponse.
     if (!existingCar) {
       await supabaseAdmin
         .from('cars')
@@ -487,11 +489,13 @@ export async function POST(request: NextRequest) {
           year:         car_year         ?? 0,
         }]);
     } else if (car_manufacturer && car_name && car_year) {
-      await supabaseAdmin
-        .from('cars')
-        .update({ manufacturer: car_manufacturer, name: car_name, year: car_year })
-        .eq('car_ordinal', numCarOrdinal)
-        .eq('manufacturer', 'Inconnu');
+      after(async () => {
+        await supabaseAdmin
+          .from('cars')
+          .update({ manufacturer: car_manufacturer, name: car_name, year: car_year })
+          .eq('car_ordinal', numCarOrdinal)
+          .eq('manufacturer', 'Inconnu');
+      });
     }
 
     const trackName = trackData?.name ?? `Circuit #${numTrackId}`;
@@ -520,26 +524,31 @@ export async function POST(request: NextRequest) {
 
     if (existingTime) {
       if (newTimeMs < existingTime.time_ms) {
-        await supabaseAdmin.from('lap_times_history').insert([{
-          player_id:   player.id,
-          car_ordinal: numCarOrdinal,
-          car_class,
-          drivetrain,
-          track_id:    numTrackId,
-          time_ms:     existingTime.time_ms,
-          car_pi:      existingTime.car_pi,
-        }]);
+        // Historique de l'ancien temps et mise à jour du record sont
+        // indépendants → écrits en parallèle.
+        // recorded_at = date du temps courant : l'amélioration remonte ainsi
+        // dans le flux « Derniers chronos » de l'accueil.
+        const [, updateRes] = await Promise.all([
+          supabaseAdmin.from('lap_times_history').insert([{
+            player_id:   player.id,
+            car_ordinal: numCarOrdinal,
+            car_class,
+            drivetrain,
+            track_id:    numTrackId,
+            time_ms:     existingTime.time_ms,
+            car_pi:      existingTime.car_pi,
+          }]),
+          supabaseAdmin
+            .from('lap_times')
+            .update({ time_ms: newTimeMs, verified: is_valid, car_pi, num_cylinders, previous_time_ms: existingTime.time_ms, recorded_at: new Date().toISOString() })
+            .eq('id', existingTime.id)
+            .select(),
+        ]);
 
-        // recorded_at = date du temps courant : l'amélioration remonte
-        // ainsi dans le flux « Derniers chronos » de l'accueil
-        const { data, error } = await supabaseAdmin
-          .from('lap_times')
-          .update({ time_ms: newTimeMs, verified: is_valid, car_pi, num_cylinders, previous_time_ms: existingTime.time_ms, recorded_at: new Date().toISOString() })
-          .eq('id', existingTime.id)
-          .select();
-
+        const { data, error } = updateRes;
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        await notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: existingTime.time_ms });
+        // Notifications + emails : différés après la réponse au relais (after).
+        after(() => notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: existingTime.time_ms }));
 
         // Réglage précédent pour pré-remplir la popup du relais : en priorité
         // celui du chrono amélioré (même circuit), sinon celui d'un autre circuit
@@ -568,7 +577,7 @@ export async function POST(request: NextRequest) {
         .select();
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      await notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: null });
+      after(() => notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: null }));
 
       // Premier chrono sur ce circuit avec cette config : le réglage a pu être
       // renseigné sur un autre circuit avec la même voiture
