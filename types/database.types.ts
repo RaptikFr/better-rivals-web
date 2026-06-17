@@ -285,6 +285,7 @@ export type Database = {
           notify_drivetrain: boolean
           notify_exact: boolean
           notify_rival: boolean
+          notify_weekly: boolean
           preferences: Json
           pseudo: string
           user_id: string | null
@@ -299,6 +300,7 @@ export type Database = {
           notify_drivetrain?: boolean
           notify_exact?: boolean
           notify_rival?: boolean
+          notify_weekly?: boolean
           preferences?: Json
           pseudo: string
           user_id?: string | null
@@ -313,6 +315,7 @@ export type Database = {
           notify_drivetrain?: boolean
           notify_exact?: boolean
           notify_rival?: boolean
+          notify_weekly?: boolean
           preferences?: Json
           pseudo?: string
           user_id?: string | null
