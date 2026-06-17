@@ -63,13 +63,20 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     if (!pid) return;
     let cancelled = false;
     supabase.from('players').select('preferences').eq('id', pid).maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return;
+        // Rend visible un échec de sync (ex. migration preferences_sync non
+        // appliquée → la colonne/les grants manquent et l'écriture échoue en
+        // silence, chaque appareil reste alors sur son localStorage).
+        if (error) console.warn('[preferences] lecture compte impossible — migration preferences_sync appliquée ?', error.message);
         const db = data?.preferences;
         if (db && typeof db === 'object' && !Array.isArray(db) && Object.keys(db).length > 0) {
           setPrefs(sanitizePreferences(db));
         } else {
-          supabase.from('players').update({ preferences: prefsRef.current as unknown as Json }).eq('id', pid);
+          supabase.from('players').update({ preferences: prefsRef.current as unknown as Json }).eq('id', pid)
+            .then(({ error: upErr }) => {
+              if (upErr) console.warn('[preferences] écriture compte impossible — migration preferences_sync appliquée ?', upErr.message);
+            });
         }
         dbReconciled.current = true;
       });
@@ -86,7 +93,10 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
       /* quota plein ou mode privé : on ignore */
     }
     if (player?.id && dbReconciled.current) {
-      supabase.from('players').update({ preferences: prefs as unknown as Json }).eq('id', player.id);
+      supabase.from('players').update({ preferences: prefs as unknown as Json }).eq('id', player.id)
+        .then(({ error }) => {
+          if (error) console.warn('[preferences] sauvegarde compte impossible — migration preferences_sync appliquée ?', error.message);
+        });
     }
     const root = document.documentElement;
     root.classList.toggle('density-compact', prefs.density === 'compact');

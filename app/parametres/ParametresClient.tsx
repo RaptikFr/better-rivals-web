@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
+import NotificationSettings from '@/components/NotificationSettings';
 import { usePreferences } from '@/hooks/usePreferences';
 import { formatTime } from '@/components/formatTime';
 import { dateAbsolute } from '@/lib/dateAbsolute';
@@ -97,7 +98,7 @@ export default function ParametresClient() {
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white">Paramètres</h1>
         <p className="text-sm text-neutral-500 mt-1">
-          Ces préférences sont enregistrées sur cet appareil (navigateur) et s&apos;appliquent à tout le site.
+          Connecté, tes préférences sont liées à ton compte et te suivent sur tous tes appareils. Déconnecté, elles restent enregistrées sur ce navigateur.
         </p>
       </div>
 
@@ -230,6 +231,8 @@ export default function ParametresClient() {
             ]}
           />
         </Section>
+
+        <NotificationSettings />
 
         <div className="flex justify-end">
           <button
