@@ -294,6 +294,16 @@ export default function Navbar() {
           ) : user ? (
             <div className="flex items-center gap-2 ml-2">
               <Link
+                href="/objectifs"
+                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  pathname === '/objectifs'
+                    ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
+                }`}
+              >
+                🎯 Objectifs
+              </Link>
+              <Link
                 href="/profil"
                 className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   pathname === '/profil'
@@ -393,6 +403,9 @@ export default function Navbar() {
             <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3">
               {!loading && (user ? (
                 <>
+                  <Link href="/objectifs" onClick={() => setMobileOpen(false)} className={mobileLinkClass('/objectifs')}>
+                    🎯 Mes objectifs
+                  </Link>
                   <Link href="/profil" onClick={() => setMobileOpen(false)} className={mobileLinkClass('/profil')}>
                     Mon profil
                   </Link>

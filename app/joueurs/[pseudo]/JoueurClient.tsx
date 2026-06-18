@@ -11,6 +11,8 @@ import { computeBadges } from '@/lib/badges';
 import { BadgesBar } from '@/components/BadgesBar';
 import { RivalsCell } from '@/components/RivalsCell';
 import { FollowButton } from '@/components/FollowButton';
+import { TargetButton } from '@/components/TargetButton';
+import { objectifConfigKey } from '@/lib/objectifs';
 import type { Drivetrain } from '@/types/supabase';
 
 interface Lap {
@@ -43,6 +45,9 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
   const [loading,      setLoading]      = useState(true);
   const [notFound,     setNotFound]     = useState(false);
   const [openCircuits, setOpenCircuits] = useState<Set<number>>(new Set());
+  // Configs sur lesquelles j'ai déjà un objectif visant ce joueur (état initial
+  // des boutons « 🎯 »). Vide si je ne suis pas connecté.
+  const [myObjectifKeys, setMyObjectifKeys] = useState<Set<string>>(new Set());
 
   function toggleCircuit(trackId: number) {
     setOpenCircuits(prev => {
@@ -91,6 +96,23 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
           if (idx !== -1) { setGeneralRank(idx + 1); setGeneralTotal(ranking.length); }
         }
       } catch { /* le classement général reste optionnel */ }
+
+      // Mes objectifs visant CE joueur → état initial des boutons « 🎯 »
+      // (uniquement si connecté ; sinon les boutons restent masqués).
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const res = await fetch('/api/objectifs', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (res.ok) {
+            const { objectifs } = await res.json() as { objectifs: { target_pseudo: string; track_id: number; car_ordinal: number; car_class: string; drivetrain: string }[] };
+            setMyObjectifKeys(new Set(
+              objectifs.filter(o => o.target_pseudo === pseudo).map(o => objectifConfigKey(o)),
+            ));
+          }
+        }
+      } catch { /* les objectifs restent optionnels */ }
 
       setLoading(false);
     }
@@ -242,6 +264,26 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                         <div className="flex items-center justify-between gap-3 sm:contents">
                           <span className="text-neutral-500 font-mono text-xs sm:w-16">PI {lap.car_pi}</span>
                           <span className="sm:w-56"><RivalsCell rivals={rivalsFor(rankings?.rivalsByConfig ?? new Map(), lap)} /></span>
+                          {playerId && (
+                            <span className="sm:ml-auto">
+                              <TargetButton
+                                compact
+                                config={{
+                                  targetPlayerId: playerId,
+                                  trackId:        lap.track_id,
+                                  carOrdinal:     lap.car_ordinal,
+                                  carClass:       lap.car_class,
+                                  drivetrain:     lap.drivetrain,
+                                }}
+                                initialActive={myObjectifKeys.has(objectifConfigKey({
+                                  track_id:    lap.track_id,
+                                  car_ordinal: lap.car_ordinal,
+                                  car_class:   lap.car_class,
+                                  drivetrain:  lap.drivetrain,
+                                }))}
+                              />
+                            </span>
+                          )}
                         </div>
                       </div>
                     );

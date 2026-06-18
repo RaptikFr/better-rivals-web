@@ -250,6 +250,68 @@ async function notifierRecordBattu(opts: {
   }
 }
 
+// Un nouveau record peut atteindre un ou plusieurs « objectifs à battre » que
+// le joueur s'est fixés sur cette config (battre tel pilote). On marque ces
+// objectifs atteints et on notifie le joueur. Différé après la réponse (after).
+async function verifierObjectifsAtteints(opts: {
+  playerId:   string;
+  newTimeMs:  number;
+  trackId:    number;
+  carOrdinal: number;
+  carClass:   string;
+  drivetrain: string;
+  trackName:  string;
+  carLabel:   string;
+  link:       string;
+}) {
+  const { data: objs } = await supabaseAdmin
+    .from('objectifs')
+    .select('id, target_player_id')
+    .eq('player_id',   opts.playerId)
+    .eq('track_id',    opts.trackId)
+    .eq('car_ordinal', opts.carOrdinal)
+    .eq('car_class',   opts.carClass)
+    .eq('drivetrain',  opts.drivetrain)
+    .is('achieved_at', null);
+  if (!objs || objs.length === 0) return;
+
+  const targetIds = objs.map(o => o.target_player_id);
+  const { data: targetLaps } = await supabaseAdmin
+    .from('lap_times')
+    .select('player_id, time_ms')
+    .eq('track_id',    opts.trackId)
+    .eq('car_ordinal', opts.carOrdinal)
+    .eq('car_class',   opts.carClass)
+    .eq('drivetrain',  opts.drivetrain)
+    .in('player_id',   targetIds);
+  const timeByTarget = new Map((targetLaps ?? []).map(l => [l.player_id, l.time_ms]));
+
+  // Objectif atteint = mon nouveau temps ≤ temps actuel de la cible.
+  const atteints = objs.filter(o => {
+    const t = timeByTarget.get(o.target_player_id);
+    return t !== undefined && opts.newTimeMs <= t;
+  });
+  if (atteints.length === 0) return;
+
+  await supabaseAdmin
+    .from('objectifs')
+    .update({ achieved_at: new Date().toISOString() })
+    .in('id', atteints.map(o => o.id));
+
+  const { data: targets } = await supabaseAdmin
+    .from('players').select('id, pseudo').in('id', atteints.map(o => o.target_player_id));
+  const pseudoById = new Map((targets ?? []).map(p => [p.id, p.pseudo]));
+
+  const notifs = atteints.map(o => ({
+    player_id: opts.playerId,
+    message:   `🎯 Objectif atteint ! Tu as battu ${pseudoById.get(o.target_player_id) ?? 'ta cible'} sur ${opts.trackName} avec ${opts.carLabel} en ${opts.carClass}/${opts.drivetrain} (${formatTime(opts.newTimeMs)})`,
+    type:      'objectif',
+    link:      opts.link,
+    read:      false,
+  }));
+  await supabaseAdmin.from('notifications').insert(notifs);
+}
+
 function buildBeatenEmailHtml(opts: {
   newPlayerPseudo: string;
   trackName:       string;
@@ -497,6 +559,23 @@ export async function POST(request: NextRequest) {
       trackName,
       carLabel,
     };
+    // Lien vers le classement de la config (réutilisé pour les notifs d'objectif).
+    const objectifLink = `/classements?${new URLSearchParams({
+      track_id:   String(numTrackId),
+      class:      car_class,
+      drivetrain,
+      car:        carLabel,
+    }).toString()}`;
+    const objectifOpts = {
+      playerId:   player.id,
+      trackId:    numTrackId,
+      carOrdinal: numCarOrdinal,
+      carClass:   car_class,
+      drivetrain,
+      trackName,
+      carLabel,
+      link:       objectifLink,
+    };
 
     // --- GESTION DU CLASSEMENT ---
     const { data: existingTime } = await supabaseAdmin
@@ -536,6 +615,7 @@ export async function POST(request: NextRequest) {
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
         // Notifications + emails : différés après la réponse au relais (after).
         after(() => notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: existingTime.time_ms }));
+        after(() => verifierObjectifsAtteints({ ...objectifOpts, newTimeMs }));
 
         // Réglage précédent pour pré-remplir la popup du relais : en priorité
         // celui du chrono amélioré (même circuit), sinon celui d'un autre circuit
@@ -565,6 +645,7 @@ export async function POST(request: NextRequest) {
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       after(() => notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: null }));
+      after(() => verifierObjectifsAtteints({ ...objectifOpts, newTimeMs }));
 
       // Premier chrono sur ce circuit avec cette config : le réglage a pu être
       // renseigné sur un autre circuit avec la même voiture

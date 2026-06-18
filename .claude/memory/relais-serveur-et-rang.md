@@ -1,17 +1,20 @@
 ---
 name: relais-serveur-et-rang
-description: Code du relais Python pas sur ce PC ; ingestion serveur optimisée (after/parallèle) ; idée rang en attente
+description: Le relais Python EST dans ce repo (relais_gui_v20.py) ; ingestion serveur optimisée ; intégration relais désormais faisable d'ici
 metadata:
   type: project
 ---
 
-Le code du **relais** (BetterRivals.exe / `relais_gui_v15.py`, Python) **n'est PAS dans ce repo ni sur ce PC** — il vit sur une autre machine. Ici, le « code relais » = uniquement le point d'entrée serveur qu'il appelle : `POST /api/times` (+ `/api/cars`).
+**CORRECTION (18/06) : le code du relais EST dans ce repo / sur ce PC.** Fichiers `relais_gui_v20.py` (actuel, v1.10.0, publié commit 5eed71f) et `relais_v19.py` (ancien) à la racine. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution touchant le relais EST faisable ici** (mon ancienne note disait l'inverse — c'était faux).
 
-**Livré (17 juin 2026, commit b7e6c7e)** — optimisation de `POST /api/times` côté serveur, iso-fonctionnel pour le relais :
-- `after()` (next/server, stable Next ≥15.1) : notifications in-app, emails Resend et enrichissement du nom de voiture différés **après** la réponse → le relais reçoit sa confirmation plus vite ; corrige aussi le risque d'email gelé en serverless.
-- `Promise.all` sur les lectures indépendantes (player/track/world_record/existence voiture, puis historique+update).
-- Garde-fous numériques stricts (track_id/car_id/lap_time) contre les filtres NaN silencieux.
+Points d'intégration relais → API (constantes ~ligne 96-99 de `relais_gui_v20.py`) :
+- `POST /api/times` (envoi des chronos) — la réponse porte `is_new_record`, `id`, `previous_setup`.
+- `GET /api/circuits`, `GET /api/cars` (+ `PATCH /api/cars` rapprochement voiture, service role).
+- `GET /api/times/mes-records` ([v13] meilleur temps perso par épreuve, affiché dans la liste).
+- Popups GUI : `PopupReglage` (~l.1134, pré-remplie par `previous_setup`), popups « monde »/« réglage » ouvertes après un `is_new_record` (~l.1814-1908).
 
-**En attente (point 5, pas commencé)** : renvoyer le **rang** du joueur dans la réponse de `POST /api/times` pour que la popup du relais affiche « 🥉 Tu es 3e ! ». Bloqué car ça **change la réponse → le relais Python doit être adapté** (autre machine). À faire : préparer le calcul du rang côté serveur ici, puis adapter le relais là-bas.
+**Ingestion serveur (livré 17/06, commit b7e6c7e)** — `POST /api/times` optimisé iso-fonctionnel : `after()` (notifs in-app + emails Resend + enrichissement nom voiture différés après réponse), `Promise.all` sur lectures indépendantes, gardes numériques strictes (NaN). Garde NaN aussi ajoutée aux GET cars/times (18/06).
 
-Voir aussi [[autonomie-pas-de-demande-autorisation]].
+**Idée « rang dans la réponse »** : renvoyer le rang du joueur dans la réponse `POST /api/times` pour afficher « 🥉 Tu es 3e ! » dans la popup. Maintenant débloqué (relais modifiable ici).
+
+**En cours — feature « objectif à battre »** (voir [[autonomie-pas-de-demande-autorisation]]) : cible = temps d'un pilote précis sur une config ; entrées classements + profil + page dédiée ; web d'abord puis affichage en jeu côté relais.

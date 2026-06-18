@@ -32,6 +32,42 @@ export type Database = {
         }
         Relationships: []
       }
+      objectifs: {
+        Row: {
+          achieved_at: string | null
+          car_class: string
+          car_ordinal: number
+          created_at: string
+          drivetrain: string
+          id: string
+          player_id: string
+          target_player_id: string
+          track_id: number
+        }
+        Insert: {
+          achieved_at?: string | null
+          car_class: string
+          car_ordinal: number
+          created_at?: string
+          drivetrain: string
+          id?: string
+          player_id: string
+          target_player_id: string
+          track_id: number
+        }
+        Update: {
+          achieved_at?: string | null
+          car_class?: string
+          car_ordinal?: number
+          created_at?: string
+          drivetrain?: string
+          id?: string
+          player_id?: string
+          target_player_id?: string
+          track_id?: number
+        }
+        Relationships: []
+      }
       cars: {
         Row: {
           add_ons: string | null

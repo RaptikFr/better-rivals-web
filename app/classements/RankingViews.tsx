@@ -6,7 +6,26 @@ import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
 import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 import type { Preferences } from '@/lib/preferences';
-import { TuneCell, type CircuitGroup, type LapTime } from './classementsShared';
+import { TargetButton } from '@/components/TargetButton';
+import { TuneCell, type CircuitGroup, type LapTime, type RankedLap } from './classementsShared';
+
+// Objectif « battre ce temps » : visible seulement pour les temps d'un autre
+// pilote, quand on est connecté.
+function rowTargetButton(lap: RankedLap, isAuthed: boolean, currentPlayerId: string | null) {
+  if (!isAuthed || currentPlayerId === null || lap.player_id === currentPlayerId) return null;
+  return (
+    <TargetButton
+      compact
+      config={{
+        targetPlayerId: lap.player_id,
+        trackId:        lap.track_id,
+        carOrdinal:     lap.car_ordinal,
+        carClass:       lap.car_class,
+        drivetrain:     lap.drivetrain,
+      }}
+    />
+  );
+}
 
 interface RankingViewProps {
   groups: CircuitGroup[];
@@ -159,6 +178,7 @@ export function RankingTableView({
                                     >
                                       {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
                                     </button>
+                                    {rowTargetButton(lap, isAuthed, currentPlayerId)}
                                     {isAuthed && currentPlayerId !== null && (
                                       lap.player_id !== currentPlayerId ? (
                                         <button
@@ -320,6 +340,7 @@ export function RankingCardView({
                           >
                             {copiedRowId === lap.id ? <span className="text-pink-400 font-bold">Copié!</span> : '🔗'}
                           </button>
+                          {rowTargetButton(lap, isAuthed, currentPlayerId)}
                           {/* Slot signalement : réservé même pour ses propres temps
                               (placeholder invisible) afin de garder le 🔗 aligné d'une ligne à l'autre. */}
                           {isAuthed && currentPlayerId !== null && (
