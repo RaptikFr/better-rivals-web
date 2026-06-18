@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { rateLimit } from '@/lib/rate-limit';
 import { siteUrl } from '@/lib/site';
 import {
   formatTime,
@@ -372,6 +373,13 @@ async function chercherReglagePrecedent(opts: {
 
 export async function POST(request: NextRequest) {
   try {
+    // --- LIMITATION DE DÉBIT ---
+    // Le relais ne POSTe qu'à la fin d'un tour : 60 req/min par IP laisse une
+    // marge confortable au jeu légitime tout en bornant le spam (écritures +
+    // notifications + emails déclenchés par cette route).
+    const limited = await rateLimit(request, 'times', 60, 60_000);
+    if (limited) return limited;
+
     // --- VÉRIFICATION DU TOKEN JWT ---
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
