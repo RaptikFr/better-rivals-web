@@ -13,10 +13,10 @@ Idées de features validées avec l'utilisateur le 18/06/2026 (il les a toutes c
 
 **🧪 EN ATTENTE DE TEST (sur PC fixe) :** le relais **v1.11.0** — vérifier (1) lancement + connexion, (2) envoi d'un chrono, (3) le 🎯 dans « Choisir un rival » pour une config posée comme objectif sur le site. Filet : la release v1.10.0 existe, on peut dépublier la v1.11.0 (latest repointe auto) si souci. Voir [[relais-serveur-et-rang]].
 
-**⚠️ ACTIONS PROPRIÉTAIRE pour activer le pack social (18/06) :**
-- **Appliquer 2 migrations** (SQL editor / API management, comme les autres — NON auto-appliquées) : `supabase/migrations/config_semaine.sql` (table `weekly_config`) et `supabase/migrations/duels.sql` (table `duels`). Sans elles, `/config-semaine`, `/duels` et l'onglet admin « Config de la semaine » plantent en lecture/écriture.
-- **Poser `DISCORD_WEBHOOK_URL`** (.env.local + Vercel) = webhook d'un salon Discord → annonce chaque nouveau nº1. Absent = no-op silencieux, le reste marche.
-- Une fois `weekly_config` créée : aller dans **/admin → ⭐ Config de la semaine** pour poser la 1re config (liste des configs ayant des temps, triées par nb de pilotes).
+**✅ PACK SOCIAL ACTIVÉ EN PROD (18/06) :**
+- Les 2 migrations sont **appliquées et vérifiées** en base (par Claude via l'API de management : `weekly_config` 8 cols + `duels` 13 cols, RLS active, grants anon/auth vides). Réseau sandboxé → appel fait avec sandbox désactivé ; PAT lu depuis `~/.claude.json` (config MCP). Voir [[acces-supabase-mcp]].
+- `DISCORD_WEBHOOK_URL` **posée en local + Vercel** (redeploy fait), salon dédié — **test réel envoyé et confirmé (HTTP 204)**. ⚠️ sur Vercel l'URL doit être SANS guillemets (en `.env.local` Next.js les retire seul).
+- Reste optionnel côté proprio : aller dans **/admin → ⭐ Config de la semaine** poser la 1re config (liste des configs ayant des temps, triées par nb de pilotes) pour inaugurer le défi hebdo.
 
 **📋 RESTE À FAIRE (ordre suggéré) :**
 1. **Brique télémétrie** (gros chantier structurant) → dans l'ordre : **#2 secteurs** (1er livrable) → **#1 delta live** → **#3 coach** → **#5 copilote réglage**. Détails brique ci-dessous.
