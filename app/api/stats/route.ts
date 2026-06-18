@@ -23,7 +23,9 @@ async function calculerStats() {
     // select('id') et non '*' : les colonnes sensibles de players (user_id)
     // ne sont pas lisibles par tous, un SELECT * serait rejeté
     supabase.from('players').select('id', { count: 'exact', head: true }),
-    supabase.from('tracks').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+    // select('id') et non '*' : depuis audit_suite_juin_2026.sql, tracks a un
+    // grant par colonne (submitted_by masqué) → un SELECT * serait rejeté
+    supabase.from('tracks').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
     // Une seule lecture (paginée) de lap_times pour tous les agrégats (voitures distinctes + tops)
     fetchAllRows<LapRow>((from, to) =>
       supabase.from('lap_times')
