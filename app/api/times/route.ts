@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/rate-limit';
 import { siteUrl } from '@/lib/site';
+import { annoncerNouveauLeaderDiscord } from '@/lib/discord';
 import {
   formatTime,
   bornesTempsMs,
@@ -185,6 +186,17 @@ async function notifierRecordBattu(opts: {
       carClass:        opts.carClass,
       drivetrain:      opts.drivetrain,
       newTimeMs:       opts.newTimeMs,
+      link,
+    });
+    // Annonce Discord : ce chrono passe devant le meilleur autre joueur sur la
+    // config exacte → c'est un nouveau nº1. No-op si DISCORD_WEBHOOK_URL absent.
+    await annoncerNouveauLeaderDiscord({
+      pseudo:     opts.pseudo,
+      trackName:  opts.trackName,
+      carLabel,
+      carClass:   opts.carClass,
+      drivetrain: opts.drivetrain,
+      timeMs:     opts.newTimeMs,
       link,
     });
     return;
