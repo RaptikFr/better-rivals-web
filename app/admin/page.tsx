@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/admins';
 
 
-type AdminTab = 'epreuves' | 'messages';
+type AdminTab = 'epreuves' | 'messages' | 'config';
 
 interface PendingTrack {
   id: number;
@@ -29,6 +29,31 @@ interface ContactMessage {
   status: string | null;
 }
 
+interface ConfigCandidate {
+  track_id: number;
+  track_name: string;
+  car_ordinal: number;
+  car_label: string;
+  car_class: string;
+  drivetrain: string;
+  participants: number;
+}
+
+interface ActiveWeeklyConfig {
+  id: string;
+  track_id: number;
+  car_ordinal: number;
+  car_class: string;
+  drivetrain: string;
+  starts_at: string;
+  ends_at: string;
+}
+
+// Clé stable d'une config candidate (pour le <select>).
+function configKey(c: { track_id: number; car_ordinal: number; car_class: string; drivetrain: string }): string {
+  return `${c.track_id}|${c.car_ordinal}|${c.car_class}|${c.drivetrain}`;
+}
+
 export default function AdminPage() {
   const router            = useRouter();
   const { user, loading } = useAuth();
@@ -44,6 +69,14 @@ export default function AdminPage() {
   const [messages,        setMessages]        = useState<ContactMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesFetched, setMessagesFetched] = useState(false);
+
+  // Onglet Config de la semaine
+  const [activeConfig,   setActiveConfig]   = useState<ActiveWeeklyConfig | null>(null);
+  const [candidates,     setCandidates]     = useState<ConfigCandidate[]>([]);
+  const [configLoading,  setConfigLoading]  = useState(false);
+  const [configFetched,  setConfigFetched]  = useState(false);
+  const [selectedConfig, setSelectedConfig] = useState<string>('');
+  const [configDays,     setConfigDays]     = useState(7);
 
   // Toutes les actions admin passent par /api/admin/* : le contrôle des droits
   // est fait côté serveur, la RLS peut donc interdire ces opérations aux clients
@@ -79,6 +112,47 @@ export default function AdminPage() {
     setMessagesFetched(true);
   }
 
+  async function fetchConfigData() {
+    setConfigLoading(true);
+    const headers = await authHeaders();
+    if (headers) {
+      const res = await fetch('/api/admin/config-semaine', { headers });
+      const json = await res.json();
+      if (res.ok) {
+        setActiveConfig(json.active ?? null);
+        setCandidates(json.candidates ?? []);
+      }
+    }
+    setConfigLoading(false);
+    setConfigFetched(true);
+  }
+
+  async function handleSetConfig() {
+    const candidate = candidates.find(c => configKey(c) === selectedConfig);
+    if (!candidate) { notify('Choisis une config dans la liste.', false); return; }
+    const headers = await authHeaders();
+    if (!headers) return;
+    const res = await fetch('/api/admin/config-semaine', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        track_id:    candidate.track_id,
+        car_ordinal: candidate.car_ordinal,
+        car_class:   candidate.car_class,
+        drivetrain:  candidate.drivetrain,
+        days:        configDays,
+      }),
+    });
+    if (!res.ok) {
+      const json = await res.json();
+      notify(`Erreur : ${json.error ?? res.status}`, false);
+    } else {
+      notify('⭐ Config de la semaine définie !', true);
+      setConfigFetched(false); // force le rechargement de la config active
+      fetchConfigData();
+    }
+  }
+
   useEffect(() => {
     if (!loading && (!user || !isAdmin(user.email))) {
       router.push('/');
@@ -98,6 +172,14 @@ export default function AdminPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminTab, user, messagesFetched]);
+
+  useEffect(() => {
+    if (adminTab === 'config' && isAdmin(user?.email) && !configFetched) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement des configs à l'ouverture de l'onglet
+      fetchConfigData();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminTab, user, configFetched]);
 
   function notify(text: string, ok: boolean) {
     setNotification({ text, ok });
@@ -173,6 +255,7 @@ export default function AdminPage() {
           {([
             { id: 'epreuves', label: '🏁 Épreuves', count: tracks.length },
             { id: 'messages', label: '✉️ Messages',  count: messages.filter(m => m.status === 'non_lu').length },
+            { id: 'config',   label: '⭐ Config de la semaine', count: 0 },
           ] as { id: AdminTab; label: string; count: number }[]).map(tab => (
             <button
               key={tab.id}
@@ -334,6 +417,81 @@ export default function AdminPage() {
                   </div>
                 );
               })}
+            </div>
+          )
+        )}
+
+        {/* ── ONGLET CONFIG DE LA SEMAINE ── */}
+        {adminTab === 'config' && (
+          configLoading ? (
+            <p className="text-neutral-500 animate-pulse">Chargement...</p>
+          ) : (
+            <div className="space-y-6">
+              {/* Config active */}
+              <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500 mb-3">Config active</h3>
+                {activeConfig ? (
+                  <div className="text-sm text-neutral-700 dark:text-neutral-300 space-y-1">
+                    {(() => {
+                      const c = candidates.find(cd => cd.track_id === activeConfig.track_id && cd.car_ordinal === activeConfig.car_ordinal && cd.car_class === activeConfig.car_class && cd.drivetrain === activeConfig.drivetrain);
+                      return (
+                        <>
+                          <p className="font-bold text-neutral-900 dark:text-white">{c?.car_label ?? `Voiture #${activeConfig.car_ordinal}`}</p>
+                          <p>🏁 {c?.track_name ?? `Circuit #${activeConfig.track_id}`} · {activeConfig.car_class} / {activeConfig.drivetrain}</p>
+                        </>
+                      );
+                    })()}
+                    <p className="text-xs text-neutral-500">
+                      Fenêtre : {new Date(activeConfig.starts_at).toLocaleDateString('fr-FR')} → {new Date(activeConfig.ends_at).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-neutral-500">Aucune config active. Définis-en une ci-dessous.</p>
+                )}
+              </div>
+
+              {/* Définir une nouvelle config */}
+              <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Définir la config de la semaine</h3>
+                <p className="text-xs text-neutral-500">
+                  Liste des configurations ayant déjà des temps (triées par nombre de pilotes), pour que le défi démarre avec de l&apos;activité.
+                </p>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Configuration</label>
+                  <select
+                    value={selectedConfig}
+                    onChange={e => setSelectedConfig(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white"
+                  >
+                    <option value="">— Choisir une config —</option>
+                    {candidates.map(c => (
+                      <option key={configKey(c)} value={configKey(c)}>
+                        {c.car_label} · {c.track_name} · {c.car_class}/{c.drivetrain} ({c.participants} pilote{c.participants > 1 ? 's' : ''})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Durée (jours)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={configDays}
+                      onChange={e => setConfigDays(Math.max(1, Math.min(31, Number(e.target.value) || 7)))}
+                      className="w-24 px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSetConfig}
+                    disabled={!selectedConfig}
+                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Définir
+                  </button>
+                </div>
+              </div>
             </div>
           )
         )}

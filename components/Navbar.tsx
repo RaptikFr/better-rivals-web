@@ -12,6 +12,7 @@ import GlobalSearch from '@/components/GlobalSearch';
 const navLinks = [
   { href: '/comparaison',        label: 'Comparer'           },
   { href: '/classement-general', label: 'Classement général' },
+  { href: '/config-semaine',     label: '⭐ Config de la semaine' },
   { href: '/stats',              label: 'Stats'              },
   { href: '/voitures',           label: 'Voitures'           },
   { href: '/circuits',           label: 'Circuits'           },

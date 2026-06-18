@@ -567,6 +567,54 @@ export type Database = {
           },
         ]
       }
+      weekly_config: {
+        Row: {
+          car_class: string
+          car_ordinal: number
+          created_at: string
+          drivetrain: string
+          ends_at: string
+          id: string
+          starts_at: string
+          track_id: number
+        }
+        Insert: {
+          car_class: string
+          car_ordinal: number
+          created_at?: string
+          drivetrain: string
+          ends_at: string
+          id?: string
+          starts_at?: string
+          track_id: number
+        }
+        Update: {
+          car_class?: string
+          car_ordinal?: number
+          created_at?: string
+          drivetrain?: string
+          ends_at?: string
+          id?: string
+          starts_at?: string
+          track_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_config_car_ordinal_fkey"
+            columns: ["car_ordinal"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["car_ordinal"]
+          },
+          {
+            foreignKeyName: "weekly_config_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
