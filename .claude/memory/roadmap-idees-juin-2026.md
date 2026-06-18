@@ -1,6 +1,6 @@
 ---
 name: roadmap-idees-juin-2026
-description: Roadmap site/relais (18/06). LIVRÉ : #6 réglage n°1, #7 bibliothèque réglages+modale, pack social complet (#8 duels, #9 config semaine, #10 webhook Discord). RESTE : brique télémétrie (secteurs→delta→coach→copilote), #4 régularité, #12 écuries, #13 check version relais. À TESTER : relais v1.11.0. ⚠️ pack social : appliquer migrations config_semaine.sql + duels.sql et poser DISCORD_WEBHOOK_URL
+description: Roadmap site/relais (18/06). LIVRÉ : #6 réglage n°1, #7 bibliothèque réglages+modale, pack social complet (#8 duels, #9 config semaine, #10 webhook Discord). RESTE : brique télémétrie (secteurs→delta→coach→copilote), #4 régularité, #12 écuries, #13 check version relais. Relais v1.11.0 testé OK + v1.11.1 publiée (objectifs plus visibles). Pack social activé en prod (migrations appliquées, DISCORD_WEBHOOK_URL posée)
 metadata:
   type: project
 ---
@@ -11,7 +11,7 @@ Idées de features validées avec l'utilisateur le 18/06/2026 (il les a toutes c
 
 **✅ LIVRÉ & déployé :** #6 Réglage du n°1 · #7 Bibliothèque de réglages `/reglages` + modale Partager/revendiquer · **Pack social complet (#8 duels, #9 config de la semaine, #10 webhook Discord)** poussé le 18/06. (Plus tôt ce jour : feature **Objectifs à battre** 🎯 site+relais, release relais **v1.11.0**.)
 
-**🧪 EN ATTENTE DE TEST (sur PC fixe) :** le relais **v1.11.0** — vérifier (1) lancement + connexion, (2) envoi d'un chrono, (3) le 🎯 dans « Choisir un rival » pour une config posée comme objectif sur le site. Filet : la release v1.10.0 existe, on peut dépublier la v1.11.0 (latest repointe auto) si souci. Voir [[relais-serveur-et-rang]].
+**✅ RELAIS v1.11.0 TESTÉ OK** (proprio, sur le fixe). **Release v1.11.1 publiée le 19/06** (objectifs plus visibles : 🎯 sur les circuits dans la sélection + panneau « 🎯 OBJECTIF » vs « 🏁 RIVAL » en course) — rebuildée + publiée par Claude via `gh`. Reste à tester quand pratique : les 2 nouveautés v1.11.1. Voir [[relais-serveur-et-rang]].
 
 **✅ PACK SOCIAL ACTIVÉ EN PROD (18/06) :**
 - Les 2 migrations sont **appliquées et vérifiées** en base (par Claude via l'API de management : `weekly_config` 8 cols + `duels` 13 cols, RLS active, grants anon/auth vides). Réseau sandboxé → appel fait avec sandbox désactivé ; PAT lu depuis `~/.claude.json` (config MCP). Voir [[acces-supabase-mcp]].
