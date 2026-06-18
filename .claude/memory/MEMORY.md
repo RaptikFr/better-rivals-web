@@ -9,6 +9,7 @@
 - [Domaine & Resend](domaine-et-resend.md) — RÉSOLU : domaine canonique better-rivals-fh6.org partout ; domaine vérifié dans Resend, e-mails OK. Plus rien en attente
 - [SEO](seo.md) — LIVRÉ (16 juin) : h1 accueil, sitemap.ts, robots.ts, JSON-LD, lib/site.ts. Sitemap soumis à Google Search Console
 - [Idée section Réglages](idee-section-reglages.md) — à explorer plus tard : vraie UI des réglages (tune_setups existe déjà en base + API POST) au lieu du simple code de partage ; à accrocher aux pages voiture
-- [Relais serveur & rang](relais-serveur-et-rang.md) — code relais Python PAS sur ce PC ; POST /api/times optimisé (after/parallèle, commit b7e6c7e) ; idée « rang dans la réponse » en attente (nécessite d'adapter le relais)
-- [Features site juin 2026](features-site-juin-2026.md) — 4 features livrées le 17/06 (stats batailles, comparateur partageable, OG profil, récap hebdo) ; récap hebdo PAS activé : migration + CRON_SECRET + planificateur à faire
+- [Relais serveur & rang](relais-serveur-et-rang.md) — le relais Python EST sur ce PC (`relais_gui_v21.py`, GITIGNORÉ) ; procédure build/release documentée ; release v1.11.0 publiée le 18/06 (objectifs + 🎯 relais)
+- [Features site juin 2026](features-site-juin-2026.md) — 4 features livrées le 17/06 ; récap hebdo ACTIVÉ (cron vercel.json + CRON_SECRET défini côté Vercel)
+- [Roadmap idées juin 2026](roadmap-idees-juin-2026.md) — idées site/relais validées le 18/06 (brique télémétrie → secteurs/delta/coach/copilote, réglage du n°1, tune library, duels, config semaine, webhook Discord, écuries, check version relais) ; saisons + détection circuit ABANDONNÉES ; départ = réglage du n°1
 - [Roadmap optimisations](roadmap-optimisations.md) — perf/SEO-contenu/maintenabilité (16 juin) : 🥇 accueil server components ✅ + 🥈 uniformiser fetch ✅ ; 🥉 recharts + 🛠️ découpe gros fichiers faits ; SEO contenu PHASES 1 (/circuits) + 2 (/voitures) + 3 (maillage) TOUTES ✅. Roadmap optimisations entièrement livrée
