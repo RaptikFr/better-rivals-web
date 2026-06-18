@@ -9,7 +9,7 @@ export interface Notification {
   message:    string;
   read:       boolean;
   created_at: string;
-  type:       'exact' | 'drivetrain' | 'class' | 'rival';
+  type:       'exact' | 'drivetrain' | 'class' | 'rival' | 'objectif' | 'duel';
   link:       string | null;
 }
 

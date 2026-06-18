@@ -7,6 +7,7 @@ import { DiscordTag } from '@/components/DiscordTag';
 import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 import type { Preferences } from '@/lib/preferences';
 import { TargetButton } from '@/components/TargetButton';
+import { ChallengeButton } from '@/components/ChallengeButton';
 import { TuneCell, LeaderTuneCell, type CircuitGroup, type LapTime, type RankedLap, type SubGroup } from './classementsShared';
 
 // Ligne « Réglage du n°1 » sous l'en-tête d'une config, si le leader a renseigné
@@ -17,21 +18,22 @@ function leaderTune(group: SubGroup) {
   return <LeaderTuneCell shareCode={leader.share_code} author={leader.setup_author} />;
 }
 
-// Objectif « battre ce temps » : visible seulement pour les temps d'un autre
-// pilote, quand on est connecté.
+// Actions sociales sur le temps d'un AUTRE pilote (connecté) : se fixer comme
+// objectif de le battre (🎯) ou le défier en duel (⚔️).
 function rowTargetButton(lap: RankedLap, isAuthed: boolean, currentPlayerId: string | null) {
   if (!isAuthed || currentPlayerId === null || lap.player_id === currentPlayerId) return null;
+  const config = {
+    targetPlayerId: lap.player_id,
+    trackId:        lap.track_id,
+    carOrdinal:     lap.car_ordinal,
+    carClass:       lap.car_class,
+    drivetrain:     lap.drivetrain,
+  };
   return (
-    <TargetButton
-      compact
-      config={{
-        targetPlayerId: lap.player_id,
-        trackId:        lap.track_id,
-        carOrdinal:     lap.car_ordinal,
-        carClass:       lap.car_class,
-        drivetrain:     lap.drivetrain,
-      }}
-    />
+    <>
+      <TargetButton compact config={config} />
+      <ChallengeButton compact config={config} />
+    </>
   );
 }
 

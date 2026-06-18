@@ -12,6 +12,7 @@ import { BadgesBar } from '@/components/BadgesBar';
 import { RivalsCell } from '@/components/RivalsCell';
 import { FollowButton } from '@/components/FollowButton';
 import { TargetButton } from '@/components/TargetButton';
+import { ChallengeButton } from '@/components/ChallengeButton';
 import { objectifConfigKey } from '@/lib/objectifs';
 import type { Drivetrain } from '@/types/supabase';
 
@@ -265,7 +266,7 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                           <span className="text-neutral-500 font-mono text-xs sm:w-16">PI {lap.car_pi}</span>
                           <span className="sm:w-56"><RivalsCell rivals={rivalsFor(rankings?.rivalsByConfig ?? new Map(), lap)} /></span>
                           {playerId && (
-                            <span className="sm:ml-auto">
+                            <span className="sm:ml-auto flex items-center gap-2">
                               <TargetButton
                                 compact
                                 config={{
@@ -281,6 +282,16 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                                   car_class:   lap.car_class,
                                   drivetrain:  lap.drivetrain,
                                 }))}
+                              />
+                              <ChallengeButton
+                                compact
+                                config={{
+                                  targetPlayerId: playerId,
+                                  trackId:        lap.track_id,
+                                  carOrdinal:     lap.car_ordinal,
+                                  carClass:       lap.car_class,
+                                  drivetrain:     lap.drivetrain,
+                                }}
                               />
                             </span>
                           )}

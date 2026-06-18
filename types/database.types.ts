@@ -68,6 +68,54 @@ export type Database = {
         }
         Relationships: []
       }
+      duels: {
+        Row: {
+          car_class: string
+          car_ordinal: number
+          challenger_id: string
+          created_at: string
+          deadline: string
+          drivetrain: string
+          id: string
+          opponent_id: string
+          resolved_at: string | null
+          responded_at: string | null
+          status: string
+          track_id: number
+          winner_id: string | null
+        }
+        Insert: {
+          car_class: string
+          car_ordinal: number
+          challenger_id: string
+          created_at?: string
+          deadline: string
+          drivetrain: string
+          id?: string
+          opponent_id: string
+          resolved_at?: string | null
+          responded_at?: string | null
+          status?: string
+          track_id: number
+          winner_id?: string | null
+        }
+        Update: {
+          car_class?: string
+          car_ordinal?: number
+          challenger_id?: string
+          created_at?: string
+          deadline?: string
+          drivetrain?: string
+          id?: string
+          opponent_id?: string
+          resolved_at?: string | null
+          responded_at?: string | null
+          status?: string
+          track_id?: number
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
       cars: {
         Row: {
           add_ons: string | null

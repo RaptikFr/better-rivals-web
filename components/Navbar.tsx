@@ -306,6 +306,16 @@ export default function Navbar() {
                 🎯 Objectifs
               </Link>
               <Link
+                href="/duels"
+                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  pathname === '/duels'
+                    ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
+                }`}
+              >
+                ⚔️ Duels
+              </Link>
+              <Link
                 href="/profil"
                 className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   pathname === '/profil'
@@ -407,6 +417,9 @@ export default function Navbar() {
                 <>
                   <Link href="/objectifs" onClick={() => setMobileOpen(false)} className={mobileLinkClass('/objectifs')}>
                     🎯 Mes objectifs
+                  </Link>
+                  <Link href="/duels" onClick={() => setMobileOpen(false)} className={mobileLinkClass('/duels')}>
+                    ⚔️ Mes duels
                   </Link>
                   <Link href="/profil" onClick={() => setMobileOpen(false)} className={mobileLinkClass('/profil')}>
                     Mon profil
