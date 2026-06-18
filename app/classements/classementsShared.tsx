@@ -15,6 +15,7 @@ export interface LapTime {
   track_id: number;
   drivetrain: Drivetrain;
   share_code: string | null;
+  setup_author: string | null;
   previous_time_ms: number | null;
   players: { pseudo: string; discord_tag: string | null } | null;
   cars: { manufacturer: string | null; name: string; year: number | null } | null;
@@ -75,6 +76,35 @@ export function TuneCell({ lap }: { lap: LapTime }) {
     >
       {copied ? <span className="text-green-400 font-bold not-italic">Copié !</span> : lap.share_code}
     </button>
+  );
+}
+
+// « Réglage du n°1 » : met en avant, sous l'en-tête d'une config, le code de
+// réglage derrière le meilleur temps (toujours visible, même config repliée),
+// avec l'auteur du réglage crédité s'il est renseigné. Copiable en un clic.
+export function LeaderTuneCell({ shareCode, author }: { shareCode: string; author: string | null }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(shareCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 text-xs bg-amber-500/[0.06] border-t border-amber-500/20">
+      <span className="font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap">🔧 Réglage du n°1</span>
+      <button
+        onClick={handleCopy}
+        title="Copier le code de réglage du leader"
+        className="font-mono font-semibold text-neutral-700 dark:text-neutral-200 hover:text-amber-600 dark:hover:text-amber-400 transition-colors truncate"
+      >
+        {copied ? <span className="text-green-500 font-bold">Copié !</span> : shareCode}
+      </button>
+      {author && (
+        <span className="text-neutral-500 whitespace-nowrap truncate">par {author}</span>
+      )}
+    </div>
   );
 }
 

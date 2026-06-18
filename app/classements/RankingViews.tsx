@@ -7,7 +7,15 @@ import { DiscordTag } from '@/components/DiscordTag';
 import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 import type { Preferences } from '@/lib/preferences';
 import { TargetButton } from '@/components/TargetButton';
-import { TuneCell, type CircuitGroup, type LapTime, type RankedLap } from './classementsShared';
+import { TuneCell, LeaderTuneCell, type CircuitGroup, type LapTime, type RankedLap, type SubGroup } from './classementsShared';
+
+// Ligne « Réglage du n°1 » sous l'en-tête d'une config, si le leader a renseigné
+// un code de réglage. Le leader est le 1er temps (laps triés par temps croissant).
+function leaderTune(group: SubGroup) {
+  const leader = group.laps[0];
+  if (!leader?.share_code) return null;
+  return <LeaderTuneCell shareCode={leader.share_code} author={leader.setup_author} />;
+}
 
 // Objectif « battre ce temps » : visible seulement pour les temps d'un autre
 // pilote, quand on est connecté.
@@ -97,6 +105,8 @@ export function RankingTableView({
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
+
+                  {leaderTune(group)}
 
                   {/* Tableau en colonnes — visible si la config est dépliée */}
                   {isOpen && (
@@ -266,6 +276,8 @@ export function RankingCardView({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
+
+                {leaderTune(group)}
 
                 {/* Liste des temps — visible si ouvert.
                     Lignes empilées en carte sur mobile, alignées en
