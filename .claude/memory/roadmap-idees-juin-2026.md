@@ -1,6 +1,6 @@
 ---
 name: roadmap-idees-juin-2026
-description: Roadmap site/relais (18/06) — PAUSE, reprise sur PC fixe. LIVRÉ : #6 réglage n°1, #7 bibliothèque réglages+modale. RESTE : brique télémétrie (secteurs→delta→coach→copilote), pack social (duels/config semaine/webhook Discord), #4 régularité, #12 écuries, #13 check version relais. À TESTER : relais v1.11.0
+description: Roadmap site/relais (18/06). LIVRÉ : #6 réglage n°1, #7 bibliothèque réglages+modale, pack social complet (#8 duels, #9 config semaine, #10 webhook Discord). RESTE : brique télémétrie (secteurs→delta→coach→copilote), #4 régularité, #12 écuries, #13 check version relais. À TESTER : relais v1.11.0. ⚠️ pack social : appliquer migrations config_semaine.sql + duels.sql et poser DISCORD_WEBHOOK_URL
 metadata:
   type: project
 ---
@@ -9,13 +9,18 @@ Idées de features validées avec l'utilisateur le 18/06/2026 (il les a toutes c
 
 ## ⏸️ ÉTAT AU 18/06 (pause demandée — reprise sur PC fixe)
 
-**✅ LIVRÉ & déployé :** #6 Réglage du n°1 · #7 Bibliothèque de réglages `/reglages` + modale Partager/revendiquer. (Plus tôt ce jour : feature **Objectifs à battre** 🎯 site+relais, release relais **v1.11.0**.)
+**✅ LIVRÉ & déployé :** #6 Réglage du n°1 · #7 Bibliothèque de réglages `/reglages` + modale Partager/revendiquer · **Pack social complet (#8 duels, #9 config de la semaine, #10 webhook Discord)** poussé le 18/06. (Plus tôt ce jour : feature **Objectifs à battre** 🎯 site+relais, release relais **v1.11.0**.)
 
 **🧪 EN ATTENTE DE TEST (sur PC fixe) :** le relais **v1.11.0** — vérifier (1) lancement + connexion, (2) envoi d'un chrono, (3) le 🎯 dans « Choisir un rival » pour une config posée comme objectif sur le site. Filet : la release v1.10.0 existe, on peut dépublier la v1.11.0 (latest repointe auto) si souci. Voir [[relais-serveur-et-rang]].
 
+**⚠️ ACTIONS PROPRIÉTAIRE pour activer le pack social (18/06) :**
+- **Appliquer 2 migrations** (SQL editor / API management, comme les autres — NON auto-appliquées) : `supabase/migrations/config_semaine.sql` (table `weekly_config`) et `supabase/migrations/duels.sql` (table `duels`). Sans elles, `/config-semaine`, `/duels` et l'onglet admin « Config de la semaine » plantent en lecture/écriture.
+- **Poser `DISCORD_WEBHOOK_URL`** (.env.local + Vercel) = webhook d'un salon Discord → annonce chaque nouveau nº1. Absent = no-op silencieux, le reste marche.
+- Une fois `weekly_config` créée : aller dans **/admin → ⭐ Config de la semaine** pour poser la 1re config (liste des configs ayant des temps, triées par nb de pilotes).
+
 **📋 RESTE À FAIRE (ordre suggéré) :**
 1. **Brique télémétrie** (gros chantier structurant) → dans l'ordre : **#2 secteurs** (1er livrable) → **#1 delta live** → **#3 coach** → **#5 copilote réglage**. Détails brique ci-dessous.
-2. **Pack social** (indépendant de la télémétrie, plus rapide) : **#8 duels**, **#9 config de la semaine**, **#10 webhook Discord**.
+2. ~~**Pack social**~~ : **LIVRÉ le 18/06** (#8 duels, #9 config de la semaine, #10 webhook Discord — voir actions propriétaire ci-dessus).
 3. **#4 score de régularité** (dépend de la brique télémétrie / multi-tours).
 4. **#12 écuries/équipes** (plutôt quand la communauté grandit).
 5. **#13 vérification de version du relais** (bandeau « nouvelle version dispo », sans auto-download).
@@ -33,9 +38,9 @@ Idées (numérotation d'origine conservée) :
 5. **Copilote de réglage** — mêmes symptômes que le coach mappés vers des DIRECTIONS de réglage (« assouplis l'antiroulis avant »…). PAS un auto-tune (Forza n'expose pas le tune en télémétrie, le relais ne peut pas écrire de réglage). *« oui, un copilote »*.
 6. **⭐ Réglage du n°1 — LIVRÉ (18/06, commit 571cc55)** : ligne « 🔧 Réglage du n°1 » sous l'en-tête de chaque config (toujours visible même replié), code copiable + auteur crédité. Composant `LeaderTuneCell` dans `classementsShared`, câblé dans `RankingViews` (vues tableau + cartes) ; `setup_author` ajouté au select de `ClassementsClient` (partagé avec classements-communauté).
 7. **Bibliothèque de réglages — LIVRÉE (18/06, commit fcd28d7)** : page `/reglages` (source hybride `tune_setups` + `share_code` dérivés des `lap_times`, dédup par `car_ordinal`, meilleur temps + nb pilotes + auteur revendiqué/le plus rapide). `lib/reglages.ts` (cache 5 min, service role), page server + `ReglagesClient` (recherche, filtres classe/transmission/⭐originaux, tri pertinence/rapides/utilisés, cartes code copiable). Liens Navbar + Footer. **Volontairement NON fait : le formulaire de valeurs détaillées du réglage** (les 3 points non validés de [[idee-section-reglages]]) + la modale « Partager/revendiquer un réglage » (LIVRÉE 18/06, commit 7a3a71e : `ShareTuneModal` — sélection voiture type-ahead, code, libellé, case ⭐ original ; POST /api/tune-setups ; ajout optimiste + toast) + d'éventuels votes (le classement se fait sur le meilleur temps obtenu, signal objectif). Voir [[idee-section-reglages]].
-8. **Duels** — étendre les objectifs 🎯 : *envoyer* un défi à un joueur (notif déjà en place), vainqueur déterminé auto. *« j'aime bien »*.
-9. **Config de la semaine** — combo voiture+classe+circuit mise en avant, page filtrant les temps sur cette config + fenêtre 7 j, badge au gagnant. *« à voir comment proposer »*.
-10. **Discord webhook** (pas un bot d'abord) — la détection de nouveau leader existe déjà dans `POST /api/times` → POST aussi vers une URL webhook Discord. *« à voir l'intégration »*.
+8. **Duels — LIVRÉ (18/06)** : table `duels` (migration `duels.sql`, RLS fermée), `lib/duels.ts` (DuelView), `/api/duels` (GET reçus+envoyés avec temps live/écart/meneur + RÉSOLUTION PARESSEUSE des duels échus → winner_id + notifs ; POST défi sur sa propre config, anti-doublon miroir ; PATCH accept/decline/cancel). `ChallengeButton` ⚔️ à côté de `TargetButton` (classements + profils). Page `/duels` + `DuelsClient` (sections reçus/en cours/envoyés/terminés, écart live + temps restant). Vainqueur = meilleur temps des deux à la date limite (défaut 7 j). Pas de cron : résolution au prochain GET d'un des deux joueurs.
+9. **Config de la semaine — LIVRÉ (18/06)** : table `weekly_config` (migration `config_semaine.sql`), `lib/configSemaine.ts` (config active = now ∈ fenêtre, classement = temps avec `recorded_at` dans la fenêtre, service role), page `/config-semaine` (server dynamic, classement médaillé + badge 👑), `/api/admin/config-semaine` (GET active+candidates triées par nb pilotes, POST pose) + onglet admin « ⭐ Config de la semaine ». L'admin choisit parmi les configs ayant déjà des temps. **NB sémantique** : un joueur doit (re)poser un temps PENDANT la fenêtre pour figurer au classement de la semaine.
+10. **Discord webhook — LIVRÉ (18/06)** : `lib/discord.ts` (`annoncerNouveauLeaderDiscord`, best-effort, embed rose) branché en `after()` dans le bloc « niveau 1 » de `notifierRecordBattu` (`POST /api/times`) = à chaque nouveau nº1 sur config exacte. URL via `DISCORD_WEBHOOK_URL` (no-op si absent). Pas de config en base, pas d'UI.
 12. **Écuries/équipes** — table `crews`, adhésion par code, classement d'équipe = somme des points (réutilise le RPC classement général groupé par écurie), tag écurie sur profil. *« comment intégrer ? »* — pertinent quand la communauté grandit.
 13. **Vérification de version du relais** (PAS un auto-updater : l'utilisateur a signalé le risque antivirus du download+remplacement d'exe). Au lancement, le relais compare sa version à la dernière release GitHub → bandeau « v1.12 dispo → [télécharger] ». Simple check, pas de download auto.
 
