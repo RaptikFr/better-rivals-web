@@ -580,10 +580,15 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const trackId = request.nextUrl.searchParams.get('track_id');
+    const trackIdParam = request.nextUrl.searchParams.get('track_id');
 
-    if (!trackId) {
+    if (!trackIdParam) {
       return NextResponse.json({ error: 'Paramètre track_id manquant.' }, { status: 400 });
+    }
+
+    const trackId = parseInt(trackIdParam, 10);
+    if (Number.isNaN(trackId)) {
+      return NextResponse.json({ error: 'track_id doit être un nombre.' }, { status: 400 });
     }
 
     // Récupère le meilleur temps par joueur sur ce circuit
@@ -596,7 +601,7 @@ export async function GET(request: NextRequest) {
         players ( pseudo ),
         cars ( manufacturer, name, year )
       `)
-      .eq('track_id', parseInt(trackId))
+      .eq('track_id', trackId)
       .order('time_ms', { ascending: true })
       .limit(100);
 

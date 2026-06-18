@@ -11,10 +11,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Paramètre ordinal manquant.' }, { status: 400 });
   }
 
+  const ordinalNum = parseInt(ordinal, 10);
+  if (Number.isNaN(ordinalNum)) {
+    return NextResponse.json({ error: 'ordinal doit être un nombre.' }, { status: 400 });
+  }
+
   const { data } = await supabaseAdmin
     .from('cars')
     .select('manufacturer, name, year')
-    .eq('car_ordinal', parseInt(ordinal))
+    .eq('car_ordinal', ordinalNum)
     .maybeSingle();
 
   // detail=true : le relais affiche le nom complet de la voiture courante

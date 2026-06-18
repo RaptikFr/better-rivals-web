@@ -1,6 +1,6 @@
 ---
 name: features-site-juin-2026
-description: 4 features site livrées le 17 juin ; récap hebdo email construit mais PAS encore activé en prod
+description: 4 features site livrées le 17 juin ; récap hebdo email ACTIVÉ (cron vercel.json + CRON_SECRET défini côté Vercel)
 metadata:
   type: project
 ---
@@ -12,7 +12,7 @@ Lot de 4 améliorations site livrées et poussées le 17 juin 2026 (après le `<
 3. **Image OG dynamique du profil** : `app/joueurs/[pseudo]/opengraph-image.tsx` (next/og). Complète l'OG `/api/og/classement` préexistant.
 4. **Récap hebdo email opt-in** : `lib/weeklyRecap.ts` + `/api/cron/weekly-recap`.
 
-**Récap hebdo — état au 17/06 soir :** migration `recap_hebdomadaire.sql` APPLIQUÉE ✅ ; planificateur Vercel Cron en place (`vercel.json`, lundi 18:00 UTC, commit b75b00b). **Reste UNIQUEMENT : définir l'env `CRON_SECRET` sur Vercel** (sans lui l'endpoint répond 401 → rien ne part ; Vercel injecte ce Bearer automatiquement dans ses appels cron). Tester avec `GET /api/cron/weekly-recap?dry=1` + `Authorization: Bearer <secret>` (liste sans envoyer).
+**Récap hebdo — ACTIVÉ (confirmé 18/06) :** migration `recap_hebdomadaire.sql` APPLIQUÉE ✅ ; cron Vercel en place (`vercel.json`, dimanche 18:00 UTC) ; `CRON_SECRET` défini côté Vercel ✅ (Vercel injecte ce Bearer dans ses appels cron). Plus rien en attente. Pour tester sans envoyer : `GET /api/cron/weekly-recap?dry=1` + `Authorization: Bearer <secret>`.
 
 Opt-in **dédié** voulu par l'utilisateur : case « Recevoir le récap hebdomadaire », distincte de `email_notifications_enabled`. Voir [[relais-serveur-et-rang]].
 
