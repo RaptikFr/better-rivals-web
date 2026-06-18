@@ -19,4 +19,10 @@ Points d'intégration relais → API (constantes ~ligne 96-99 de `relais_gui_v20
 
 **Idée « rang dans la réponse »** : renvoyer le rang du joueur dans la réponse `POST /api/times` pour afficher « 🥉 Tu es 3e ! » dans la popup. Maintenant débloqué (relais modifiable ici).
 
-**En cours — feature « objectif à battre »** (voir [[autonomie-pas-de-demande-autorisation]]) : cible = temps d'un pilote précis sur une config ; entrées classements + profil + page dédiée ; web d'abord puis affichage en jeu côté relais.
+**Procédure build + release du relais (faite le 18/06 pour v21 / release v1.11.0)** :
+- Renommer/bumper `relais_gui_vN.py` (header + ligne packaging + entrée changelog), bumper la version sémantique du site dans `app/telecharger/page.tsx` (2 occurrences « Télécharger v1.x.y »).
+- Deps build (Python 3.14 ici) : `python -m pip install requests keyring`. **PAS besoin de pywin32** — keyring utilise l'API Windows via ctypes (`WinVaultKeyring`), testé OK. C'est ce qui rend l'exe ~4 Mo plus léger que les anciens builds (qui embarquaient pywin32 inutilement).
+- Build : `python -m PyInstaller --onefile --noconsole --name BetterRivals relais_gui_vN.py` → `dist/BetterRivals.exe` (~15 Mo). Vérifier `build/BetterRivals/warn-*.txt` (aucun module critique manquant) + présence de `certifi/cacert.pem`, `tcl8/tk8`, `keyring.backends.Windows`.
+- Release : **`gh` n'est PAS installé** et **curl est bloqué par le sandbox** (HTTP 000) ; en revanche **python `requests` a accès réseau**. Donc piloter l'API GitHub en Python : token récupéré via `git credential fill` (c'est un PAT `ghp_…`), POST `/releases` (tag `v1.x.y`, name « Relais vN — … », target `main`) puis upload de l'asset `BetterRivals.exe` sur `upload_url`. Le site pointe sur `/releases/latest/download/BetterRivals.exe` → un vrai release (pas draft) met à jour « latest » automatiquement.
+
+**Feature « objectif à battre » (livrée 18/06)** (voir [[autonomie-pas-de-demande-autorisation]]) : cible = temps d'un pilote précis sur une config ; entrées classements + profil + page dédiée ; web d'abord puis affichage en jeu côté relais.
