@@ -1,11 +1,27 @@
 ---
 name: roadmap-idees-juin-2026
-description: Roadmap d'idées site/relais validées le 18/06 (télémétrie, réglages, social) ; #6 réglage du n°1 + #7 bibliothèque de réglages LIVRÉS
+description: Roadmap site/relais (18/06) — PAUSE, reprise sur PC fixe. LIVRÉ : #6 réglage n°1, #7 bibliothèque réglages+modale. RESTE : brique télémétrie (secteurs→delta→coach→copilote), pack social (duels/config semaine/webhook Discord), #4 régularité, #12 écuries, #13 check version relais. À TESTER : relais v1.11.0
 metadata:
   type: project
 ---
 
 Idées de features validées avec l'utilisateur le 18/06/2026 (il les a toutes commentées positivement). **Abandonnées : saisons/archives et détection auto du circuit** (ne pas reproposer). Tout le reste est à conserver.
+
+## ⏸️ ÉTAT AU 18/06 (pause demandée — reprise sur PC fixe)
+
+**✅ LIVRÉ & déployé :** #6 Réglage du n°1 · #7 Bibliothèque de réglages `/reglages` + modale Partager/revendiquer. (Plus tôt ce jour : feature **Objectifs à battre** 🎯 site+relais, release relais **v1.11.0**.)
+
+**🧪 EN ATTENTE DE TEST (sur PC fixe) :** le relais **v1.11.0** — vérifier (1) lancement + connexion, (2) envoi d'un chrono, (3) le 🎯 dans « Choisir un rival » pour une config posée comme objectif sur le site. Filet : la release v1.10.0 existe, on peut dépublier la v1.11.0 (latest repointe auto) si souci. Voir [[relais-serveur-et-rang]].
+
+**📋 RESTE À FAIRE (ordre suggéré) :**
+1. **Brique télémétrie** (gros chantier structurant) → dans l'ordre : **#2 secteurs** (1er livrable) → **#1 delta live** → **#3 coach** → **#5 copilote réglage**. Détails brique ci-dessous.
+2. **Pack social** (indépendant de la télémétrie, plus rapide) : **#8 duels**, **#9 config de la semaine**, **#10 webhook Discord**.
+3. **#4 score de régularité** (dépend de la brique télémétrie / multi-tours).
+4. **#12 écuries/équipes** (plutôt quand la communauté grandit).
+5. **#13 vérification de version du relais** (bandeau « nouvelle version dispo », sans auto-download).
+6. (Optionnel) **formulaire de valeurs détaillées du réglage** sur `/reglages` — bloqué par 3 décisions non tranchées, voir [[idee-section-reglages]].
+
+Détail de chaque idée ci-dessous.
 
 **🧱 Brique fondatrice — capture de trace télémétrique** (débloque 1+2+3+5 d'un coup) : le relais lit déjà ~60 Hz mais ne garde que le chrono. Idée : échantillonner **par distance** (~1 point/10-15 m, qq centaines de points/tour) → vitesse, accélérateur, frein, volant, glisse, temps écoulé. Stockage : table `lap_traces` (JSON compressé) liée au `lap_time`, envoyée par le relais sur un nouvel endpoint au nouveau record. **Séquence logique : secteurs → delta live → coach → copilote.**
 

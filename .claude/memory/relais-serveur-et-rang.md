@@ -5,9 +5,13 @@ metadata:
   type: project
 ---
 
-**CORRECTION (18/06) : le code du relais EST sur ce PC** — fichiers `relais_gui_v20.py` (actuel, v1.10.0) et `relais_v19.py` (ancien) à la racine. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution du relais est éditable ici.**
+**CORRECTION (18/06) : le code du relais EST sur ce PC** — fichier actuel `relais_gui_v21.py` (release **v1.11.0**, objectifs 🎯) à la racine. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution du relais est éditable ici.**
 
-⚠️ **MAIS `relais*.py` est GITIGNORÉ** (`.gitignore` : « Relais desktop … jamais envoyé sur GitHub »). Le relais n'est PAS versionné dans ce repo : éditer le `.py` modifie le fichier local, mais `git add/commit` ne le prend pas (et ne doit pas). Distribution = `BetterRivals.exe` reconstruit séparément à partir de ce `.py`. Donc après une modif relais : prévenir l'utilisateur qu'il doit rebuild/redéployer l'exe lui-même ; ne pas tenter de committer le relais.
+⚠️ **À TESTER (sur PC fixe, l'utilisateur n'a pas Forza sur le portable) :** le relais **v1.11.0** — lancement+connexion, envoi d'un chrono, et 🎯 dans « Choisir un rival » pour une config posée en objectif sur le site. Repli : dépublier la release v1.11.0 (latest repointe sur v1.10.0) en cas de souci de build.
+
+⚠️ **Le SOURCE `relais_gui_v21.py` n'existe QUE sur ce PC portable** (gitignoré → pas synchronisé sur le PC fixe). Le test desktop passe par l'exe **v1.11.0** téléchargeable depuis la release GitHub (≠ source). Toute future modif du SOURCE du relais doit se faire sur la machine qui a le `.py` (le portable), pas le fixe — ou copier le fichier manuellement.
+
+⚠️ **`relais*.py` est GITIGNORÉ** (`.gitignore` : « Relais desktop … jamais envoyé sur GitHub »). Le relais n'est PAS versionné dans ce repo : éditer le `.py` modifie le fichier local, mais `git add/commit` ne le prend pas (et ne doit pas). Distribution = `BetterRivals.exe` reconstruit séparément à partir de ce `.py`. Donc après une modif relais : prévenir l'utilisateur qu'il doit rebuild/redéployer l'exe lui-même ; ne pas tenter de committer le relais.
 
 Points d'intégration relais → API (constantes ~ligne 96-99 de `relais_gui_v20.py`) :
 - `POST /api/times` (envoi des chronos) — la réponse porte `is_new_record`, `id`, `previous_setup`.
