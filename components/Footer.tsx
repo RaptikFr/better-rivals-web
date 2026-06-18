@@ -17,6 +17,7 @@ const SECTIONS: { title: string; links: { href: string; label: string }[] }[] = 
       { href: '/epreuves-officielles', label: 'Épreuves officielles' },
       { href: '/epreuves-communaute',  label: 'Épreuves communauté' },
       { href: '/comparaison',          label: 'Comparaison' },
+      { href: '/reglages',             label: 'Réglages' },
       { href: '/stats',                label: 'Statistiques' },
     ],
   },

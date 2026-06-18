@@ -15,6 +15,7 @@ const navLinks = [
   { href: '/stats',              label: 'Stats'              },
   { href: '/voitures',           label: 'Voitures'           },
   { href: '/circuits',           label: 'Circuits'           },
+  { href: '/reglages',           label: 'Réglages'           },
   { href: '/telecharger',         label: 'Télécharger'        },
   { href: '/contact',            label: 'Contact'            },
 ];

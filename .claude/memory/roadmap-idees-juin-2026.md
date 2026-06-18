@@ -1,6 +1,6 @@
 ---
 name: roadmap-idees-juin-2026
-description: Roadmap d'idées site/relais validées le 18/06 (télémétrie, réglages, social) ; départ = « réglage du n°1 »
+description: Roadmap d'idées site/relais validées le 18/06 (télémétrie, réglages, social) ; #6 réglage du n°1 LIVRÉ, #7 bibliothèque de réglages EN COURS
 metadata:
   type: project
 ---
@@ -15,8 +15,8 @@ Idées (numérotation d'origine conservée) :
 3. **Coach post-tour** — analyse trace : freinage tôt/tard, patinage, sous/survirage → rapport. *« j'adore »*.
 4. **Score de régularité** — variance entre tours + badge « métronome ». *« oui »*.
 5. **Copilote de réglage** — mêmes symptômes que le coach mappés vers des DIRECTIONS de réglage (« assouplis l'antiroulis avant »…). PAS un auto-tune (Forza n'expose pas le tune en télémétrie, le relais ne peut pas écrire de réglage). *« oui, un copilote »*.
-6. **⭐ Réglage du n°1** — afficher le `share_code` du meilleur temps au niveau de chaque config (la donnée existe déjà : `lap_times.share_code` + `setup_author`). **DÉPART CHOISI (en cours)** : la version par-ligne existe déjà via `TuneCell` (colonne optionnelle `cols.tune`, sans auteur) ; la valeur ajoutée = ligne « 🔧 Réglage du n°1 » au niveau config (toujours visible, même replié) + auteur crédité. Nécessite d'ajouter `setup_author` au select de `ClassementsClient` + au type `LapTime` + un composant `LeaderTuneCell`.
-7. **Bibliothèque de réglages** — notes/votes sur `tune_setups` (table existe déjà) + page « meilleurs réglages par voiture+circuit ». *« j'aimerais bien »*.
+6. **⭐ Réglage du n°1 — LIVRÉ (18/06, commit 571cc55)** : ligne « 🔧 Réglage du n°1 » sous l'en-tête de chaque config (toujours visible même replié), code copiable + auteur crédité. Composant `LeaderTuneCell` dans `classementsShared`, câblé dans `RankingViews` (vues tableau + cartes) ; `setup_author` ajouté au select de `ClassementsClient` (partagé avec classements-communauté).
+7. **Bibliothèque de réglages — EN COURS (démarré 18/06)** — notes/votes sur `tune_setups` (table existe déjà) + page « meilleurs réglages par voiture+circuit ». *« j'aimerais bien »*. Voir aussi [[idee-section-reglages]].
 8. **Duels** — étendre les objectifs 🎯 : *envoyer* un défi à un joueur (notif déjà en place), vainqueur déterminé auto. *« j'aime bien »*.
 9. **Config de la semaine** — combo voiture+classe+circuit mise en avant, page filtrant les temps sur cette config + fenêtre 7 j, badge au gagnant. *« à voir comment proposer »*.
 10. **Discord webhook** (pas un bot d'abord) — la détection de nouveau leader existe déjà dans `POST /api/times` → POST aussi vers une URL webhook Discord. *« à voir l'intégration »*.
