@@ -5,7 +5,9 @@ metadata:
   type: project
 ---
 
-**CORRECTION (18/06) : le code du relais EST dans ce repo / sur ce PC.** Fichiers `relais_gui_v20.py` (actuel, v1.10.0, publié commit 5eed71f) et `relais_v19.py` (ancien) à la racine. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution touchant le relais EST faisable ici** (mon ancienne note disait l'inverse — c'était faux).
+**CORRECTION (18/06) : le code du relais EST sur ce PC** — fichiers `relais_gui_v20.py` (actuel, v1.10.0) et `relais_v19.py` (ancien) à la racine. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution du relais est éditable ici.**
+
+⚠️ **MAIS `relais*.py` est GITIGNORÉ** (`.gitignore` : « Relais desktop … jamais envoyé sur GitHub »). Le relais n'est PAS versionné dans ce repo : éditer le `.py` modifie le fichier local, mais `git add/commit` ne le prend pas (et ne doit pas). Distribution = `BetterRivals.exe` reconstruit séparément à partir de ce `.py`. Donc après une modif relais : prévenir l'utilisateur qu'il doit rebuild/redéployer l'exe lui-même ; ne pas tenter de committer le relais.
 
 Points d'intégration relais → API (constantes ~ligne 96-99 de `relais_gui_v20.py`) :
 - `POST /api/times` (envoi des chronos) — la réponse porte `is_new_record`, `id`, `previous_setup`.
