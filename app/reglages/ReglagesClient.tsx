@@ -3,32 +3,64 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePreferences } from '@/hooks/usePreferences';
+import { usePlayer } from '@/hooks/usePlayer';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
+import { ShareTuneModal } from './ShareTuneModal';
 import type { ReglageEntry } from '@/lib/reglages';
 import type { Drivetrain } from '@/types/supabase';
+
+const normCode = (s: string) => s.trim().toUpperCase().replace(/\s+/g, ' ');
 
 const CLASS_ORDER = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R', 'X'];
 type Sort = 'pertinence' | 'rapides' | 'utilises';
 
 export default function ReglagesClient({ reglages }: { reglages: ReglageEntry[] }) {
   const { formatTime } = usePreferences();
+  const { player } = usePlayer();
+  // Liste locale : permet l'ajout optimiste après partage (le cache serveur
+  // de /reglages se rafraîchit au plus toutes les 5 min).
+  const [list,          setList]          = useState(reglages);
+  const [shareOpen,     setShareOpen]     = useState(false);
+  const [toast,         setToast]         = useState<string | null>(null);
   const [search,        setSearch]        = useState('');
   const [filterClass,   setFilterClass]   = useState('Toutes');
   const [filterDt,      setFilterDt]      = useState<'Tous' | Drivetrain>('Tous');
   const [originalsOnly, setOriginalsOnly] = useState(false);
   const [sort,          setSort]          = useState<Sort>('pertinence');
 
+  function handleShared(entry: ReglageEntry) {
+    setList(prev => {
+      const i = prev.findIndex(e => e.carOrdinal === entry.carOrdinal && normCode(e.shareCode) === normCode(entry.shareCode));
+      if (i >= 0) {
+        // Le code existe déjà (dérivé d'un temps) : on y applique la revendication.
+        const next = [...prev];
+        next[i] = {
+          ...next[i],
+          label:         entry.label ?? next[i].label,
+          isOriginal:    entry.isOriginal || next[i].isOriginal,
+          author:        entry.authorClaimed ? entry.author : next[i].author,
+          authorClaimed: entry.authorClaimed || next[i].authorClaimed,
+        };
+        return next;
+      }
+      return [entry, ...prev];
+    });
+    setShareOpen(false);
+    setToast('Réglage partagé ! Il apparaîtra pour tous dans la bibliothèque sous peu.');
+    setTimeout(() => setToast(null), 4000);
+  }
+
   // Facettes disponibles, dérivées des données.
   const classesDispo = useMemo(() => {
     const s = new Set<string>();
-    reglages.forEach(r => r.classes.forEach(c => s.add(c)));
+    list.forEach(r => r.classes.forEach(c => s.add(c)));
     return CLASS_ORDER.filter(c => s.has(c));
-  }, [reglages]);
+  }, [list]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const out = reglages.filter(r => {
+    const out = list.filter(r => {
       if (originalsOnly && !r.isOriginal) return false;
       if (filterClass !== 'Toutes' && !r.classes.includes(filterClass)) return false;
       if (filterDt !== 'Tous' && !r.drivetrains.includes(filterDt)) return false;
@@ -46,18 +78,38 @@ export default function ReglagesClient({ reglages }: { reglages: ReglageEntry[] 
     }
     // 'pertinence' : conserve l'ordre serveur (originaux d'abord).
     return out;
-  }, [reglages, search, filterClass, filterDt, originalsOnly, sort]);
+  }, [list, search, filterClass, filterDt, originalsOnly, sort]);
 
   return (
     <main className="min-h-screen p-6">
       <div className="max-w-screen-xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">🔧 Bibliothèque de réglages</h1>
-          <p className="text-neutral-500 max-w-2xl">
-            Les réglages (tunes) partagés par la communauté, par modèle de voiture. Copie un code, va l’appliquer
-            dans Forza, et chasse le meilleur temps obtenu avec.
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">🔧 Bibliothèque de réglages</h1>
+            <p className="text-neutral-500 max-w-2xl">
+              Les réglages (tunes) partagés par la communauté, par modèle de voiture. Copie un code, va l’appliquer
+              dans Forza, et chasse le meilleur temps obtenu avec.
+            </p>
+          </div>
+          {player && (
+            <button
+              onClick={() => setShareOpen(true)}
+              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold text-white bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-90 transition-opacity"
+            >
+              + Partager un réglage
+            </button>
+          )}
         </div>
+
+        {toast && (
+          <div className="mb-5 bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-3 text-green-600 dark:text-green-400 text-sm font-semibold">
+            {toast}
+          </div>
+        )}
+
+        {shareOpen && player && (
+          <ShareTuneModal myPseudo={player.pseudo} onClose={() => setShareOpen(false)} onShared={handleShared} />
+        )}
 
         {/* Filtres */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
