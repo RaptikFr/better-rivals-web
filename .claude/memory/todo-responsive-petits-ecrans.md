@@ -1,6 +1,6 @@
 ---
 name: todo-responsive-petits-ecrans
-description: "À FAIRE prochaine session : sur petits écrans (~17 pouces) on doit scroller horizontalement pour tout voir. Le mettre sur 2 lignes, ou regrouper des éléments dans un menu déroulant pour gagner de la place"
+description: "À FAIRE prochaine session : la NAVBAR déborde sur petits écrans (~17 pouces) → scroll horizontal. La passer sur 2 lignes, ou regrouper des liens dans un menu déroulant pour gagner de la place"
 metadata: 
   node_type: memory
   type: project
@@ -9,12 +9,10 @@ metadata:
 
 **Demandé par le proprio le 19/06 (à traiter la prochaine session).**
 
-**Problème** : sur des écrans « petits » (genre 17 pouces), il faut **scroller horizontalement** pour voir tout le contenu. 
+**Zone CONFIRMÉE = la NAVBAR** (le proprio a précisé le 19/06). Sur des écrans « petits » (~17 pouces), la barre de navigation **déborde et oblige à scroller horizontalement**. La vue tableau des classements n'est PAS concernée (le proprio ne l'a pas regardée mais ne pense pas que ce soit nécessaire — à ne traiter que si on le constate).
 
 **Pistes proposées par le proprio** :
-1. Faire **passer sur 2 lignes** (wrap) au lieu d'un défilement horizontal.
-2. OU regrouper certains éléments dans un **menu déroulant** pour gagner de la place.
+1. Faire **passer la navbar sur 2 lignes** (wrap) au lieu d'un défilement horizontal.
+2. OU regrouper certains liens dans un **menu déroulant** (type « Plus ▾ ») pour gagner de la place.
 
-**À confirmer en début de session : QUELLE zone exactement** (le proprio n'a pas précisé). Candidat le plus probable = la **vue tableau des classements** (`app/classements/RankingViews.tsx`, `RankingTableView`) : elle a beaucoup de colonnes (classement, pseudo, temps, ancien temps, diff, écarts leader/préc/suiv, PI, réglage, actions) dans un conteneur `overflow-x-auto` → d'où le scroll horizontal. Autres candidats possibles : la barre de filtres des classements, ou la navbar. **Demander/vérifier avant d'agir.**
-
-**Note** : les colonnes du tableau sont déjà configurables via les préférences (`prefs.tableColumns`, voir [[idee-panneau-options]]) — une partie de la largeur dépend donc des colonnes activées. La solution responsive doit cohabiter avec ça.
+**Où** : composant navbar = `components/Navbar*` (à localiser : chercher la barre de nav avec les liens Classements / Circuits / Voitures / Réglages / Duels / Config semaine / etc. — beaucoup de liens ajoutés au fil des features, d'où le débordement). Vérifier d'abord comment elle gère déjà le mobile (probablement un menu burger en dessous d'un breakpoint) : le souci est sans doute la plage « tablette/petit laptop » entre le burger mobile et le grand écran.
