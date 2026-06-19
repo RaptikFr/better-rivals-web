@@ -1,6 +1,7 @@
 # Mémoire — Better Rivals Web
 
 - [Identification machine](identification-machine.md) — portable vs fixe via `$env:COMPUTERNAME` (portable = `PC-RENAUD`) ; crucial car le relais est gitignoré (risque divergence)
+- [Feature secteurs](feature-secteurs.md) — brique télémétrie #2 : temps par secteurs + tour théorique. Forza n'expose PAS les checkpoints → reconstruits par distance (N variable). Code LIVRÉ 19/06 ; reste : appliquer migration `secteurs.sql` + valider offset 292 en jeu + release relais v1.12.0
 
 - [Autonomie sans demande d'autorisation](autonomie-pas-de-demande-autorisation.md) — agir directement (modifs, commits, push, installs) sans demander
 - [Lint zéro warning](lint-zero-warning.md) — viser `eslint .` → 0 ; règle react-hooks/set-state-in-effect = disables ciblés justifiés

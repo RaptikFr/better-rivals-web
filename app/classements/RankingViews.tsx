@@ -8,7 +8,7 @@ import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 import type { Preferences } from '@/lib/preferences';
 import { TargetButton } from '@/components/TargetButton';
 import { ChallengeButton } from '@/components/ChallengeButton';
-import { TuneCell, LeaderTuneCell, type CircuitGroup, type LapTime, type RankedLap, type SubGroup } from './classementsShared';
+import { TuneCell, LeaderTuneCell, TheoreticalLapBanner, type CircuitGroup, type LapTime, type RankedLap, type SubGroup } from './classementsShared';
 
 // Ligne « Réglage du n°1 » sous l'en-tête d'une config, si le leader a renseigné
 // un code de réglage. Le leader est le 1er temps (laps triés par temps croissant).
@@ -112,6 +112,8 @@ export function RankingTableView({
 
                   {/* Tableau en colonnes — visible si la config est dépliée */}
                   {isOpen && (
+                    <>
+                    <TheoreticalLapBanner laps={group.laps} />
                     <div className="overflow-x-auto pb-2">
                       <table className="w-full text-sm border-collapse">
                         <thead>
@@ -213,6 +215,7 @@ export function RankingTableView({
                         </tbody>
                       </table>
                     </div>
+                    </>
                   )}
                 </div>
               );
@@ -280,6 +283,7 @@ export function RankingCardView({
                 </button>
 
                 {leaderTune(group)}
+                {openGroups.has(group.key) && <TheoreticalLapBanner laps={group.laps} />}
 
                 {/* Liste des temps — visible si ouvert.
                     Lignes empilées en carte sur mobile, alignées en

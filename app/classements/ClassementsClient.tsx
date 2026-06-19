@@ -156,7 +156,7 @@ export default function ClassementsClient({
       let query = supabase
         .from('lap_times')
         .select(`
-          id, time_ms, previous_time_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id, share_code, setup_author,
+          id, time_ms, previous_time_ms, sectors_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id, share_code, setup_author,
           players ( pseudo, discord_tag:discord_tag_public ),
           cars ( manufacturer, name, year ),
           tracks ( name, length_km, type, is_sprint )

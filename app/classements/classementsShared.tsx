@@ -17,6 +17,9 @@ export interface LapTime {
   share_code: string | null;
   setup_author: string | null;
   previous_time_ms: number | null;
+  // Durées de chaque secteur (ms), reconstruites par le relais via la distance.
+  // null pour les tours posés avant la feature ou par un vieux relais.
+  sectors_ms: number[] | null;
   players: { pseudo: string; discord_tag: string | null } | null;
   cars: { manufacturer: string | null; name: string; year: number | null } | null;
   tracks: { name: string; length_km: number | null; type: string | null; is_sprint: boolean | null } | null;
@@ -104,6 +107,80 @@ export function LeaderTuneCell({ shareCode, author }: { shareCode: string; autho
       {author && (
         <span className="text-neutral-500 whitespace-nowrap truncate">par {author}</span>
       )}
+    </div>
+  );
+}
+
+// ── Tour théorique (brique télémétrie #2) ──
+// Combine les MEILLEURS secteurs parmi tous les pilotes d'une même config pour
+// reconstituer le tour parfait atteignable. Ne compare que les tours ayant le
+// même nombre de secteurs (les bornes de découpe diffèrent sinon) — en pratique
+// tous les tours d'un circuit ont le même N, déduit de sa longueur.
+export interface TheoreticalLap {
+  totalMs:    number;
+  sectors:    number[];            // meilleur temps par index de secteur
+  holders:    (string | null)[];   // pseudo détenteur de chaque meilleur secteur
+  realBestMs: number;              // meilleur temps réel parmi ceux à secteurs
+  count:      number;              // nb de pilotes éligibles (même N)
+}
+
+export function computeTheoretical(laps: LapTime[]): TheoreticalLap | null {
+  const avecSecteurs = laps.filter(l => Array.isArray(l.sectors_ms) && l.sectors_ms.length >= 2);
+  if (avecSecteurs.length === 0) return null;
+
+  const tries = [...avecSecteurs].sort((a, b) => a.time_ms - b.time_ms);
+  const n = tries[0].sectors_ms!.length;
+  const eligibles = avecSecteurs.filter(l => l.sectors_ms!.length === n);
+
+  const best: number[] = Array(n).fill(Infinity);
+  const holders: (string | null)[] = Array(n).fill(null);
+  for (const l of eligibles) {
+    l.sectors_ms!.forEach((s, i) => {
+      if (s > 0 && s < best[i]) { best[i] = s; holders[i] = l.players?.pseudo ?? null; }
+    });
+  }
+  if (best.some(v => !Number.isFinite(v))) return null;
+
+  const totalMs = best.reduce((a, b) => a + b, 0);
+  return { totalMs, sectors: best, holders, realBestMs: tries[0].time_ms, count: eligibles.length };
+}
+
+// Bannière compacte sous l'en-tête d'une config : tour théorique + gain vs
+// meilleur réel + détail des secteurs (détenteur en infobulle). Rien si aucun
+// tour de la config n'a de données de secteurs.
+export function TheoreticalLapBanner({ laps }: { laps: LapTime[] }) {
+  const { formatTime, prefs } = usePreferences();
+  const theo = computeTheoretical(laps);
+  if (!theo) return null;
+
+  const decSep = prefs.decimalSep === 'comma' ? ',' : '.';
+  const gain   = theo.realBestMs - theo.totalMs;
+
+  return (
+    <div className="px-4 py-2 text-xs bg-sky-500/[0.06] border-t border-sky-500/20">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="font-bold text-sky-600 dark:text-sky-400 whitespace-nowrap">🧮 Tour théorique</span>
+        <span className="font-mono font-bold text-neutral-800 dark:text-neutral-100">{formatTime(theo.totalMs)}</span>
+        {gain > 0 && (
+          <span className="font-mono text-emerald-500" title="Gain par rapport au meilleur temps réel de la config">
+            −{(gain / 1000).toFixed(3).replace('.', decSep)}s vs meilleur réel
+          </span>
+        )}
+        <span className="text-neutral-500">
+          · meilleurs secteurs combinés{theo.count > 1 ? ` de ${theo.count} pilotes` : ''}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1 mt-1.5">
+        {theo.sectors.map((s, i) => (
+          <span
+            key={i}
+            title={theo.holders[i] ? `Secteur ${i + 1} — ${theo.holders[i]}` : `Secteur ${i + 1}`}
+            className="font-mono px-1.5 py-0.5 rounded bg-neutral-200/70 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300"
+          >
+            S{i + 1} {formatTime(s)}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

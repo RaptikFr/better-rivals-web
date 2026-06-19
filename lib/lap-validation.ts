@@ -55,3 +55,41 @@ export function plusRapideQueRecord(timeMs: number, worldRecordMs: number | null
   if (!worldRecordMs) return false; // pas de référence → on ne juge pas
   return timeMs < worldRecordMs * 0.985;
 }
+
+// Bornes sur le nombre de secteurs acceptées par le serveur. Le relais découpe
+// par distance (min 5, plafonné à 20) ; on tolère 2→30 pour rester souple sans
+// laisser passer un tableau aberrant.
+const SECTEURS_MIN = 2;
+const SECTEURS_MAX = 30;
+
+/**
+ * Valide et normalise les temps par secteurs envoyés par le relais (brique
+ * télémétrie #2). Forza n'expose pas de checkpoint : le relais reconstruit les
+ * secteurs par distance, leur NOMBRE dépend de la longueur du tracé. On attend
+ * donc un TABLEAU de durées (une par secteur, en secondes, pas le cumul), de
+ * longueur variable. Les secteurs sont un bonus facultatif — toute anomalie
+ * renvoie `null` (on stocke alors NULL sans rejeter le chrono).
+ *
+ * Garde-fous : entre SECTEURS_MIN et SECTEURS_MAX nombres finis positifs, et
+ * somme cohérente avec le temps du tour (tolérance 3 % ou 1 s, le plus large).
+ * Renvoie les durées en millisecondes entières.
+ */
+export function secteursValides(
+  sectors: unknown,
+  lapTimeMs: number,
+): number[] | null {
+  if (!Array.isArray(sectors)) return null;
+  if (sectors.length < SECTEURS_MIN || sectors.length > SECTEURS_MAX) return null;
+
+  const ms = sectors.map(s => {
+    const n = Number(s);
+    return Number.isFinite(n) && n > 0 ? Math.round(n * 1000) : NaN;
+  });
+  if (ms.some(v => Number.isNaN(v))) return null;
+
+  const somme = ms.reduce((a, b) => a + b, 0);
+  const tolerance = Math.max(lapTimeMs * 0.03, 1000);
+  if (Math.abs(somme - lapTimeMs) > tolerance) return null;
+
+  return ms;
+}

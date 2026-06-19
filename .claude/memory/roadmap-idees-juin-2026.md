@@ -21,7 +21,7 @@ Idées de features validées avec l'utilisateur le 18/06/2026 (il les a toutes c
 - Reste optionnel côté proprio : aller dans **/admin → ⭐ Config de la semaine** poser la 1re config (liste des configs ayant des temps, triées par nb de pilotes) pour inaugurer le défi hebdo.
 
 **📋 RESTE À FAIRE (ordre suggéré) :**
-1. **Brique télémétrie** (gros chantier structurant) → dans l'ordre : **#2 secteurs** (1er livrable) → **#1 delta live** → **#3 coach** → **#5 copilote réglage**. Détails brique ci-dessous.
+1. **Brique télémétrie** (gros chantier structurant) → **#2 secteurs = CODE LIVRÉ le 19/06** (voir [[feature-secteurs]] ; reste : appliquer migration `secteurs.sql` + valider offset distance 292 en jeu + release relais v1.12.0). Forza n'expose PAS de checkpoint → secteurs reconstruits par distance, N variable (min 5). Suite : **#1 delta live** → **#3 coach** → **#5 copilote réglage**. Détails brique ci-dessous.
 2. ~~**Pack social**~~ : **LIVRÉ le 18/06** (#8 duels, #9 config de la semaine, #10 webhook Discord — voir actions propriétaire ci-dessus).
 3. **#4 score de régularité** (dépend de la brique télémétrie / multi-tours).
 4. **#12 écuries/équipes** (plutôt quand la communauté grandit).

@@ -10,6 +10,7 @@ import {
   identifiantsValides,
   tempsDansBornes,
   plusRapideQueRecord,
+  secteursValides,
 } from '@/lib/lap-validation';
 
 export const dynamic = 'force-dynamic';
@@ -472,7 +473,7 @@ export async function POST(request: NextRequest) {
       car_id, track_id, lap_time, is_valid,
       drivetrain, car_class, car_pi, num_cylinders,
       car_manufacturer, car_name, car_year,
-      is_sprint,
+      is_sprint, sectors,
     } = body;
 
     if (!is_valid) {
@@ -486,6 +487,10 @@ export async function POST(request: NextRequest) {
     const newTimeMs     = Math.round(Number(lap_time) * 1000);
     const numTrackId    = parseInt(track_id);
     const numCarOrdinal = parseInt(car_id);
+
+    // Secteurs facultatifs (relais ≥ v1.12). null si absents/incohérents :
+    // on n'écrit alors rien (colonnes nullables), sans rejeter le chrono.
+    const secteurs = secteursValides(sectors, newTimeMs);
 
     if (!identifiantsValides({ trackId: numTrackId, carOrdinal: numCarOrdinal, timeMs: newTimeMs })) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
@@ -618,7 +623,13 @@ export async function POST(request: NextRequest) {
           }]),
           supabaseAdmin
             .from('lap_times')
-            .update({ time_ms: newTimeMs, verified: is_valid, car_pi, num_cylinders, previous_time_ms: existingTime.time_ms, recorded_at: new Date().toISOString() })
+            .update({
+              time_ms: newTimeMs, verified: is_valid, car_pi, num_cylinders,
+              previous_time_ms: existingTime.time_ms, recorded_at: new Date().toISOString(),
+              // Secteurs du nouveau meilleur tour ; remis à NULL si non fournis,
+              // pour ne pas garder ceux d'un tour précédent désormais battu.
+              sectors_ms: secteurs,
+            })
             .eq('id', existingTime.id)
             .select(),
         ]);
@@ -652,6 +663,7 @@ export async function POST(request: NextRequest) {
           car_class,
           car_pi,
           num_cylinders,
+          sectors_ms:   secteurs,
         }])
         .select();
 

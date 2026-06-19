@@ -195,6 +195,7 @@ export type Database = {
           player_id: string
           previous_time_ms: number | null
           recorded_at: string
+          sectors_ms: number[] | null
           setup_author: string | null
           share_code: string | null
           time_ms: number
@@ -213,6 +214,7 @@ export type Database = {
           player_id: string
           previous_time_ms?: number | null
           recorded_at?: string
+          sectors_ms?: number[] | null
           setup_author?: string | null
           share_code?: string | null
           time_ms: number
@@ -231,6 +233,7 @@ export type Database = {
           player_id?: string
           previous_time_ms?: number | null
           recorded_at?: string
+          sectors_ms?: number[] | null
           setup_author?: string | null
           share_code?: string | null
           time_ms?: number
