@@ -27,4 +27,4 @@ Quand il n'y a pas de PAT de management Supabase sur la machine (cas du portable
 
 **Limite** : les migrations purement RLS / data (renommages, audits, inserts world_records) ne sont pas testables ainsi. Les recouper avec les mémoires de features.
 
-**Constat 19/06** : toutes les migrations de `supabase/migrations/` sont appliquées SAUF `track_best_times_rpc.sql` (créée le 19/06, optionnelle, repli JS actif). Voir [[todo-proprio-delta-live]].
+**Constat 19/06** : TOUTES les migrations de `supabase/migrations/` sont appliquées (y compris `track_best_times_rpc.sql`, appliquée par le proprio le 19/06). État détaillé par fichier dans `supabase/migrations/README.md`.
