@@ -1,6 +1,6 @@
 ---
 name: feature-trace-telemetrie
-description: "Brique FONDATRICE télémétrie : capture de trace d'un tour (lap_traces) par le relais, échantillonnée par distance. Débloque #1 delta live, #3 coach, #5 copilote. Fondation LIVRÉE (code) 19/06 ; reste : appliquer lap_traces.sql + valider offsets en jeu + release v1.13.0, PUIS bâtir delta live"
+description: "Brique FONDATRICE télémétrie : capture de trace d'un tour (lap_traces) par le relais, échantillonnée par distance. Débloque #1 delta live, #3 coach, #5 copilote. LIVRÉE + DÉPLOYÉE 19/06 (migration appliquée, release relais v1.13.0). Reste : valider offsets en jeu, PUIS bâtir #1 delta live"
 metadata: 
   node_type: memory
   type: project
@@ -18,10 +18,10 @@ metadata:
 - **Relais** (`relais_gui_v21.py`, `APP_VERSION=1.13.0`) : classe `TraceRecorder` (alimentée à chaque paquet en mode circuit, comme `SectorTracker`). Offsets ajoutés (mêmes +12, ⚠ NON validés) : Speed 256 (m/s), Accel 315, Brake 316, Steer 320. Upload best-effort en thread dans `_traiter_reponse_succes` quand `is_new_record` + `trace_pour(best_s)` correspond (POST /api/traces avec le `lap_id` renvoyé par /api/times). Jamais bloquant. Simulé OK (481 points pour un tour de 6 km à 12 m).
 - Build + tsc + eslint OK.
 
-**RESTE À FAIRE :**
-1. Appliquer `lap_traces.sql` dans le SQL Editor Supabase.
-2. Build + release relais **v1.13.0** (bumper `/telecharger`). Procédure : [[relais-serveur-et-rang]].
-3. ⚠️ **Valider les offsets en jeu** (distance 292 + speed/accel/brake/steer). En réalité, **la même validation que les secteurs** : si l'offset distance 292 est bon, la trace l'est aussi. Vérifier qu'une ligne `lap_traces` se crée après un record et que les valeurs sont plausibles (vitesse, % accel/frein).
-4. **PUIS bâtir #1 delta live** : GET /api/traces (récupérer la trace de référence = PB du joueur sur la config), chargée par le relais à la sélection ; overlay « +0,3s vs PB » par interpolation du temps de référence à distance égale. Voir [[feature-secteurs]] pour la séquence brique.
+**FAIT** : ✅ `lap_traces.sql` appliquée par le proprio (19/06). ✅ **release relais v1.13.0 publiée** (19/06, buildée sur le portable, exe 14,5 Mo, latest pointe dessus, `/telecharger` bumpé v1.13.0 commit da17fba).
+
+**RESTE :**
+1. ⚠️ **Valider les offsets en jeu** (distance 292 + speed/accel/brake/steer). **Même validation que les secteurs** : si distance 292 est bon, la trace l'est aussi. Vérifier qu'une ligne `lap_traces` se crée après un record (mode circuit) et que les valeurs sont plausibles (vitesse, % accel/frein, point_count ≈ longueur/12).
+2. **PUIS bâtir #1 delta live** : GET /api/traces (récupérer la trace de référence = PB du joueur sur la config), chargée par le relais à la sélection ; overlay « +0,3s vs PB » par interpolation du temps de référence à distance égale. Voir [[feature-secteurs]] pour la séquence brique.
 
 **Pas encore fait (volontairement, séquencé)** : le GET de référence + l'overlay delta live (#1), et toute visualisation de trace côté site (coach #3).

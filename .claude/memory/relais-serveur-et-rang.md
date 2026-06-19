@@ -1,6 +1,6 @@
 ---
 name: relais-serveur-et-rang
-description: "Relais Python relais_gui_v21.py (gitignoré, sur fixe+portable). Dernière release v1.12.0 (secteurs) publiée 19/06 depuis le PORTABLE → ⚠️ portable = source à jour (v1.12.0), fixe en retard (v1.11.1). gh absent du portable → release via fallback Python/requests+git credential"
+description: "Relais Python relais_gui_v21.py (gitignoré, sur fixe+portable). Dernière release v1.13.0 (trace télémétrie) publiée 19/06 depuis le PORTABLE → ⚠️ portable = source à jour (v1.13.0), fixe en retard (v1.11.1). gh absent du portable → release via fallback Python/requests+git credential"
 metadata: 
   node_type: memory
   type: project
@@ -9,7 +9,9 @@ metadata:
 
 **Le code du relais existe sur LES DEUX machines** (fixe + portable) — fichier `relais_gui_v21.py` à la racine, gitignoré. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution du relais est éditable ici** (py_compile dispo en local pour le check syntaxe).
 
-⚠️⚠️ **DIVERGENCE DE SOURCE AU 19/06 : le PORTABLE est la copie la plus à jour (v1.12.0), le FIXE est EN RETARD (v1.11.1).** Les v1.11.2 (#13) PUIS v1.12.0 (secteurs) ont été développées+buildées+publiées **sur le PORTABLE** (`PC-RENAUD`, Python 3.14, `gh` absent → release via fallback requests, exe 14,5 Mo). **Avant toute prochaine modif relais sur le fixe : recopier d'abord `relais_gui_v21.py` du portable vers le fixe**, sinon ça diverge pour de bon. Pour savoir sur quelle machine on est : [[identification-machine]].
+⚠️⚠️ **DIVERGENCE DE SOURCE AU 19/06 : le PORTABLE est la copie la plus à jour (v1.13.0), le FIXE est EN RETARD (v1.11.1).** Les v1.11.2 (#13), v1.12.0 (secteurs) PUIS v1.13.0 (trace télémétrie) ont été développées+buildées+publiées **sur le PORTABLE** (`PC-RENAUD`, Python 3.14, `gh` absent → release via fallback requests, exe 14,5 Mo). **Avant toute prochaine modif relais sur le fixe : recopier d'abord `relais_gui_v21.py` du portable vers le fixe**, sinon ça diverge pour de bon. Pour savoir sur quelle machine on est : [[identification-machine]].
+
+✅ **RELEASE v1.13.0 PUBLIÉE (19/06, depuis le PORTABLE)** — fondation **trace télémétrique**. `APP_VERSION="1.13.0"`. `TraceRecorder` (échantillonnage par distance 12 m : distance/temps/vitesse/accel/frein/volant), upload sur POST /api/traces au nouveau record (best-effort). Offsets ajoutés Speed 256/Accel 315/Brake 316/Steer 320 (⚠️ à valider en jeu, mêmes que distance). `/telecharger` bumpé v1.12.0→v1.13.0 (commit da17fba). latest pointe dessus. Détails : [[feature-trace-telemetrie]].
 
 ✅ **RELEASE v1.12.0 PUBLIÉE (19/06, depuis le PORTABLE)** — feature **secteurs** (brique télémétrie #2). `APP_VERSION="1.12.0"`. `SectorTracker` + offset `DistanceTraveled` 292 (⚠️ à valider en jeu), payload `sectors` facultatif. `/telecharger` bumpé v1.11.2→v1.12.0 (commit 371cf14). latest pointe dessus. Détails complets : [[feature-secteurs]].
 
