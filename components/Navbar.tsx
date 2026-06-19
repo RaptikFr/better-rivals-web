@@ -9,16 +9,23 @@ import { isAdmin } from '@/lib/admins';
 import { dateRelative } from '@/lib/dateRelative';
 import GlobalSearch from '@/components/GlobalSearch';
 
+// Liens principaux : toujours visibles dans la barre desktop.
 const navLinks = [
   { href: '/comparaison',        label: 'Comparer'           },
   { href: '/classement-general', label: 'Classement général' },
-  { href: '/config-semaine',     label: '⭐ Config de la semaine' },
-  { href: '/stats',              label: 'Stats'              },
   { href: '/voitures',           label: 'Voitures'           },
   { href: '/circuits',           label: 'Circuits'           },
   { href: '/reglages',           label: 'Réglages'           },
-  { href: '/telecharger',         label: 'Télécharger'        },
-  { href: '/contact',            label: 'Contact'            },
+];
+
+// Liens secondaires : regroupés dans le menu « Plus ▾ » en desktop
+// (pour éviter que la barre déborde sur les petits écrans). En mobile,
+// ils restent listés normalement dans le menu burger.
+const PLUS_LINKS = [
+  { href: '/config-semaine', label: '⭐ Config de la semaine' },
+  { href: '/stats',          label: 'Stats'                   },
+  { href: '/telecharger',    label: 'Télécharger'             },
+  { href: '/contact',        label: 'Contact'                 },
 ];
 
 const EPREUVES_LINKS = [
@@ -39,10 +46,12 @@ export default function Navbar() {
   const [bellOpen,        setBellOpen]        = useState(false);
   const [epreuvesOpen,    setEpreuvesOpen]    = useState(false);
   const [classementsOpen, setClassementsOpen] = useState(false);
+  const [plusOpen,        setPlusOpen]        = useState(false);
   const [mobileOpen,      setMobileOpen]      = useState(false);
   const bellRef        = useRef<HTMLDivElement>(null);
   const epreuvesRef    = useRef<HTMLDivElement>(null);
   const classementsRef = useRef<HTMLDivElement>(null);
+  const plusRef        = useRef<HTMLDivElement>(null);
 
   // Marque toutes les notifications comme lues à l'ouverture du dropdown
   // (volontairement déclenché sur bellOpen seul : réagir à unreadCount
@@ -57,6 +66,7 @@ export default function Navbar() {
       if (bellRef.current        && !bellRef.current.contains(e.target as Node))        setBellOpen(false);
       if (epreuvesRef.current    && !epreuvesRef.current.contains(e.target as Node))    setEpreuvesOpen(false);
       if (classementsRef.current && !classementsRef.current.contains(e.target as Node)) setClassementsOpen(false);
+      if (plusRef.current        && !plusRef.current.contains(e.target as Node))        setPlusOpen(false);
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -187,6 +197,42 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          {/* Dropdown Plus (liens secondaires regroupés) */}
+          <div ref={plusRef} className="relative">
+            <button
+              onClick={() => setPlusOpen(o => !o)}
+              className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                PLUS_LINKS.some(l => l.href === pathname)
+                  ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
+              }`}
+            >
+              Plus
+              <svg className={`w-3 h-3 transition-transform ${plusOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {plusOpen && (
+              <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl z-50 overflow-hidden py-1">
+                {PLUS_LINKS.map(({ href, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setPlusOpen(false)}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                      pathname === href
+                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
           </nav>
 
           {/* Recherche globale */}
@@ -402,7 +448,7 @@ export default function Navbar() {
             </div>
 
             <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3">
-              {navLinks.map(({ href, label }) => (
+              {[...navLinks, ...PLUS_LINKS].map(({ href, label }) => (
                 <Link key={href} href={href} onClick={() => setMobileOpen(false)} className={mobileLinkClass(href)}>
                   {label}
                 </Link>
