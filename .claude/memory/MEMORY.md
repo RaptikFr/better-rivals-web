@@ -1,5 +1,7 @@
 # Mémoire — Better Rivals Web
 
+- [À FAIRE — responsive petits écrans](todo-responsive-petits-ecrans.md) — sur ~17 pouces, scroll horizontal pour tout voir ; à passer sur 2 lignes ou regrouper dans un menu déroulant (probablement la vue tableau des classements ; à confirmer)
+
 - [Identification machine](identification-machine.md) — portable vs fixe via `$env:COMPUTERNAME` (portable = `PC-RENAUD`) ; crucial car le relais est gitignoré (risque divergence)
 - [Feature secteurs](feature-secteurs.md) — brique télémétrie #2 : temps par secteurs + tour théorique. Forza n'expose PAS les checkpoints → reconstruits par distance (N variable). LIVRÉ + DÉPLOYÉ 19/06 (migration appliquée, release relais v1.12.0) ; SEUL reste : valider l'offset distance 292 en jeu
 - [Feature trace télémétrie](feature-trace-telemetrie.md) — brique FONDATRICE : capture de trace d'un tour (`lap_traces`, échantillonnée par distance) → débloque #1 delta live, #3 coach, #5 copilote. LIVRÉE + DÉPLOYÉE 19/06 (migration appliquée, release relais v1.13.0) ; reste : valider offsets en jeu, PUIS bâtir le delta live (#1, prochain)
