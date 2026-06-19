@@ -1,6 +1,6 @@
 ---
 name: relais-serveur-et-rang
-description: "Relais Python relais_gui_v21.py (gitignoré, sur fixe+portable). Release v1.11.2 publiée 19/06 depuis le PORTABLE (#13 check version) → ⚠️ portable = source à jour, fixe en retard (v1.11.1). gh absent du portable → release via fallback Python/requests+git credential"
+description: "Relais Python relais_gui_v21.py (gitignoré, sur fixe+portable). Dernière release v1.12.0 (secteurs) publiée 19/06 depuis le PORTABLE → ⚠️ portable = source à jour (v1.12.0), fixe en retard (v1.11.1). gh absent du portable → release via fallback Python/requests+git credential"
 metadata: 
   node_type: memory
   type: project
@@ -9,7 +9,9 @@ metadata:
 
 **Le code du relais existe sur LES DEUX machines** (fixe + portable) — fichier `relais_gui_v21.py` à la racine, gitignoré. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution du relais est éditable ici** (py_compile dispo en local pour le check syntaxe).
 
-⚠️⚠️ **DIVERGENCE DE SOURCE AU 19/06 : le PORTABLE est désormais la copie la plus à jour (v1.11.2), le FIXE est EN RETARD (v1.11.1).** La v1.11.2 (#13) a été développée+buildée+publiée **sur le PORTABLE** (`PC-RENAUD`, Python 3.14, `gh` absent → release via fallback requests, exe 14,5 Mo). **Avant toute prochaine modif relais sur le fixe : recopier d'abord `relais_gui_v21.py` du portable vers le fixe**, sinon les v1.11.1-du-fixe et v1.11.2-du-portable divergent pour de bon. Pour savoir sur quelle machine on est : [[identification-machine]].
+⚠️⚠️ **DIVERGENCE DE SOURCE AU 19/06 : le PORTABLE est la copie la plus à jour (v1.12.0), le FIXE est EN RETARD (v1.11.1).** Les v1.11.2 (#13) PUIS v1.12.0 (secteurs) ont été développées+buildées+publiées **sur le PORTABLE** (`PC-RENAUD`, Python 3.14, `gh` absent → release via fallback requests, exe 14,5 Mo). **Avant toute prochaine modif relais sur le fixe : recopier d'abord `relais_gui_v21.py` du portable vers le fixe**, sinon ça diverge pour de bon. Pour savoir sur quelle machine on est : [[identification-machine]].
+
+✅ **RELEASE v1.12.0 PUBLIÉE (19/06, depuis le PORTABLE)** — feature **secteurs** (brique télémétrie #2). `APP_VERSION="1.12.0"`. `SectorTracker` + offset `DistanceTraveled` 292 (⚠️ à valider en jeu), payload `sectors` facultatif. `/telecharger` bumpé v1.11.2→v1.12.0 (commit 371cf14). latest pointe dessus. Détails complets : [[feature-secteurs]].
 
 ✅ **RELEASE v1.11.2 PUBLIÉE (19/06, depuis le PORTABLE)** — feature **#13 vérification de version du relais**. Source v21 (nom conservé), `APP_VERSION="1.11.2"`. Au lancement, `LoginWindow` lance en thread `derniere_version_disponible()` → GET `api.github.com/repos/RaptikFr/better-rivals-web/releases/latest` (best-effort, timeout 4 s) ; si tag > APP_VERSION, bandeau orange « ⬆️ Nouvelle version dispo → Télécharger » (ouvre `/telecharger` via `webbrowser`). `_parse_version` robuste aux suffixes (`v1.12.0-beta`). N° de version affiché sous le titre. **PAS d'auto-updater** (faux positifs AV). `/telecharger` bumpé v1.11.1→v1.11.2 (commit 65ec84d poussé). ⚠️ **La détection ne marche QUE depuis v1.11.2** (les exe ≤ v1.11.1 n'ont pas le check). py_compile OK, exe **14,5 Mo** (portable, Python 3.14, UPX absent — l'écart avec le ~18-19 Mo du fixe vient de la version Python, pas d'UPX).
 
