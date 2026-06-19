@@ -1,17 +1,19 @@
 ---
 name: relais-serveur-et-rang
-description: "Relais Python relais_gui_v21.py (gitignoré). Release v1.11.2 publiée 19/06 (#13 check version). gh ABSENT du fixe → release via fallback Python/requests+git credential. Procédure build/release documentée"
+description: "Relais Python relais_gui_v21.py (gitignoré, sur fixe+portable). Release v1.11.2 publiée 19/06 depuis le PORTABLE (#13 check version) → ⚠️ portable = source à jour, fixe en retard (v1.11.1). gh absent du portable → release via fallback Python/requests+git credential"
 metadata: 
   node_type: memory
   type: project
   originSessionId: cae85036-f3e2-4180-a051-95649963b520
 ---
 
-**Le code du relais EST sur le PC fixe** — fichier `relais_gui_v21.py` à la racine. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution du relais est éditable ici** (py_compile dispo en local pour le check syntaxe).
+**Le code du relais existe sur LES DEUX machines** (fixe + portable) — fichier `relais_gui_v21.py` à la racine, gitignoré. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution du relais est éditable ici** (py_compile dispo en local pour le check syntaxe).
 
-✅ **RELEASE v1.11.2 PUBLIÉE (19/06)** — feature **#13 vérification de version du relais**. Source v21 (nom conservé), `APP_VERSION="1.11.2"`. Au lancement, `LoginWindow` lance en thread `derniere_version_disponible()` → GET `api.github.com/repos/RaptikFr/better-rivals-web/releases/latest` (best-effort, timeout 4 s) ; si tag > APP_VERSION, bandeau orange « ⬆️ Nouvelle version dispo → Télécharger » (ouvre `/telecharger` via `webbrowser`). `_parse_version` robuste aux suffixes (`v1.12.0-beta`). N° de version affiché sous le titre. **PAS d'auto-updater** (faux positifs AV). `/telecharger` bumpé v1.11.1→v1.11.2 (commit 65ec84d poussé). ⚠️ **La détection ne marche QUE depuis v1.11.2** (les exe ≤ v1.11.1 n'ont pas le check). py_compile OK, exe **14,5 Mo** (donc UPX EST présent sur le fixe maintenant — contredit la note v1.11.1 « UPX absent » : ne plus s'y fier).
+⚠️⚠️ **DIVERGENCE DE SOURCE AU 19/06 : le PORTABLE est désormais la copie la plus à jour (v1.11.2), le FIXE est EN RETARD (v1.11.1).** La v1.11.2 (#13) a été développée+buildée+publiée **sur le PORTABLE** (UPX présent → exe 14,5 Mo ; `gh` absent → release via fallback requests). **Avant toute prochaine modif relais sur le fixe : recopier d'abord `relais_gui_v21.py` du portable vers le fixe**, sinon les v1.11.1-du-fixe et v1.11.2-du-portable divergent pour de bon.
 
-⚠️ **`gh` N'EST PAS sur le PC fixe** (Get-Command + recherche FS = introuvable, ni Bash ni PowerShell) — contredit la note « gh 2.94 installé sur le fixe » : c'était faux ou désinstallé. **Release faite via le fallback Python/requests** : token récupéré par `git credential fill` (protocol=https/host=github.com → password=PAT 40 car.), POST `/repos/.../releases` (draft:false, target main) puis upload de l'asset sur `upload_url`. Réseau sandboxé → lancer le script avec **sandbox désactivé**. Procédure éprouvée le 19/06.
+✅ **RELEASE v1.11.2 PUBLIÉE (19/06, depuis le PORTABLE)** — feature **#13 vérification de version du relais**. Source v21 (nom conservé), `APP_VERSION="1.11.2"`. Au lancement, `LoginWindow` lance en thread `derniere_version_disponible()` → GET `api.github.com/repos/RaptikFr/better-rivals-web/releases/latest` (best-effort, timeout 4 s) ; si tag > APP_VERSION, bandeau orange « ⬆️ Nouvelle version dispo → Télécharger » (ouvre `/telecharger` via `webbrowser`). `_parse_version` robuste aux suffixes (`v1.12.0-beta`). N° de version affiché sous le titre. **PAS d'auto-updater** (faux positifs AV). `/telecharger` bumpé v1.11.1→v1.11.2 (commit 65ec84d poussé). ⚠️ **La détection ne marche QUE depuis v1.11.2** (les exe ≤ v1.11.1 n'ont pas le check). py_compile OK, exe **14,5 Mo** (cohérent avec le portable : UPX présent).
+
+⚠️ **`gh` est ABSENT du PORTABLE** (Get-Command + recherche FS = introuvable — comme déjà noté ; sur le FIXE `gh` 2.94 est censé être présent). **Release faite via le fallback Python/requests** : token récupéré par `git credential fill` (protocol=https/host=github.com → password=PAT 40 car.), POST `/repos/.../releases` (draft:false, target main) puis upload de l'asset sur `upload_url`. Réseau sandboxé → lancer le script avec **sandbox désactivé**. Fallback éprouvé le 19/06.
 
 ✅ **RELEASE v1.11.1 (19/06)** — source v21, deux améliorations « objectifs plus visibles » : (1) 🎯 devant les CIRCUITS où j'ai un objectif non atteint ; (2) en course, panneau rival « 🎯 OBJECTIF » vs « 🏁 RIVAL ». Lecture seule, contrat POST /api/times inchangé.
 
