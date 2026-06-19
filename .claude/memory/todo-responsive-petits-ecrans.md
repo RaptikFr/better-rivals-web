@@ -1,18 +1,16 @@
 ---
 name: todo-responsive-petits-ecrans
-description: "À FAIRE prochaine session : la NAVBAR déborde sur petits écrans (~17 pouces) → scroll horizontal. La passer sur 2 lignes, ou regrouper des liens dans un menu déroulant pour gagner de la place"
+description: "RÉSOLU (19/06) : la navbar débordait sur petits écrans (~17\") → liens secondaires regroupés dans un dropdown « Plus ▾ ». Reste à confirmer en conditions réelles côté proprio"
 metadata: 
   node_type: memory
   type: project
   originSessionId: cae85036-f3e2-4180-a051-95649963b520
 ---
 
-**Demandé par le proprio le 19/06 (à traiter la prochaine session).**
+**Demandé par le proprio le 19/06 — TRAITÉ le 19/06 (commit 5f590cc).**
 
-**Zone CONFIRMÉE = la NAVBAR** (le proprio a précisé le 19/06). Sur des écrans « petits » (~17 pouces), la barre de navigation **déborde et oblige à scroller horizontalement**. La vue tableau des classements n'est PAS concernée (le proprio ne l'a pas regardée mais ne pense pas que ce soit nécessaire — à ne traiter que si on le constate).
+**Problème** : la NAVBAR (`components/Navbar.tsx`) débordait sur les petits écrans (~17 pouces) → scroll horizontal. Trop d'éléments dès `lg` (1024px) : 2 dropdowns (Épreuves, Classements) + 9 liens + recherche + ⚙️ + cloche + zone auth (Objectifs, Duels, Profil, Déconnexion). Les classements (tableau) n'étaient PAS concernés.
 
-**Pistes proposées par le proprio** :
-1. Faire **passer la navbar sur 2 lignes** (wrap) au lieu d'un défilement horizontal.
-2. OU regrouper certains liens dans un **menu déroulant** (type « Plus ▾ ») pour gagner de la place.
+**Solution livrée (option « menu déroulant » suggérée par le proprio, préférée au wrap 2 lignes car pas de saut de hauteur)** : nouveau dropdown **« Plus ▾ »** (modelé sur Épreuves/Classements) qui absorbe les liens secondaires `PLUS_LINKS` = ⭐ Config de la semaine, Stats, Télécharger, Contact. Restent visibles dans `navLinks` : Comparer, Classement général, Voitures, Circuits, Réglages. Le menu burger mobile liste toujours TOUT (`[...navLinks, ...PLUS_LINKS]`). Build + eslint OK.
 
-**Où** : composant navbar = `components/Navbar*` (à localiser : chercher la barre de nav avec les liens Classements / Circuits / Voitures / Réglages / Duels / Config semaine / etc. — beaucoup de liens ajoutés au fil des features, d'où le débordement). Vérifier d'abord comment elle gère déjà le mobile (probablement un menu burger en dessous d'un breakpoint) : le souci est sans doute la plage « tablette/petit laptop » entre le burger mobile et le grand écran.
+**RESTE** : le proprio doit confirmer sur son écran réel que ça ne déborde plus. Si ça déborde encore, leviers : déplacer plus de liens dans `PLUS_LINKS`, ou monter le breakpoint de la nav complète de `lg` à `xl` (le burger prendrait le relais sous 1280px).

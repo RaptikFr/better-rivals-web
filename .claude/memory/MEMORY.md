@@ -1,6 +1,6 @@
 # Mémoire — Better Rivals Web
 
-- [À FAIRE — responsive navbar petits écrans](todo-responsive-petits-ecrans.md) — la NAVBAR déborde sur ~17 pouces (scroll horizontal) ; à passer sur 2 lignes ou regrouper des liens dans un menu déroulant. (Classements pas concernés.)
+- [Responsive navbar petits écrans — RÉSOLU](todo-responsive-petits-ecrans.md) — débordement navbar (~17") corrigé via dropdown « Plus ▾ » regroupant les liens secondaires (commit 5f590cc). Reste : confirmation visuelle côté proprio.
 
 - [Identification machine](identification-machine.md) — portable vs fixe via `$env:COMPUTERNAME` (portable = `PC-RENAUD`) ; crucial car le relais est gitignoré (risque divergence)
 - [Feature secteurs](feature-secteurs.md) — brique télémétrie #2 : temps par secteurs + tour théorique. Forza n'expose PAS les checkpoints → reconstruits par distance (N variable). LIVRÉ + DÉPLOYÉ 19/06 (migration appliquée, release relais v1.12.0) ; SEUL reste : valider l'offset distance 292 en jeu
