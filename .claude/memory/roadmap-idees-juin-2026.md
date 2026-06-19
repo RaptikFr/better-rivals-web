@@ -30,7 +30,7 @@ Idées de features validées avec l'utilisateur le 18/06/2026 (il les a toutes c
 
 Détail de chaque idée ci-dessous.
 
-**🧱 Brique fondatrice — capture de trace télémétrique** (débloque 1+2+3+5 d'un coup) : le relais lit déjà ~60 Hz mais ne garde que le chrono. Idée : échantillonner **par distance** (~1 point/10-15 m, qq centaines de points/tour) → vitesse, accélérateur, frein, volant, glisse, temps écoulé. Stockage : table `lap_traces` (JSON compressé) liée au `lap_time`, envoyée par le relais sur un nouvel endpoint au nouveau record. **Séquence logique : secteurs → delta live → coach → copilote.**
+**🧱 Brique fondatrice — capture de trace télémétrique** : **CODE LIVRÉ le 19/06** (voir [[feature-trace-telemetrie]]). Table `lap_traces` + `POST /api/traces` + `TraceRecorder` relais (échantillonnage par distance 12 m : distance/temps/vitesse/accel/frein/volant ; upload au nouveau record). Reste : appliquer `lap_traces.sql` + release relais v1.13.0 + valider offsets en jeu. **Séquence logique : secteurs ✅ → [trace ✅ code] → delta live (#1, PROCHAIN) → coach → copilote.**
 
 Idées (numérotation d'origine conservée) :
 1. **Delta live vs fantôme (PB ou rival)** — overlay relais « +0,3s vs PB » à distance égale, depuis une trace de référence. Dépend de la brique. *« pourquoi pas, à voir l'intégration »*.

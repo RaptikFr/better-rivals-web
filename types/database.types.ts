@@ -182,6 +182,41 @@ export type Database = {
         }
         Relationships: []
       }
+      lap_traces: {
+        Row: {
+          created_at: string
+          id: string
+          lap_time_id: string
+          point_count: number
+          sample_dist_m: number
+          samples: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lap_time_id: string
+          point_count: number
+          sample_dist_m: number
+          samples: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lap_time_id?: string
+          point_count?: number
+          sample_dist_m?: number
+          samples?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lap_traces_lap_time_id_fkey"
+            columns: ["lap_time_id"]
+            isOneToOne: true
+            referencedRelation: "lap_times"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lap_times: {
         Row: {
           car_class: string

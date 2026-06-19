@@ -93,3 +93,48 @@ export function secteursValides(
 
   return ms;
 }
+
+// Bornes sur le nombre de points d'une trace (brique télémétrie, fondation).
+// Échantillonnée par distance (~10-15 m/point) : un tour fait quelques
+// centaines de points ; on plafonne large pour ne pas stocker n'importe quoi.
+const TRACE_MIN_POINTS = 10;
+const TRACE_MAX_POINTS = 5000;
+
+export interface TraceSamples {
+  d:   number[];   // distance cumulée dans le tour (m)
+  t:   number[];   // temps écoulé (s)
+  v:   number[];   // vitesse (km/h)
+  thr: number[];   // accélérateur (0-100)
+  brk: number[];   // frein (0-100)
+  str: number[];   // volant (-100..100)
+}
+
+/**
+ * Valide la trace échantillonnée envoyée par le relais : 6 tableaux parallèles
+ * de même longueur, finis, avec distance et temps monotones croissants. Renvoie
+ * la trace normalisée ou `null` (la route rejette alors la trace).
+ */
+export function traceValide(samples: unknown): TraceSamples | null {
+  if (!samples || typeof samples !== 'object') return null;
+  const src = samples as Record<string, unknown>;
+  const cles = ['d', 't', 'v', 'thr', 'brk', 'str'] as const;
+
+  const out = {} as Record<(typeof cles)[number], number[]>;
+  for (const k of cles) {
+    const a = src[k];
+    if (!Array.isArray(a)) return null;
+    out[k] = a.map(Number);
+  }
+
+  const n = out.d.length;
+  if (n < TRACE_MIN_POINTS || n > TRACE_MAX_POINTS) return null;
+  for (const k of cles) {
+    if (out[k].length !== n) return null;
+    if (out[k].some(x => !Number.isFinite(x))) return null;
+  }
+  // Distance et temps doivent croître (échantillonnage par distance le long du tour)
+  for (let i = 1; i < n; i++) {
+    if (out.d[i] < out.d[i - 1] || out.t[i] < out.t[i - 1]) return null;
+  }
+  return out as TraceSamples;
+}

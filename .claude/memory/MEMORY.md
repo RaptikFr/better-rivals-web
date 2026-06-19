@@ -2,6 +2,7 @@
 
 - [Identification machine](identification-machine.md) — portable vs fixe via `$env:COMPUTERNAME` (portable = `PC-RENAUD`) ; crucial car le relais est gitignoré (risque divergence)
 - [Feature secteurs](feature-secteurs.md) — brique télémétrie #2 : temps par secteurs + tour théorique. Forza n'expose PAS les checkpoints → reconstruits par distance (N variable). LIVRÉ + DÉPLOYÉ 19/06 (migration appliquée, release relais v1.12.0) ; SEUL reste : valider l'offset distance 292 en jeu
+- [Feature trace télémétrie](feature-trace-telemetrie.md) — brique FONDATRICE : capture de trace d'un tour (`lap_traces`, échantillonnée par distance) → débloque #1 delta live, #3 coach, #5 copilote. Code LIVRÉ 19/06 (table+API+relais v1.13.0) ; reste : appliquer `lap_traces.sql` + release v1.13.0 + valider offsets en jeu, PUIS bâtir le delta live
 
 - [Autonomie sans demande d'autorisation](autonomie-pas-de-demande-autorisation.md) — agir directement (modifs, commits, push, installs) sans demander
 - [Lint zéro warning](lint-zero-warning.md) — viser `eslint .` → 0 ; règle react-hooks/set-state-in-effect = disables ciblés justifiés
