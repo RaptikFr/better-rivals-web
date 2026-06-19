@@ -696,9 +696,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'track_id doit être un nombre.' }, { status: 400 });
     }
 
-    // Récupère le meilleur temps par joueur sur ce circuit
-    // On groupe par player_id + car_class + drivetrain pour avoir
-    // les meilleurs temps par configuration
+    // Voie rapide : déduplication côté Postgres (RPC track_best_times) — un seul
+    // meilleur temps par (joueur × voiture × classe × transmission), sans la
+    // limite arbitraire qui tronquait les circuits populaires. On reconstruit la
+    // forme imbriquée attendue par le relais (players / cars).
+    const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('track_best_times', { p_track_id: trackId });
+    if (!rpcError && rpcData) {
+      const times = (rpcData as Array<{
+        id: string; time_ms: number; car_ordinal: number; car_class: string;
+        car_pi: number; drivetrain: string; pseudo: string;
+        manufacturer: string | null; name: string | null; year: number | null;
+      }>).map(r => ({
+        id: r.id, time_ms: r.time_ms, car_class: r.car_class, car_pi: r.car_pi,
+        drivetrain: r.drivetrain, car_ordinal: r.car_ordinal,
+        players: { pseudo: r.pseudo },
+        cars: { manufacturer: r.manufacturer, name: r.name, year: r.year },
+      }));
+      return NextResponse.json({ times }, { status: 200 });
+    }
+
+    // Repli (RPC non encore déployé) : ancienne dédup JS, top 100 par temps.
     const { data, error } = await supabaseAdmin
       .from('lap_times')
       .select(`

@@ -739,6 +739,21 @@ export type Database = {
           configs: number
         }[]
       }
+      track_best_times: {
+        Args: { p_track_id: number }
+        Returns: {
+          id: string
+          time_ms: number
+          car_ordinal: number
+          car_class: string
+          car_pi: number
+          drivetrain: string
+          pseudo: string
+          manufacturer: string | null
+          name: string | null
+          year: number | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
