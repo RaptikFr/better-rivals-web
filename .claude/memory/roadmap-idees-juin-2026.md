@@ -1,8 +1,10 @@
 ---
 name: roadmap-idees-juin-2026
-description: Roadmap site/relais (18/06). LIVRÉ : #6 réglage n°1, #7 bibliothèque réglages+modale, pack social complet (#8 duels, #9 config semaine, #10 webhook Discord). RESTE : brique télémétrie (secteurs→delta→coach→copilote), #4 régularité, #12 écuries, #13 check version relais. Relais v1.11.0 testé OK + v1.11.1 publiée (objectifs plus visibles). Pack social activé en prod (migrations appliquées, DISCORD_WEBHOOK_URL posée)
-metadata:
+description: "Roadmap site/relais (19/06). LIVRÉ : #6 réglage n°1, #7 bibliothèque réglages+modale, pack social complet (#8 duels, #9 config semaine, #10 webhook Discord), #13 check version relais (release v1.11.2). RESTE : brique télémétrie (secteurs→delta→coach→copilote), #4 régularité, #12 écuries. Relais v1.11.0/v1.11.1 testés OK, v1.11.2 publiée (check version). Pack social activé en prod"
+metadata: 
+  node_type: memory
   type: project
+  originSessionId: cae85036-f3e2-4180-a051-95649963b520
 ---
 
 Idées de features validées avec l'utilisateur le 18/06/2026 (il les a toutes commentées positivement). **Abandonnées : saisons/archives et détection auto du circuit** (ne pas reproposer). Tout le reste est à conserver.
@@ -23,7 +25,7 @@ Idées de features validées avec l'utilisateur le 18/06/2026 (il les a toutes c
 2. ~~**Pack social**~~ : **LIVRÉ le 18/06** (#8 duels, #9 config de la semaine, #10 webhook Discord — voir actions propriétaire ci-dessus).
 3. **#4 score de régularité** (dépend de la brique télémétrie / multi-tours).
 4. **#12 écuries/équipes** (plutôt quand la communauté grandit).
-5. **#13 vérification de version du relais** (bandeau « nouvelle version dispo », sans auto-download).
+5. ~~**#13 vérification de version du relais**~~ : **LIVRÉ le 19/06 (release relais v1.11.2)** — voir [[relais-serveur-et-rang]].
 6. (Optionnel) **formulaire de valeurs détaillées du réglage** sur `/reglages` — bloqué par 3 décisions non tranchées, voir [[idee-section-reglages]].
 
 Détail de chaque idée ci-dessous.
