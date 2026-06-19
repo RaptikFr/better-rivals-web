@@ -1,5 +1,7 @@
 # Mémoire — Better Rivals Web
 
+- [Identification machine](identification-machine.md) — portable vs fixe via `$env:COMPUTERNAME` (portable = `PC-RENAUD`) ; crucial car le relais est gitignoré (risque divergence)
+
 - [Autonomie sans demande d'autorisation](autonomie-pas-de-demande-autorisation.md) — agir directement (modifs, commits, push, installs) sans demander
 - [Lint zéro warning](lint-zero-warning.md) — viser `eslint .` → 0 ; règle react-hooks/set-state-in-effect = disables ciblés justifiés
 - [Panneau d'options /parametres](idee-panneau-options.md) — v1 + v2 + contraste a11y LIVRÉS et déployés. Plus rien en attente
