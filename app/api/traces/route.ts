@@ -72,3 +72,69 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
   }
 }
+
+// GET /api/traces — trace de référence pour le DELTA LIVE (#1). Le relais la
+// charge à la sélection de la config : c'est la trace du PROPRE meilleur temps
+// (PB) du joueur sur cette config exacte (track_id + car_ordinal + car_class +
+// drivetrain). Le relais interpole ensuite le temps de référence à distance
+// égale pour afficher « +0,3s vs PB ». Renvoie 204 si le joueur n'a pas encore
+// de trace sur la config (PB sans trace, ou aucun PB) → pas de fantôme à
+// afficher, le relais désactive simplement l'overlay.
+export async function GET(request: NextRequest) {
+  try {
+    const limited = await rateLimit(request, 'traces-get', 60, 60_000);
+    if (limited) return limited;
+
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Token manquant.' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Token invalide ou expiré.' }, { status: 401 });
+    }
+
+    const params     = request.nextUrl.searchParams;
+    const trackId    = parseInt(params.get('track_id')    ?? '', 10);
+    const carOrdinal = parseInt(params.get('car_ordinal') ?? '', 10);
+    const carClass   = params.get('car_class')  ?? '';
+    const drivetrain = params.get('drivetrain') ?? '';
+    if (!Number.isFinite(trackId) || !Number.isFinite(carOrdinal) || !carClass || !drivetrain) {
+      return NextResponse.json({ error: 'Paramètres de config incomplets.' }, { status: 400 });
+    }
+
+    const { data: player } = await supabaseAdmin
+      .from('players').select('id').eq('user_id', user.id).single();
+    if (!player) return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
+
+    // PB du joueur sur la config exacte (au plus une ligne : unicité par config).
+    const { data: lap } = await supabaseAdmin
+      .from('lap_times')
+      .select('id, time_ms')
+      .eq('player_id',   player.id)
+      .eq('track_id',    trackId)
+      .eq('car_ordinal', carOrdinal)
+      .eq('car_class',   carClass)
+      .eq('drivetrain',  drivetrain)
+      .maybeSingle();
+    if (!lap) return new NextResponse(null, { status: 204 }); // pas de PB sur cette config
+
+    const { data: trace } = await supabaseAdmin
+      .from('lap_traces')
+      .select('sample_dist_m, point_count, samples')
+      .eq('lap_time_id', lap.id)
+      .maybeSingle();
+    if (!trace) return new NextResponse(null, { status: 204 }); // PB sans trace enregistrée
+
+    return NextResponse.json({
+      lap_time_id:   lap.id,
+      time_ms:       lap.time_ms,
+      sample_dist_m: trace.sample_dist_m,
+      point_count:   trace.point_count,
+      samples:       trace.samples,
+    }, { status: 200 });
+  } catch {
+    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+  }
+}
