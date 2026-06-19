@@ -38,6 +38,59 @@ const CLASSEMENTS_LINKS = [
   { href: '/classements-communaute', label: 'Épreuves communauté'  },
 ];
 
+// Dropdown desktop générique (Épreuves / Classements / Plus) : bouton + menu
+// déroulant. Mutualise le balisage répété de ces trois menus. `containerRef`
+// est utilisé par le handler de clic-extérieur de Navbar pour refermer le menu.
+function NavDropdown({
+  label, links, open, setOpen, containerRef, align = 'left',
+}: {
+  label:        string;
+  links:        { href: string; label: string }[];
+  open:         boolean;
+  setOpen:      (v: boolean) => void;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  align?:       'left' | 'right';
+}) {
+  const pathname = usePathname();
+  const isActive = links.some(l => l.href === pathname);
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+          isActive
+            ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+            : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
+        }`}
+      >
+        {label}
+        <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 w-52 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl z-50 overflow-hidden py-1`}>
+          {links.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                pathname === href
+                  ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
@@ -107,79 +160,22 @@ export default function Navbar() {
           <nav className="hidden lg:flex items-center gap-1 lg:gap-2 xl:gap-3 2xl:gap-5">
 
           {/* Dropdown Épreuves */}
-          <div ref={epreuvesRef} className="relative">
-            <button
-              onClick={() => setEpreuvesOpen(o => !o)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                ['/epreuves-officielles', '/epreuves-communaute'].includes(pathname)
-                  ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
-              }`}
-            >
-              Épreuves
-              <svg className={`w-3 h-3 transition-transform ${epreuvesOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {epreuvesOpen && (
-              <div className="absolute left-0 top-full mt-1 w-52 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl z-50 overflow-hidden py-1">
-                {EPREUVES_LINKS.map(({ href, label }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setEpreuvesOpen(false)}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
-                      pathname === href
-                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+          <NavDropdown
+            label="Épreuves"
+            links={EPREUVES_LINKS}
+            open={epreuvesOpen}
+            setOpen={setEpreuvesOpen}
+            containerRef={epreuvesRef}
+          />
 
           {/* Dropdown Classements */}
-          <div
-            ref={classementsRef}
-            className="relative"
-          >
-            <button
-              onClick={() => setClassementsOpen(o => !o)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                ['/classements', '/classements-communaute'].includes(pathname)
-                  ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
-              }`}
-            >
-              Classements
-              <svg className={`w-3 h-3 transition-transform ${classementsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {classementsOpen && (
-              <div className="absolute left-0 top-full mt-1 w-52 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl z-50 overflow-hidden py-1">
-                {CLASSEMENTS_LINKS.map(({ href, label }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setClassementsOpen(false)}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
-                      pathname === href
-                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+          <NavDropdown
+            label="Classements"
+            links={CLASSEMENTS_LINKS}
+            open={classementsOpen}
+            setOpen={setClassementsOpen}
+            containerRef={classementsRef}
+          />
 
           {navLinks.map(({ href, label }) => {
             const isActive = pathname === href;
@@ -199,40 +195,14 @@ export default function Navbar() {
           })}
 
           {/* Dropdown Plus (liens secondaires regroupés) */}
-          <div ref={plusRef} className="relative">
-            <button
-              onClick={() => setPlusOpen(o => !o)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                PLUS_LINKS.some(l => l.href === pathname)
-                  ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
-              }`}
-            >
-              Plus
-              <svg className={`w-3 h-3 transition-transform ${plusOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {plusOpen && (
-              <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl z-50 overflow-hidden py-1">
-                {PLUS_LINKS.map(({ href, label }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setPlusOpen(false)}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
-                      pathname === href
-                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+          <NavDropdown
+            label="Plus"
+            links={PLUS_LINKS}
+            open={plusOpen}
+            setOpen={setPlusOpen}
+            containerRef={plusRef}
+            align="right"
+          />
           </nav>
 
           {/* Recherche globale */}
