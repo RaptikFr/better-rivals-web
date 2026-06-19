@@ -1,6 +1,6 @@
 # Mémoire — Better Rivals Web
 
-- [À RESTITUER au proprio — actions delta live](todo-proprio-delta-live.md) — à redonner MOT POUR MOT quand il est sur le PC fixe : (1) valider les offsets trace en jeu, (2) recopier le relais du portable AVANT d'éditer sur le fixe, (3) me prévenir. GET /api/traces déjà fait (e1b2cfa).
+- [À RESTITUER au proprio — actions delta live](todo-proprio-delta-live.md) — à redonner MOT POUR MOT quand il est sur le PC fixe : (1) valider les offsets trace en jeu, (2) recopier le relais du portable AVANT d'éditer sur le fixe, (3) me prévenir. GET /api/traces déjà fait (e1b2cfa). + migration `track_best_times_rpc.sql` à appliquer dans le SQL Editor (commit 14cca00, non urgent, repli JS actif).
 - [Responsive navbar petits écrans — RÉSOLU](todo-responsive-petits-ecrans.md) — débordement navbar (~17") corrigé via dropdown « Plus ▾ » regroupant les liens secondaires (commit 5f590cc). Reste : confirmation visuelle côté proprio.
 
 - [Identification machine](identification-machine.md) — portable vs fixe via `$env:COMPUTERNAME` (portable = `PC-RENAUD`) ; crucial car le relais est gitignoré (risque divergence)

@@ -29,4 +29,13 @@ metadata:
 
 ---
 
-**Côté Claude, rien d'autre à faire en attendant** (le GET site est prêt). La balle est dans le camp du proprio pour (1) et (2).
+## 🗄️ Migration SQL en attente (indépendante du delta live)
+
+**Appliquer `supabase/migrations/track_best_times_rpc.sql` dans le SQL Editor Supabase.**
+- Crée le RPC `track_best_times(p_track_id)` qui déduplique côté Postgres les meilleurs temps par config sur un circuit (commit 14cca00).
+- Sans elle, `GET /api/times` retombe sur l'ancienne dédup JS `.limit(100)` → fonctionne, mais tronque les configs au-delà de 100 lignes sur un circuit populaire. **Pas urgent** tant que la communauté est petite ; la prod n'est pas cassée.
+- ⚠️ Je n'ai pas pu l'appliquer moi-même : aucun PAT de management Supabase sur cette machine (il était sans doute configuré côté MCP sur le fixe). Si le PAT est dispo sur le fixe, je pourrai l'appliquer là-bas.
+
+---
+
+**Côté Claude, rien d'autre à faire en attendant** (le GET site est prêt). La balle est dans le camp du proprio pour (1), (2) et la migration ci-dessus.
