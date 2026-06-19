@@ -1,6 +1,6 @@
 ---
 name: feature-trace-telemetrie
-description: "Brique FONDATRICE télémétrie : capture de trace d'un tour (lap_traces) par le relais, échantillonnée par distance. Débloque #1 delta live, #3 coach, #5 copilote. LIVRÉE + DÉPLOYÉE 19/06 (migration appliquée, release relais v1.13.0). Reste : valider offsets en jeu, PUIS bâtir #1 delta live"
+description: "Brique FONDATRICE télémétrie : capture de trace d'un tour (lap_traces) par le relais, échantillonnée par distance. Débloque #1 delta live, #3 coach, #5 copilote. LIVRÉE + DÉPLOYÉE 19/06 (migration appliquée, release relais v1.13.0). GET /api/traces (trace de réf = PB) FAIT (commit e1b2cfa). Reste : valider offsets en jeu + intégration relais du delta live (#1)"
 metadata: 
   node_type: memory
   type: project
@@ -22,6 +22,6 @@ metadata:
 
 **RESTE :**
 1. ⚠️ **Valider les offsets en jeu** (distance 292 + speed/accel/brake/steer). **Même validation que les secteurs** : si distance 292 est bon, la trace l'est aussi. Vérifier qu'une ligne `lap_traces` se crée après un record (mode circuit) et que les valeurs sont plausibles (vitesse, % accel/frein, point_count ≈ longueur/12).
-2. **PUIS bâtir #1 delta live** : GET /api/traces (récupérer la trace de référence = PB du joueur sur la config), chargée par le relais à la sélection ; overlay « +0,3s vs PB » par interpolation du temps de référence à distance égale. Voir [[feature-secteurs]] pour la séquence brique.
+2. **#1 delta live** : ✅ **GET /api/traces FAIT (19/06, commit e1b2cfa)** — auth Bearer + rate-limit, résout le joueur via token, renvoie la trace de son PB sur la config exacte (`track_id+car_ordinal+car_class+drivetrain`) = `{lap_time_id, time_ms, sample_dist_m, point_count, samples}` ; **204** si pas de PB ou pas de trace sur la config. RESTE côté **relais** (gitignoré) : appeler ce GET à la sélection de config, charger d+t de la trace de réf, et afficher l'overlay « +0,3s vs PB » par interpolation du temps de réf à distance égale (en course). Voir [[feature-secteurs]] pour la séquence brique.
 
-**Pas encore fait (volontairement, séquencé)** : le GET de référence + l'overlay delta live (#1), et toute visualisation de trace côté site (coach #3).
+**Pas encore fait** : l'intégration relais du delta live (#1, charge GET + overlay), et toute visualisation de trace côté site (coach #3).
