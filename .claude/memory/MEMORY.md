@@ -8,6 +8,7 @@
 - [Feature secteurs](feature-secteurs.md) — brique télémétrie #2 : temps par secteurs + tour théorique. Forza n'expose PAS les checkpoints → reconstruits par distance (N variable). LIVRÉ + DÉPLOYÉ 19/06 (migration appliquée, release relais v1.12.0) ; SEUL reste : valider l'offset distance 292 en jeu
 - [Feature trace télémétrie](feature-trace-telemetrie.md) — brique FONDATRICE : capture de trace d'un tour (`lap_traces`, échantillonnée par distance) → débloque #1 delta live, #3 coach, #5 copilote. LIVRÉE + DÉPLOYÉE 19/06 (migration appliquée, release relais v1.13.0) ; reste : valider offsets en jeu, PUIS bâtir le delta live (#1, prochain)
 
+- [Cap projet juin 2026](cap-projet-juin-2026.md) — site/relais quasi feature-complets ; NE PAS proposer de features « pour en proposer ». Concret restant : tests relais (delta live), fin world_records, chaîne télémétrie planifiée. Idées neuves ⟵ surtout du public
 - [Autonomie sans demande d'autorisation](autonomie-pas-de-demande-autorisation.md) — agir directement (modifs, commits, push, installs) sans demander
 - [Lint zéro warning](lint-zero-warning.md) — viser `eslint .` → 0 ; règle react-hooks/set-state-in-effect = disables ciblés justifiés
 - [Panneau d'options /parametres](idee-panneau-options.md) — v1 + v2 + contraste a11y LIVRÉS et déployés. Plus rien en attente
