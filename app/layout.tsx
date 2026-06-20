@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Archivo,
+  Spline_Sans_Mono,
+  Space_Grotesk,
+  JetBrains_Mono,
+  Fredoka,
+  DM_Mono,
+} from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -15,6 +24,27 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// Polices des skins (cf. « Modernisation du site »). `preload: false` : seul le
+// skin actif bascule `--font-sans`/`--font-mono` (globals.css), inutile de
+// précharger les 6 familles sur chaque route.
+// Apex
+const archivo = Archivo({ subsets: ["latin"], display: "swap", preload: false, variable: "--font-archivo" });
+const splineMono = Spline_Sans_Mono({ subsets: ["latin"], display: "swap", preload: false, variable: "--font-spline-mono" });
+// Telemetry
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], display: "swap", preload: false, variable: "--font-space-grotesk" });
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], display: "swap", preload: false, variable: "--font-jetbrains-mono" });
+// Arcade
+const fredoka = Fredoka({ subsets: ["latin"], display: "swap", preload: false, variable: "--font-fredoka" });
+const dmMono = DM_Mono({ weight: ["400", "500"], subsets: ["latin"], display: "swap", preload: false, variable: "--font-dm-mono" });
+
+const skinFontVars = [archivo, splineMono, spaceGrotesk, jetbrainsMono, fredoka, dmMono]
+  .map((f) => f.variable)
+  .join(" ");
+
+// Pose la classe de skin (+ verrouille le sombre) avant le premier paint, pour
+// éviter le flash, comme le fait next-themes pour `.dark`.
+const NO_FLASH_SKIN = `(function(){try{var p=JSON.parse(localStorage.getItem('better-rivals:preferences')||'{}');var s=p&&p.skin;if(s&&s!=='classic'&&['apex','telemetry','arcade'].indexOf(s)>-1){document.documentElement.classList.add('skin-'+s,'dark');}}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -61,10 +91,11 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${skinFontVars} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white">
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SKIN }} />
         <Providers>
           <Navbar />
           <div className="flex-1">{children}</div>

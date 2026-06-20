@@ -7,6 +7,10 @@ export type RankingLayout = 'cards' | 'table';
 export type Accent = 'pink-violet' | 'red-green' | 'blue-yellow';
 export type FontSize = 'normal' | 'large';
 export type Contrast = 'normal' | 'high';
+/** Style d'interface global : recolore surfaces/typo/formes de tout le site.
+ *  « classic » = look d'origine (rose/violet, clair/sombre). Les 3 autres sont
+ *  des ambiances sombres complètes (cf. « Modernisation du site »). */
+export type Skin = 'classic' | 'apex' | 'telemetry' | 'arcade';
 
 /** Colonnes facultatives de la vue tableau des classements (PC). */
 export interface TableColumns {
@@ -35,6 +39,9 @@ export interface Preferences {
   rankingLayout: RankingLayout;
   /** Couleurs d'accentuation du site (dégradés, badges, liens actifs…). */
   accent: Accent;
+  /** Style d'interface (skin) : ambiance complète du site. Les skins non-`classic`
+   *  sont sombres (le thème clair est verrouillé tant qu'ils sont actifs). */
+  skin: Skin;
   /** Taille de police globale (accessibilité). */
   fontSize: FontSize;
   /** Contraste renforcé des textes secondaires et bordures (accessibilité). */
@@ -62,6 +69,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   reduceMotion: false,
   rankingLayout: 'cards',
   accent: 'pink-violet',
+  skin: 'apex',
   fontSize: 'normal',
   contrast: 'normal',
   tableColumns: DEFAULT_TABLE_COLUMNS,
@@ -84,6 +92,7 @@ export function sanitizePreferences(raw: unknown): Preferences {
     reduceMotion: typeof r.reduceMotion === 'boolean' ? r.reduceMotion : DEFAULT_PREFERENCES.reduceMotion,
     rankingLayout: pick('rankingLayout', ['cards', 'table']),
     accent: pick('accent', ['pink-violet', 'red-green', 'blue-yellow']),
+    skin: pick('skin', ['classic', 'apex', 'telemetry', 'arcade']),
     fontSize: pick('fontSize', ['normal', 'large']),
     contrast: pick('contrast', ['normal', 'high']),
     tableColumns: sanitizeTableColumns(r.tableColumns),

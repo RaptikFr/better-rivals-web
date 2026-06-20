@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { formatTime as rawFormatTime } from '@/components/formatTime';
 import { dateRelative } from '@/lib/dateRelative';
 import { dateAbsolute } from '@/lib/dateAbsolute';
@@ -37,6 +38,9 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   // Sync cross-device : pour un joueur connecté, les préférences vivent aussi
   // sur son compte (players.preferences). Anon → localStorage seul.
   const { player } = usePlayer();
+  // Les skins (hors « classic ») sont sombres : on verrouille le thème sur sombre
+  // tant que l'un d'eux est actif (cf. décision « skins = sombre uniquement »).
+  const { setTheme } = useTheme();
   const prefsRef = useRef(prefs);
   useEffect(() => { prefsRef.current = prefs; }, [prefs]);
   // Passe à true une fois les prefs du compte réconciliées avec le local, pour
@@ -105,7 +109,13 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     root.classList.toggle('accent-blue-yellow', prefs.accent === 'blue-yellow');
     root.classList.toggle('text-scale-large', prefs.fontSize === 'large');
     root.classList.toggle('contrast-high', prefs.contrast === 'high');
-  }, [prefs, ready, player?.id]);
+    // Skin : une seule classe `skin-*` à la fois (« classic » = aucune override).
+    root.classList.toggle('skin-apex', prefs.skin === 'apex');
+    root.classList.toggle('skin-telemetry', prefs.skin === 'telemetry');
+    root.classList.toggle('skin-arcade', prefs.skin === 'arcade');
+    // Verrouille le sombre pour les skins conçus sombres.
+    if (prefs.skin !== 'classic') setTheme('dark');
+  }, [prefs, ready, player?.id, setTheme]);
 
   const setPref = useCallback(<K extends keyof Preferences>(key: K, value: Preferences[K]) => {
     setPrefs(prev => ({ ...prev, [key]: value }));

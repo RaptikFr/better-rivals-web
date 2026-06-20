@@ -77,6 +77,125 @@ body {
   --color-violet-950: var(--color-amber-950);
 }
 
+/* ===========================================================
+   Préférence « Style d'interface » (skin) — cf. « Modernisation du site ».
+   Même mécanisme que l'accent : une classe sur <html> (.skin-apex / -telemetry
+   / -arcade) remappe des variables CSS. On remappe ici 4 familles de variables
+   que les ~770 utilitaires Tailwind du site consomment déjà :
+     - les paliers neutral  : surfaces / bordures / textes secondaires
+     - pink et violet        : accent (comme la préférence accent)
+     - white                 : couleur de texte principale (fg du skin)
+     - les rayons (radius)   : rayons des cartes / contrôles
+     - sans et mono          : polices du skin (chargées dans layout.tsx)
+   Tout le site se reskinne sans toucher les composants. « classic » = aucune
+   override (look d'origine). Les skins sont sombres (dark verrouillé).
+   Valeurs : « Modernisation du site/design_handoff_skins/themes.css ». */
+
+/* --- APEX : sombre & racing premium --- */
+.skin-apex {
+  --skin-bg: #0A0B0D;      --skin-surface: #121417;  --skin-surface-2: #16191d;
+  --skin-border: #1E2126;  --skin-border-strong: #262a30;
+  --skin-fg: #ECEAE4;      --skin-muted: #8B8A82;    --skin-faint: #5d5f62;
+  --skin-accent: #FF5E1A;  --skin-accent-2: #FF5E1A;
+  --font-sans: var(--font-archivo); --font-mono: var(--font-spline-mono);
+  --radius-md: 9px; --radius-lg: 9px; --radius-xl: 14px; --radius-2xl: 16px; --radius-3xl: 18px;
+}
+/* --- TELEMETRY : tech / e-sport (coins nets) --- */
+.skin-telemetry {
+  --skin-bg: #04060A;      --skin-surface: #080B11;  --skin-surface-2: #0b0f16;
+  --skin-border: #13202b;  --skin-border-strong: #1b3040;
+  --skin-fg: #E6F3F7;      --skin-muted: #6f8a98;    --skin-faint: #3f5563;
+  --skin-accent: #2DE2E6;  --skin-accent-2: #FF2E97;
+  --font-sans: var(--font-space-grotesk); --font-mono: var(--font-jetbrains-mono);
+  --radius-md: 0px; --radius-lg: 0px; --radius-xl: 0px; --radius-2xl: 0px; --radius-3xl: 0px;
+}
+/* --- ARCADE : coloré & ludique --- */
+.skin-arcade {
+  --skin-bg: #16122B;      --skin-surface: #241e44;  --skin-surface-2: #2b2450;
+  --skin-border: #352d5e;  --skin-border-strong: #43396f;
+  --skin-fg: #F4F1FF;      --skin-muted: #a99fd0;    --skin-faint: #7a6fb0;
+  --skin-accent: #37E29A;  --skin-accent-2: #FF5C7A;
+  --font-sans: var(--font-fredoka); --font-mono: var(--font-dm-mono);
+  --radius-md: 12px; --radius-lg: 12px; --radius-xl: 18px; --radius-2xl: 22px; --radius-3xl: 26px;
+}
+
+/* Remap des paliers neutral (échelle sombre) → surfaces/bordures/textes du skin.
+   Commun aux 3 skins via :is(). */
+.skin-apex, .skin-telemetry, .skin-arcade {
+  --color-neutral-950: var(--skin-bg);
+  --color-neutral-900: var(--skin-surface);
+  --color-neutral-800: var(--skin-border);
+  --color-neutral-700: var(--skin-border-strong);
+  --color-neutral-600: var(--skin-faint);
+  --color-neutral-500: var(--skin-faint);
+  --color-neutral-400: var(--skin-muted);
+  --color-neutral-300: var(--skin-muted);
+  --color-neutral-200: color-mix(in srgb, var(--skin-fg) 78%, var(--skin-muted));
+  --color-neutral-100: var(--skin-fg);
+  --color-neutral-50:  var(--skin-fg);
+  --color-white: var(--skin-fg);
+  /* Accent (pink = primaire, violet = secondaire). Petite rampe via color-mix
+     pour conserver des états hover plus clairs/foncés. */
+  --color-pink-300: color-mix(in srgb, var(--skin-accent) 60%, white);
+  --color-pink-400: color-mix(in srgb, var(--skin-accent) 82%, white);
+  --color-pink-500: var(--skin-accent);
+  --color-pink-600: color-mix(in srgb, var(--skin-accent) 88%, black);
+  --color-pink-700: color-mix(in srgb, var(--skin-accent) 72%, black);
+  --color-pink-800: color-mix(in srgb, var(--skin-accent) 55%, black);
+  --color-violet-300: color-mix(in srgb, var(--skin-accent-2) 60%, white);
+  --color-violet-400: color-mix(in srgb, var(--skin-accent-2) 82%, white);
+  --color-violet-500: var(--skin-accent-2);
+  --color-violet-600: color-mix(in srgb, var(--skin-accent-2) 88%, black);
+  --color-violet-700: color-mix(in srgb, var(--skin-accent-2) 72%, black);
+  --color-violet-800: color-mix(in srgb, var(--skin-accent-2) 55%, black);
+}
+
+/* Polices : on les pose explicitement (le body hérite, et l'utilitaire
+   `font-mono` — très utilisé pour les temps/données — est surchargé par
+   spécificité). Indépendant de la façon dont Tailwind résout --font-sans/mono. */
+.skin-apex      body { font-family: var(--font-archivo), system-ui, sans-serif; }
+.skin-telemetry body { font-family: var(--font-space-grotesk), system-ui, sans-serif; }
+.skin-arcade    body { font-family: var(--font-fredoka), system-ui, sans-serif; }
+.skin-apex      .font-sans { font-family: var(--font-archivo), system-ui, sans-serif; }
+.skin-telemetry .font-sans { font-family: var(--font-space-grotesk), system-ui, sans-serif; }
+.skin-arcade    .font-sans { font-family: var(--font-fredoka), system-ui, sans-serif; }
+.skin-apex      .font-mono { font-family: var(--font-spline-mono), ui-monospace, monospace; }
+.skin-telemetry .font-mono { font-family: var(--font-jetbrains-mono), ui-monospace, monospace; }
+.skin-arcade    .font-mono { font-family: var(--font-dm-mono), ui-monospace, monospace; }
+
+/* Signatures de fond (halos / grille). Statiques → compatibles reduce-motion.
+   On peint via background-image (la couleur de fond reste celle de neutral-950). */
+.skin-apex body {
+  background-image: radial-gradient(1200px 500px at 80% -10%, rgba(255, 94, 26, 0.07), transparent 60%);
+  background-attachment: fixed;
+}
+.skin-arcade body {
+  background-image:
+    radial-gradient(700px 380px at 88% -8%, rgba(255, 92, 122, 0.18), transparent 60%),
+    radial-gradient(640px 360px at 4% 4%, rgba(61, 139, 255, 0.18), transparent 60%);
+  background-attachment: fixed;
+}
+.skin-telemetry body {
+  background-image:
+    radial-gradient(900px 400px at 85% -5%, rgba(255, 46, 151, 0.10), transparent 60%),
+    radial-gradient(700px 400px at 5% 10%, rgba(45, 226, 230, 0.08), transparent 60%);
+  background-attachment: fixed;
+}
+/* Telemetry : grille HUD en couche fixe derrière le contenu. */
+.skin-telemetry body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(45, 226, 230, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 226, 230, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(circle at 50% 0%, #000, transparent 80%);
+  mask-image: radial-gradient(circle at 50% 0%, #000, transparent 80%);
+}
+
 /* Préférence « taille de police » : agrandit la base rem → tout le site
    (textes, espacements en rem) grossit proportionnellement. Défaut = 16px. */
 .text-scale-large {

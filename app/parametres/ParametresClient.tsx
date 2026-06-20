@@ -7,7 +7,7 @@ import { usePreferences } from '@/hooks/usePreferences';
 import { formatTime } from '@/components/formatTime';
 import { dateAbsolute } from '@/lib/dateAbsolute';
 import { dateRelative } from '@/lib/dateRelative';
-import type { TableColumns } from '@/lib/preferences';
+import type { TableColumns, Skin } from '@/lib/preferences';
 
 /** Contrôle segmenté générique (boutons radio stylés). */
 function Segmented<T extends string | boolean>({
@@ -16,12 +16,14 @@ function Segmented<T extends string | boolean>({
   value,
   options,
   onChange,
+  disabled,
 }: {
   label: string;
   hint?: string;
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -32,7 +34,7 @@ function Segmented<T extends string | boolean>({
       <div
         role="group"
         aria-label={label}
-        className="flex shrink-0 rounded-lg bg-neutral-100 dark:bg-neutral-800 p-1"
+        className={`flex shrink-0 rounded-lg bg-neutral-100 dark:bg-neutral-800 p-1 ${disabled ? 'opacity-50' : ''}`}
       >
         {options.map(opt => {
           const active = opt.value === value;
@@ -40,15 +42,88 @@ function Segmented<T extends string | boolean>({
             <button
               key={String(opt.value)}
               type="button"
+              disabled={disabled}
               onClick={() => onChange(opt.value)}
               aria-pressed={active}
-              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${disabled ? 'cursor-not-allowed' : ''} ${
                 active
                   ? 'bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white shadow-sm'
                   : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
               }`}
             >
               {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const SKIN_OPTIONS: { value: Skin; name: string; desc: string; swatch: React.CSSProperties }[] = [
+  {
+    value: 'classic',
+    name: 'Classic',
+    desc: "Le thème d'origine, rose & violet (clair ou sombre).",
+    swatch: { background: 'linear-gradient(135deg, #ec4899, #8b5cf6)' },
+  },
+  {
+    value: 'apex',
+    name: 'Apex',
+    desc: 'Sombre & racing premium, accent orange.',
+    swatch: {
+      background: 'radial-gradient(120px 60px at 80% 0, rgba(255,94,26,.5), transparent), #0A0B0D',
+      boxShadow: 'inset 0 0 0 2px #FF5E1A33',
+    },
+  },
+  {
+    value: 'telemetry',
+    name: 'Telemetry',
+    desc: 'Tech e-sport, cyan + magenta, coins nets.',
+    swatch: { background: 'linear-gradient(135deg, #2DE2E6, #04060A 55%, #FF2E97)' },
+  },
+  {
+    value: 'arcade',
+    name: 'Arcade',
+    desc: 'Coloré & ludique, vert + corail, formes rondes.',
+    swatch: { background: 'linear-gradient(135deg, #FFC93C, #FF5C7A 45%, #A678FF)' },
+  },
+];
+
+/** Sélecteur « Style d'interface » : 4 cartes câblées sur setPref('skin', …). */
+function SkinPicker({ value, onChange }: { value: Skin; onChange: (v: Skin) => void }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <p className="text-sm font-semibold text-neutral-900 dark:text-white">Style d&apos;interface</p>
+        <p className="text-xs text-neutral-500 mt-0.5">
+          Change toute l&apos;ambiance du site (couleurs, typo, formes). Les skins Apex, Telemetry
+          et Arcade sont sombres : le thème clair est désactivé tant que l&apos;un d&apos;eux est actif.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {SKIN_OPTIONS.map(skin => {
+          const active = skin.value === value;
+          return (
+            <button
+              key={skin.value}
+              type="button"
+              onClick={() => onChange(skin.value)}
+              aria-pressed={active}
+              className={`relative text-left rounded-xl border-2 p-3 transition-colors ${
+                active
+                  ? 'border-pink-500 bg-pink-500/10'
+                  : 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600'
+              }`}
+            >
+              {active && (
+                <span className="absolute top-2 right-2 grid place-items-center w-6 h-6 rounded-full bg-pink-500 text-white text-xs font-bold">
+                  ✓
+                </span>
+              )}
+              <span className="block h-12 rounded-lg mb-2 border border-white/10" style={skin.swatch} />
+              <span className="block text-sm font-bold text-neutral-900 dark:text-white">{skin.name}</span>
+              <span className="block text-xs text-neutral-500 leading-tight mt-0.5">{skin.desc}</span>
             </button>
           );
         })}
@@ -92,6 +167,7 @@ export default function ParametresClient() {
 
   const timePreview = formatTime(SAMPLE_MS, { style: prefs.timeStyle, decimalSep: prefs.decimalSep });
   const datePreview = prefs.dateStyle === 'absolute' ? dateAbsolute(SAMPLE_DATE) : dateRelative(SAMPLE_DATE);
+  const darkLocked = prefs.skin !== 'classic'; // skins sombres → thème clair verrouillé
 
   return (
     <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -104,11 +180,15 @@ export default function ParametresClient() {
 
       <div className="flex flex-col gap-5">
         <Section title="Apparence">
+          <SkinPicker value={prefs.skin} onChange={v => setPref('skin', v)} />
           <Segmented
             label="Thème"
-            hint="« Système » suit le réglage clair/sombre de votre appareil."
-            value={mounted ? (theme ?? 'system') : 'system'}
+            hint={darkLocked
+              ? 'Verrouillé sur sombre par le style d’interface actif (repasse en « Classic » pour le débloquer).'
+              : '« Système » suit le réglage clair/sombre de votre appareil.'}
+            value={mounted ? (darkLocked ? 'dark' : (theme ?? 'system')) : 'system'}
             onChange={v => setTheme(v)}
+            disabled={darkLocked}
             options={[
               { value: 'light', label: '☀️ Clair' },
               { value: 'dark', label: '🌙 Sombre' },
