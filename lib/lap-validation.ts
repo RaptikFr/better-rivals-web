@@ -138,3 +138,69 @@ export function traceValide(samples: unknown): TraceSamples | null {
   }
   return out as TraceSamples;
 }
+
+/**
+ * Nombre de secteurs d'un circuit selon sa longueur — formule déterministe
+ * (identique côté relais) pour que tous les tours d'un même circuit aient le
+ * même découpage : au moins 5, davantage si long. 0 si longueur inconnue.
+ */
+export function nbSecteurs(lengthKm: number | null | undefined): number {
+  if (!lengthKm || lengthKm <= 0) return 0;
+  return Math.max(5, Math.min(20, Math.round(lengthKm / 1.5)));
+}
+
+/**
+ * Reconstruit des secteurs ÉGAUX EN DISTANCE à partir d'une trace télémétrique
+ * (tableaux `d`/`t` parallèles, distance et temps croissants) : découpe la
+ * distance RÉELLE du tour en `n` parts égales, interpole le temps écoulé à chaque
+ * borne, renvoie les durées de secteur en millisecondes — ou `null` si incohérent.
+ *
+ * Pourquoi pas la longueur "officielle" du circuit : la valeur de distance de la
+ * télémétrie Forza ne correspond pas aux mètres réels (elle plafonne ~5950 quel
+ * que soit le tracé). Elle reste monotone et reproductible par tour, donc la
+ * découper par ses PROPRES fractions donne des secteurs égaux et comparables
+ * entre pilotes. C'est cette fonction qui alimente `sectors_ms` (et donc le tour
+ * théorique), pas les secteurs envoyés par le relais (faussés par ce décalage).
+ */
+export function secteursDepuisTrace(
+  samples: { d?: unknown; t?: unknown } | null | undefined,
+  n: number,
+): number[] | null {
+  if (!samples || !Number.isInteger(n) || n < 2) return null;
+  const d = samples.d, t = samples.t;
+  if (!Array.isArray(d) || !Array.isArray(t) || d.length !== t.length || d.length < n + 1) {
+    return null;
+  }
+  const dFinal = Number(d[d.length - 1]);
+  const tFinal = Number(t[t.length - 1]);
+  if (!(dFinal > 0) || !(tFinal > 0)) return null;
+
+  // Temps (s) interpolé linéairement à la distance `cible` le long de la trace.
+  const interpT = (cible: number): number => {
+    if (cible <= Number(d[0])) return Number(t[0]);
+    for (let i = 1; i < d.length; i++) {
+      const di = Number(d[i]);
+      if (di >= cible) {
+        const d0 = Number(d[i - 1]);
+        const span = di - d0;
+        if (span <= 0) return Number(t[i]);
+        return Number(t[i - 1]) + ((cible - d0) / span) * (Number(t[i]) - Number(t[i - 1]));
+      }
+    }
+    return tFinal;
+  };
+
+  const cumul: number[] = [];
+  for (let k = 1; k < n; k++) cumul.push(interpT((k / n) * dFinal));
+  cumul.push(tFinal); // dernière borne = ligne d'arrivée
+
+  const durees: number[] = [];
+  let prev = 0;
+  for (const ti of cumul) {
+    const dur = ti - prev;
+    if (!(dur > 0)) return null;            // non-monotone → on jette
+    durees.push(Math.round(dur * 1000));
+    prev = ti;
+  }
+  return durees;
+}

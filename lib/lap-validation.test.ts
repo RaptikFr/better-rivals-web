@@ -5,6 +5,8 @@ import {
   identifiantsValides,
   tempsDansBornes,
   plusRapideQueRecord,
+  nbSecteurs,
+  secteursDepuisTrace,
 } from './lap-validation';
 
 describe('formatTime', () => {
@@ -84,5 +86,48 @@ describe('plusRapideQueRecord', () => {
     expect(plusRapideQueRecord(1, null)).toBe(false);
     expect(plusRapideQueRecord(1, undefined)).toBe(false);
     expect(plusRapideQueRecord(1, 0)).toBe(false);
+  });
+});
+
+describe('nbSecteurs', () => {
+  it('au moins 5, plafonné à 20, ~1 secteur / 1,5 km', () => {
+    expect(nbSecteurs(2.4)).toBe(5);   // round(1.6)=2 → plancher 5
+    expect(nbSecteurs(7)).toBe(5);     // round(4.67)=5
+    expect(nbSecteurs(12)).toBe(8);    // round(8)
+    expect(nbSecteurs(60)).toBe(20);   // plafond
+  });
+
+  it('0 si longueur inconnue ou nulle', () => {
+    expect(nbSecteurs(null)).toBe(0);
+    expect(nbSecteurs(undefined)).toBe(0);
+    expect(nbSecteurs(0)).toBe(0);
+  });
+});
+
+describe('secteursDepuisTrace', () => {
+  it('vitesse constante : secteurs égaux en temps (durées en ms)', () => {
+    const d = [0, 1000, 2000, 3000, 4000, 5000];
+    const t = [0, 10, 20, 30, 40, 50];
+    expect(secteursDepuisTrace({ d, t }, 5)).toEqual([10_000, 10_000, 10_000, 10_000, 10_000]);
+  });
+
+  it('découpe par DISTANCE, pas par temps : sectors égaux en distance, durées variables', () => {
+    // 0→500 m parcourus en 2 s, 500→1000 m en 8 s (2e moitié bien plus lente)
+    const d = [0, 500, 1000];
+    const t = [0, 2, 10];
+    expect(secteursDepuisTrace({ d, t }, 2)).toEqual([2_000, 8_000]);
+  });
+
+  it('indépendant de l’échelle de distance (cap ~5950 de Forza)', () => {
+    const d = [0, 1190, 2380, 3570, 4760, 5950];
+    const t = [0, 10, 20, 30, 40, 50];
+    expect(secteursDepuisTrace({ d, t }, 5)).toEqual([10_000, 10_000, 10_000, 10_000, 10_000]);
+  });
+
+  it('rejette une trace incohérente (trop courte, non-monotone, n<2)', () => {
+    expect(secteursDepuisTrace({ d: [0, 1, 2], t: [0, 1, 2] }, 5)).toBeNull(); // < n+1 points
+    expect(secteursDepuisTrace({ d: [0, 1000], t: [0, 10] }, 1)).toBeNull();   // n < 2
+    expect(secteursDepuisTrace(null, 5)).toBeNull();
+    expect(secteursDepuisTrace({ d: [0, 0, 0, 0, 0, 0], t: [0, 1, 2, 3, 4, 5] }, 5)).toBeNull(); // dFinal = 0
   });
 });

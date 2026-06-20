@@ -10,7 +10,6 @@ import {
   identifiantsValides,
   tempsDansBornes,
   plusRapideQueRecord,
-  secteursValides,
 } from '@/lib/lap-validation';
 
 export const dynamic = 'force-dynamic';
@@ -473,7 +472,7 @@ export async function POST(request: NextRequest) {
       car_id, track_id, lap_time, is_valid,
       drivetrain, car_class, car_pi, num_cylinders,
       car_manufacturer, car_name, car_year,
-      is_sprint, sectors,
+      is_sprint,
     } = body;
 
     if (!is_valid) {
@@ -488,9 +487,12 @@ export async function POST(request: NextRequest) {
     const numTrackId    = parseInt(track_id);
     const numCarOrdinal = parseInt(car_id);
 
-    // Secteurs facultatifs (relais ≥ v1.12). null si absents/incohérents :
-    // on n'écrit alors rien (colonnes nullables), sans rejeter le chrono.
-    const secteurs = secteursValides(sectors, newTimeMs);
+    // Secteurs : on n'utilise PLUS ceux envoyés par le relais (faussés — la
+    // distance télémétrique de Forza ne correspond pas aux mètres réels). Ils
+    // sont désormais recalculés côté serveur depuis la trace, dans POST
+    // /api/traces (découpe par distance réelle). Ici on remet sectors_ms à NULL
+    // (un nouveau meilleur tour repart sans secteurs ; la trace les recalcule).
+    const secteurs = null;
 
     if (!identifiantsValides({ trackId: numTrackId, carOrdinal: numCarOrdinal, timeMs: newTimeMs })) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });

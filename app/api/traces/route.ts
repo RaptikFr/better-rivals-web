@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/rate-limit';
-import { traceValide } from '@/lib/lap-validation';
+import { traceValide, nbSecteurs, secteursDepuisTrace, secteursValides } from '@/lib/lap-validation';
 import type { Json } from '@/types/database.types';
 
 export const dynamic = 'force-dynamic';
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Le joueur ne peut attacher une trace qu'à SON propre tour.
     const [playerRes, lapRes] = await Promise.all([
       supabaseAdmin.from('players').select('id').eq('user_id', user.id).single(),
-      supabaseAdmin.from('lap_times').select('id, player_id').eq('id', lap_time_id).maybeSingle(),
+      supabaseAdmin.from('lap_times').select('id, player_id, track_id, time_ms').eq('id', lap_time_id).maybeSingle(),
     ]);
     const player = playerRes.data;
     const lap    = lapRes.data;
@@ -67,6 +67,25 @@ export async function POST(request: NextRequest) {
       );
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Secteurs ÉGAUX EN DISTANCE recalculés depuis la trace (source faisant
+    // autorité). On le fait ici plutôt qu'au POST /api/times : la distance de la
+    // télémétrie Forza ne correspond pas aux mètres réels (elle plafonne ~5950 m
+    // quel que soit le tracé), donc les secteurs envoyés par le relais sont
+    // faussés. La trace, elle, donne la distance réelle du tour → découpe juste.
+    // Best-effort : un échec ici ne remet pas en cause la trace déjà stockée.
+    try {
+      const { data: track } = await supabaseAdmin
+        .from('tracks').select('length_km').eq('id', lap.track_id).maybeSingle();
+      const n = nbSecteurs(track?.length_km);
+      const secteurs = secteursDepuisTrace(trace, n);
+      // Garde-fou : la somme doit retomber sur le temps du tour (sinon on n'écrit
+      // pas plutôt que d'afficher un tour théorique incohérent).
+      if (secteurs && secteursValides(secteurs.map(ms => ms / 1000), lap.time_ms)) {
+        await supabaseAdmin.from('lap_times').update({ sectors_ms: secteurs }).eq('id', lap.id);
+      }
+    } catch { /* secteurs = bonus, jamais bloquant */ }
+
     return NextResponse.json({ success: true, point_count: trace.d.length }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
