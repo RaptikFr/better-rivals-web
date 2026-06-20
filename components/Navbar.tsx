@@ -194,15 +194,39 @@ export default function Navbar() {
             );
           })}
 
-          {/* Dropdown Plus (liens secondaires regroupés) */}
-          <NavDropdown
-            label="Plus"
-            links={PLUS_LINKS}
-            open={plusOpen}
-            setOpen={setPlusOpen}
-            containerRef={plusRef}
-            align="right"
-          />
+          {/* Liens secondaires : EN CLAIR seulement sur très grand écran
+              (≥2000px, ex. moniteur 27"/2560px) ; REGROUPÉS dans « Plus » en
+              dessous (ex. portable 17"/1920px où la barre déborderait). Le seuil
+              porte sur la largeur en PIXELS de la fenêtre (influencée par la mise
+              à l'échelle d'affichage Windows), pas la taille physique. */}
+          {PLUS_LINKS.map(({ href, label }) => {
+            const isActive = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`hidden min-[2000px]:block px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  isActive
+                    ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+
+          {/* Dropdown Plus : uniquement en dessous de 2000px (sinon liens en clair ci-dessus) */}
+          <div className="min-[2000px]:hidden">
+            <NavDropdown
+              label="Plus"
+              links={PLUS_LINKS}
+              open={plusOpen}
+              setOpen={setPlusOpen}
+              containerRef={plusRef}
+              align="right"
+            />
+          </div>
           </nav>
 
           {/* Recherche globale */}
