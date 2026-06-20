@@ -196,6 +196,41 @@ body {
   mask-image: radial-gradient(circle at 50% 0%, #000, transparent 80%);
 }
 
+/* ---------- Signatures par skin (retouches ciblées par composant) ----------
+   Pilotées par des classes marqueurs stables posées sur les composants
+   (br-logo, br-cta, br-dt). Aucune règle en skin « classic ». */
+
+/* Logo de la Navbar (.br-logo) */
+.skin-apex .br-logo { text-transform: uppercase; letter-spacing: -0.02em; }
+.skin-telemetry .br-logo {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  text-transform: uppercase; letter-spacing: 0.03em;
+  background-image: none;
+  color: var(--skin-accent);
+  -webkit-text-fill-color: var(--skin-accent); /* annule le bg-clip-text transparent */
+  text-shadow: 0 0 20px rgba(45, 226, 230, 0.5);
+}
+
+/* Titres de page (h1) */
+.skin-apex h1 { text-transform: uppercase; letter-spacing: -0.02em; }
+.skin-telemetry h1 { text-shadow: 0 0 30px rgba(45, 226, 230, 0.18); }
+
+/* Boutons d'action principaux (.br-cta) */
+.skin-telemetry .br-cta {
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.skin-arcade .br-cta { box-shadow: 0 5px 0 #1fa873; }
+.skin-arcade .br-cta:active { transform: translateY(4px); box-shadow: 0 1px 0 #1fa873; }
+
+/* Badges transmission (.br-dt). Arcade : pleins, texte foncé (cf. README). */
+.skin-telemetry .br-dt { border-radius: 0; }
+.skin-arcade .br-dt { border: none; border-radius: 9px; color: #16122B; font-weight: 700; }
+.skin-arcade .br-dt[data-dt="AWD"] { background: #46C7FF; }
+.skin-arcade .br-dt[data-dt="RWD"] { background: #FF9B4D; }
+.skin-arcade .br-dt[data-dt="FWD"] { background: #37E29A; }
+.skin-arcade .br-dt[data-dt="none"] { background: var(--skin-surface-2); color: var(--skin-muted); }
+
 /* Préférence « taille de police » : agrandit la base rem → tout le site
    (textes, espacements en rem) grossit proportionnellement. Défaut = 16px. */
 .text-scale-large {

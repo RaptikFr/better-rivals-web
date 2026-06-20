@@ -60,7 +60,7 @@ export function FollowButton({ followedPlayerId }: { followedPlayerId: string })
       className={`px-4 py-2 rounded-full text-sm font-bold transition-all disabled:opacity-50 ${
         following
           ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-700 hover:border-red-400 hover:text-red-400'
-          : 'text-white bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-90'
+          : 'br-cta text-white bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-90'
       }`}
     >
       {following ? '✓ Suivi' : '+ Suivre'}

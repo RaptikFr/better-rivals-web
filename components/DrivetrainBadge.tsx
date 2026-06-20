@@ -19,7 +19,9 @@ export function DrivetrainBadge({ drivetrain }: { drivetrain: Drivetrain | null 
     ? DRIVETRAIN_COLORS[drivetrain]
     : "bg-neutral-200 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400";
   return (
-    <span className={`px-2 py-0.5 border rounded text-xs font-bold ${style}`}>
+    // `br-dt` + `data-dt` : cibles stables pour les signatures de skin (Arcade =
+    // badges pleins, cf. globals.css). Sans effet en skin Classic.
+    <span data-dt={drivetrain ?? "none"} className={`br-dt px-2 py-0.5 border rounded text-xs font-bold ${style}`}>
       {drivetrain ?? "—"}
     </span>
   );

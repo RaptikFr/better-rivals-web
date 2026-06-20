@@ -142,13 +142,13 @@ export default function Navbar() {
     }`;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md">
+    <header className="br-navbar sticky top-0 z-50 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
 
         {/* Logo */}
         <Link
           href="/"
-          className="text-xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-80 transition-opacity"
+          className="br-logo text-xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-80 transition-opacity"
         >
           Better Rivals
         </Link>
@@ -370,7 +370,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/inscription"
-                className="px-3 py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-90 transition-opacity"
+                className="br-cta px-3 py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-90 transition-opacity"
               >
                 S&apos;inscrire
               </Link>
@@ -460,7 +460,7 @@ export default function Navbar() {
                   <Link
                     href="/inscription"
                     onClick={() => setMobileOpen(false)}
-                    className="block mt-1 px-3 py-2.5 rounded-lg text-sm font-bold text-center text-white bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-90 transition-opacity"
+                    className="br-cta block mt-1 px-3 py-2.5 rounded-lg text-sm font-bold text-center text-white bg-gradient-to-r from-pink-500 to-violet-600 hover:opacity-90 transition-opacity"
                   >
                     S&apos;inscrire
                   </Link>
