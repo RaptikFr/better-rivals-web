@@ -14,11 +14,11 @@ Le projet est édité depuis **deux machines** du proprio. Comme `relais_gui_v21
 | Machine | COMPUTERNAME | Python | `gh` | `upx` |
 |---|---|---|---|---|
 | **PORTABLE** | `PC-RENAUD` | 3.14.0 | absent | absent |
-| **FIXE** | *(à capturer la prochaine fois qu'on y est)* | 3.13.2 | présent (2.94) | absent |
+| **FIXE** | `RAPTIK-PC` | 3.13.2 | présent (2.94) | absent |
 
-→ Si `COMPUTERNAME == "PC-RENAUD"` ⇒ **portable**. Sinon, supposer le fixe (et en profiter pour relever et consigner son COMPUTERNAME ici).
+→ Si `COMPUTERNAME == "PC-RENAUD"` ⇒ **portable** ; si `RAPTIK-PC` ⇒ **fixe**. (COMPUTERNAME du fixe relevé le 20/06.)
 
-**Conséquence pratique** : avant toute modif du relais, vérifier quelle copie est la plus à jour. Au 19/06, le **portable a v1.11.2**, le **fixe a v1.11.1** (en retard). Sur le fixe : `gh` simplifie les releases ; sur le portable : pas de `gh`, release via fallback Python/requests + `git credential fill`.
+**Conséquence pratique** : avant toute modif du relais, vérifier quelle copie est la plus à jour. **20/06 : divergence RÉSOLUE — le proprio a recopié `relais_gui_v21.py` v1.13.0 du portable vers le fixe** ; les deux machines sont désormais alignées sur v1.13.0. Sur le fixe : `gh` simplifie les releases ; sur le portable : pas de `gh`, release via fallback Python/requests + `git credential fill`.
 
 Note taille exe : ni le portable ni le fixe n'ont UPX. L'écart (portable ~14,5 Mo vs fixe ~18-19 Mo) vient surtout de la version de Python embarquée (3.14 vs 3.13), pas d'UPX. Pas un sujet (non compressé = + sûr antivirus, choix assumé).
 

@@ -19,10 +19,9 @@ metadata:
 - Contrôler que les valeurs sont **plausibles** : `point_count` ≈ longueur du circuit / 12 m, vitesse cohérente, % accélérateur/frein crédibles.
 - C'est la **même validation que les secteurs** : si l'offset distance 292 est bon, la trace l'est aussi.
 
-**2. ⚠️ AVANT de toucher au relais sur le PC FIXE : recopier la version à jour depuis le portable.**
-- Le **portable a la dernière version (v1.13.0)**, le **FIXE est EN RETARD (v1.11.1)**.
-- Le relais est **gitignoré** → si tu édites la vieille copie du fixe, tu perds tout le travail récent (secteurs + trace).
-- Donc : **copier `relais_gui_v21.py` (et son dossier) du portable vers le fixe d'abord**, puis seulement éditer.
+**2. ✅ FAIT le 20/06 — recopier la version à jour du portable sur le fixe.**
+- Le proprio a recopié `relais_gui_v21.py` **v1.13.0** à la racine sur le fixe (`RAPTIK-PC`, APP_VERSION confirmé 1.13.0). Divergence résolue, voir [[relais-serveur-et-rang]].
+- (Le relais reste **gitignoré** → toujours travailler sur la copie à jour.)
 
 **3. Me prévenir une fois (1) validé.**
 - Dès que les offsets sont confirmés en jeu, on enchaîne sur le code relais du delta live : je t'écris la fonction d'interpolation du temps de référence + le format de l'overlay « +0,3s vs PB », tu l'intègres au `.py`, puis on publie une nouvelle release relais.
