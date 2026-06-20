@@ -190,8 +190,15 @@ export function TheoreticalLapBanner({ laps, optimal }: { laps: LapTime[]; optim
   const theo = optimal ?? computeTheoretical(laps);
   if (!theo) return null;
 
+  // Meilleur temps réel de la config (laps triés par temps). Si le tour optimal
+  // est PLUS LENT (le vrai meilleur tour n'a pas de données de secteurs, ex. un
+  // tour d'avant la télémétrie), l'agrégat est incomplet → on n'affiche rien
+  // plutôt qu'un « optimal » incohérent, plus lent que le n°1.
+  const realBest = laps.length ? laps[0].time_ms : theo.realBestMs;
+  if (theo.totalMs > realBest) return null;
+
   const decSep   = prefs.decimalSep === 'comma' ? ',' : '.';
-  const gain     = theo.realBestMs - theo.totalMs;
+  const gain     = realBest - theo.totalMs;
   const optimise = optimal != null;
 
   return (
