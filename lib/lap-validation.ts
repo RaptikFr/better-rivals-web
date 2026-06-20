@@ -165,6 +165,7 @@ export function nbSecteurs(lengthKm: number | null | undefined): number {
 export function secteursDepuisTrace(
   samples: { d?: unknown; t?: unknown } | null | undefined,
   n: number,
+  lapTimeMs?: number,
 ): number[] | null {
   if (!samples || !Number.isInteger(n) || n < 2) return null;
   const d = samples.d, t = samples.t;
@@ -172,7 +173,10 @@ export function secteursDepuisTrace(
     return null;
   }
   const dFinal = Number(d[d.length - 1]);
-  const tFinal = Number(t[t.length - 1]);
+  // Borne d'arrivée = le vrai temps du tour quand on l'a (le dernier échantillon
+  // de la trace tombe quelques ms AVANT la ligne ; sans ça le dernier secteur
+  // est sous-compté et la somme ne retombe pas sur time_ms → faux gain affiché).
+  const tFinal = (lapTimeMs && lapTimeMs > 0) ? lapTimeMs / 1000 : Number(t[t.length - 1]);
   if (!(dFinal > 0) || !(tFinal > 0)) return null;
 
   // Temps (s) interpolé linéairement à la distance `cible` le long de la trace.

@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       const { data: track } = await supabaseAdmin
         .from('tracks').select('length_km').eq('id', lap.track_id).maybeSingle();
       const n = nbSecteurs(track?.length_km);
-      const secteurs = secteursDepuisTrace(trace, n);
+      const secteurs = secteursDepuisTrace(trace, n, lap.time_ms);
       // Garde-fou : la somme doit retomber sur le temps du tour (sinon on n'écrit
       // pas plutôt que d'afficher un tour théorique incohérent).
       if (secteurs && secteursValides(secteurs.map(ms => ms / 1000), lap.time_ms)) {

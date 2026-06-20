@@ -124,6 +124,14 @@ describe('secteursDepuisTrace', () => {
     expect(secteursDepuisTrace({ d, t }, 5)).toEqual([10_000, 10_000, 10_000, 10_000, 10_000]);
   });
 
+  it('utilise le vrai temps du tour comme borne d’arrivée (somme = time_ms)', () => {
+    const d = [0, 1000, 2000, 3000, 4000, 5000];
+    const t = [0, 10, 20, 30, 40, 50]; // dernier échantillon à 50 s, ligne à 51 s
+    const sect = secteursDepuisTrace({ d, t }, 5, 51_000);
+    expect(sect).toEqual([10_000, 10_000, 10_000, 10_000, 11_000]);
+    expect(sect!.reduce((a, b) => a + b, 0)).toBe(51_000);
+  });
+
   it('rejette une trace incohérente (trop courte, non-monotone, n<2)', () => {
     expect(secteursDepuisTrace({ d: [0, 1, 2], t: [0, 1, 2] }, 5)).toBeNull(); // < n+1 points
     expect(secteursDepuisTrace({ d: [0, 1000], t: [0, 10] }, 1)).toBeNull();   // n < 2
