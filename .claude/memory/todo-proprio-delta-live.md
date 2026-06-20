@@ -24,7 +24,7 @@ metadata:
 - (Le relais reste **gitignoré** → toujours travailler sur la copie à jour.)
 
 **3. Me prévenir une fois (1) validé.**
-- Dès que les offsets sont confirmés en jeu, on enchaîne sur le code relais du delta live : je t'écris la fonction d'interpolation du temps de référence + le format de l'overlay « +0,3s vs PB », tu l'intègres au `.py`, puis on publie une nouvelle release relais.
+- ⚠️ MISE À JOUR 20/06 : **le code relais du delta live est DÉJÀ écrit** (classe `LiveDelta` + overlay « DELTA LIVE vs PB » dans `relais_gui_v21.py`, `APP_VERSION=1.14.0`, sur le fixe — voir [[feature-delta-live]]). Donc dès que les offsets sont confirmés en jeu, il ne reste qu'à **build + release v1.14.0** (`gh` est sur le fixe) + bump `/telecharger`. Plus besoin de coder, juste valider + publier.
 
 ---
 

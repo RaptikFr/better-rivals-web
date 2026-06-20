@@ -33,7 +33,7 @@ Détail de chaque idée ci-dessous.
 **🧱 Brique fondatrice — capture de trace télémétrique** : **CODE LIVRÉ le 19/06** (voir [[feature-trace-telemetrie]]). Table `lap_traces` + `POST /api/traces` + `TraceRecorder` relais (échantillonnage par distance 12 m : distance/temps/vitesse/accel/frein/volant ; upload au nouveau record). Reste : appliquer `lap_traces.sql` + release relais v1.13.0 + valider offsets en jeu. **Séquence logique : secteurs ✅ → [trace ✅ code] → delta live (#1, PROCHAIN) → coach → copilote.**
 
 Idées (numérotation d'origine conservée) :
-1. **Delta live vs fantôme (PB ou rival)** — overlay relais « +0,3s vs PB » à distance égale, depuis une trace de référence. Dépend de la brique. *« pourquoi pas, à voir l'intégration »*.
+1. **Delta live vs fantôme (PB ou rival)** — overlay relais « +0,3s vs PB » à distance égale, depuis une trace de référence. **CODE RELAIS ÉCRIT le 20/06 (v1.14.0), pas encore release (attend validation offsets en jeu)** — vs le PB pour l'instant. Voir [[feature-delta-live]]. *« pourquoi pas, à voir l'intégration »*.
 2. **Temps par secteurs + tour théorique** (somme des meilleurs secteurs) — 1er livrable de la brique, le plus simple. *« j'aime beaucoup »*.
 3. **Coach post-tour** — analyse trace : freinage tôt/tard, patinage, sous/survirage → rapport. *« j'adore »*.
 4. **Score de régularité** — variance entre tours + badge « métronome ». *« oui »*.

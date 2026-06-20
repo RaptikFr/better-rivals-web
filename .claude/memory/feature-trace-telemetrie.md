@@ -22,6 +22,6 @@ metadata:
 
 **RESTE :**
 1. ⚠️ **Valider les offsets en jeu** (distance 292 + speed/accel/brake/steer). **Même validation que les secteurs** : si distance 292 est bon, la trace l'est aussi. Vérifier qu'une ligne `lap_traces` se crée après un record (mode circuit) et que les valeurs sont plausibles (vitesse, % accel/frein, point_count ≈ longueur/12).
-2. **#1 delta live** : ✅ **GET /api/traces FAIT (19/06, commit e1b2cfa)** — auth Bearer + rate-limit, résout le joueur via token, renvoie la trace de son PB sur la config exacte (`track_id+car_ordinal+car_class+drivetrain`) = `{lap_time_id, time_ms, sample_dist_m, point_count, samples}` ; **204** si pas de PB ou pas de trace sur la config. RESTE côté **relais** (gitignoré) : appeler ce GET à la sélection de config, charger d+t de la trace de réf, et afficher l'overlay « +0,3s vs PB » par interpolation du temps de réf à distance égale (en course). Voir [[feature-secteurs]] pour la séquence brique.
+2. **#1 delta live** : ✅ **GET /api/traces FAIT (19/06, commit e1b2cfa)** + ✅ **CODE RELAIS ÉCRIT le 20/06** (classe `LiveDelta` + overlay « DELTA LIVE vs PB », source v21 `APP_VERSION=1.14.0`). La config voiture n'étant pas connue à la sélection du circuit, la trace de réf est chargée **en live** dès que la voiture est détectée. Détails complets : [[feature-delta-live]]. RESTE : valider les offsets en jeu, puis build + release relais v1.14.0.
 
-**Pas encore fait** : l'intégration relais du delta live (#1, charge GET + overlay), et toute visualisation de trace côté site (coach #3).
+**Pas encore fait** : la visualisation de trace côté site (coach #3) et le copilote (#5).
