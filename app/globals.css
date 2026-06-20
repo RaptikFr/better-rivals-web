@@ -223,6 +223,15 @@ body {
 .skin-arcade .br-cta { box-shadow: 0 5px 0 #1fa873; }
 .skin-arcade .br-cta:active { transform: translateY(4px); box-shadow: 0 1px 0 #1fa873; }
 
+/* Cartes — Arcade : ombres pleines décalées (signature « chunky »).
+   Heuristique sans toucher les composants : un conteneur à bordure 1px pleine
+   (.border) + grand rayon (.rounded-xl/2xl/3xl) = une carte. Les boutons/inputs
+   (rounded-lg/full) et les lignes de tableau (border-t) sont exclus de fait.
+   Le cadre de sélection des skins (border-2) l'est aussi. */
+.skin-arcade :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border {
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.22);
+}
+
 /* Badges transmission (.br-dt). Arcade : pleins, texte foncé (cf. README). */
 .skin-telemetry .br-dt { border-radius: 0; }
 .skin-arcade .br-dt { border: none; border-radius: 9px; color: #16122B; font-weight: 700; }
