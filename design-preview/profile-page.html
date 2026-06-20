@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Pages" name="Profil joueur" subtitle="Page complète : en-tête, badges, tableau de chronos par circuit" -->
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Profil joueur — aperçu page entière</title>
+<style>
+  :root {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  /* Thème sombre (défaut) */
+  [data-theme="dark"] {
+    --bg: #0a0a0a; --fg: #fafafa; --muted: #737373;
+    --card: #171717; --card-head: #0a0a0a; --border: #262626;
+    --row-border: rgba(38,38,38,.5); --row-hover: rgba(38,38,38,.4);
+    --neutral-btn-bg: #262626; --neutral-btn-fg: #d4d4d4; --neutral-btn-border: #404040;
+  }
+  [data-theme="light"] {
+    --bg: #ffffff; --fg: #171717; --muted: #737373;
+    --card: #f5f5f5; --card-head: #e5e5e5; --border: #e5e5e5;
+    --row-border: rgba(229,229,229,.6); --row-hover: rgba(229,229,229,.5);
+    --neutral-btn-bg: #e5e5e5; --neutral-btn-fg: #404040; --neutral-btn-border: #d4d4d4;
+  }
+  body { margin: 0; background: var(--bg); color: var(--fg); min-height: 100vh; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+  .toolbar { display: flex; justify-content: flex-end; padding: 12px 24px 0; max-width: 1100px; margin: 0 auto; }
+  .toggle-theme { font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer; background: var(--card); color: var(--fg); border: 1px solid var(--border); }
+
+  /* === En-tête === */
+  .header { display: flex; align-items: center; gap: 24px; margin-bottom: 40px; }
+  .avatar { width: 80px; height: 80px; border-radius: 9999px; background: linear-gradient(135deg, #ec4899, #7c3aed); display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 800; color: #fff; flex-shrink: 0; }
+  .htext { flex: 1; min-width: 0; }
+  .pseudo { font-size: 44px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 4px; background: linear-gradient(to right, #ec4899, #7c3aed); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+  .podiums { display: flex; gap: 12px; font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .hactions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; align-self: flex-start; }
+  .btn-follow { padding: 8px 16px; border-radius: 9999px; font-size: 14px; font-weight: 700; color: #fff; background: linear-gradient(to right, #ec4899, #7c3aed); border: none; cursor: pointer; }
+  .link-cmp { font-size: 14px; font-weight: 600; color: #f472b6; text-decoration: none; }
+
+  /* BadgesBar */
+  .badges-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--muted); background: none; border: none; cursor: pointer; padding: 4px 0 0; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding: 0; list-style: none; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; border: 1px solid; font-size: 12px; font-weight: 600; }
+  .gold { border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.1); color: #fcd34d; }
+  .violet-p { border-color: rgba(167,139,250,.4); background: rgba(167,139,250,.1); color: #c4b5fd; }
+
+  /* === Circuits === */
+  .circuits { display: flex; flex-direction: column; gap: 16px; }
+  .circuit { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .circuit-head { width: 100%; padding: 12px 20px; background: var(--card-head); display: flex; align-items: center; gap: 12px; cursor: pointer; border: none; color: var(--fg); text-align: left; font: inherit; }
+  .circuit-head h2 { font-size: 16px; font-weight: 800; margin: 0; }
+  .circuit-head .km { font-size: 14px; color: var(--muted); }
+  .circuit-head .cfg { margin-left: auto; font-size: 12px; color: var(--muted); font-family: var(--mono); margin-right: 4px; }
+  .chev { width: 16px; height: 16px; color: var(--muted); transition: transform .2s; }
+  .chev.open { transform: rotate(180deg); }
+
+  .rows { border-top: 1px solid var(--border); }
+  .lap { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--row-border); font-size: 14px; }
+  .lap:last-child { border-bottom: 0; }
+  .lap:hover { background: var(--row-hover); }
+  .rank { font-weight: 700; color: var(--muted); width: 28px; text-align: right; font-variant-numeric: tabular-nums; }
+  .time { font-family: var(--mono); font-weight: 700; color: #f472b6; font-size: 16px; width: 96px; }
+  .class { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; width: 40px; text-align: center; }
+  .dt { padding: 2px 8px; border: 1px solid; border-radius: 4px; font-size: 12px; font-weight: 700; }
+  .dt-awd { background: rgba(59,130,246,.2); border-color: rgba(59,130,246,.5); color: #60a5fa; }
+  .dt-rwd { background: rgba(249,115,22,.2); border-color: rgba(249,115,22,.5); color: #fb923c; }
+  .dt-fwd { background: rgba(34,197,94,.2); border-color: rgba(34,197,94,.5); color: #4ade80; }
+  .car { flex: 1; color: var(--fg); opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pi { color: var(--muted); font-family: var(--mono); font-size: 12px; width: 64px; }
+  .rivals { width: 200px; display: flex; flex-direction: column; gap: 2px; font-size: 12px; white-space: nowrap; }
+  .ahead { color: #38bdf8; } .behind { color: #fbbf24; } .muted { color: var(--muted); }
+  .rmono { font-family: var(--mono); }
+  .actions { display: flex; gap: 8px; margin-left: auto; }
+  .ic { font-size: 16px; cursor: pointer; }
+  .ic.on-target { filter: none; } .ic.off { opacity: .5; }
+</style>
+</head>
+<body>
+  <div class="toolbar"><button class="toggle-theme" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'">🌓 Basculer clair / sombre</button></div>
+  <div class="wrap">
+
+    <!-- En-tête -->
+    <div class="header">
+      <div class="avatar">N</div>
+      <div class="htext">
+        <h1 class="pseudo">NightRider</h1>
+        <div class="stats">
+          <span>42 chronos</span><span>·</span><span>11 circuits</span><span>·</span><span>18 voitures</span>
+        </div>
+        <div class="podiums"><span>🥇 7</span><span>🥈 4</span><span>🥉 3</span></div>
+        <button class="badges-toggle">🏅 Badges (3)
+          <svg class="chev open" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <ul class="pills">
+          <li class="pill gold">🥇 Top 10 général</li>
+          <li class="pill violet-p">💎 Vétéran</li>
+          <li class="pill gold">🔥 Sur le podium</li>
+        </ul>
+      </div>
+      <div class="hactions">
+        <button class="btn-follow">+ Suivre</button>
+        <a class="link-cmp" href="#">⚔️ Comparer</a>
+      </div>
+    </div>
+
+    <!-- Circuits -->
+    <div class="circuits">
+
+      <!-- Circuit ouvert -->
+      <div class="circuit">
+        <button class="circuit-head" onclick="this.parentElement.querySelector('.rows').classList.toggle('hidden'); this.querySelector('.chev').classList.toggle('open')">
+          <h2>Nürburgring Nordschleife</h2><span class="km">· 20.8 km</span>
+          <span class="cfg">3 configs</span>
+          <svg class="chev open" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="rows">
+          <div class="lap">
+            <span class="rank">1</span>
+            <span class="time">6:42.183</span>
+            <span class="class" style="background:#F43156;color:#fff">A</span>
+            <span class="dt dt-awd">AWD</span>
+            <span class="car">2020 Nissan GT-R Nismo</span>
+            <span class="pi">PI 798</span>
+            <span class="rivals">
+              <span class="ahead">▲ SpeedKing <span class="rmono">−0.342</span></span>
+              <span class="behind">▼ DriftBoss <span class="rmono">+0.118</span></span>
+            </span>
+            <span class="actions"><span class="ic off">🎯</span><span class="ic">⚔️</span></span>
+          </div>
+          <div class="lap">
+            <span class="rank">2</span>
+            <span class="time">6:55.901</span>
+            <span class="class" style="background:#B960E8;color:#fff">S1</span>
+            <span class="dt dt-rwd">RWD</span>
+            <span class="car">2018 Porsche 911 GT3 RS</span>
+            <span class="pi">PI 845</span>
+            <span class="rivals">
+              <span class="ahead">▲ ApexHunter <span class="rmono">−1.204</span></span>
+              <span class="muted">▼ —</span>
+            </span>
+            <span class="actions"><span class="ic" style="color:#f472b6">🎯</span><span class="ic">⚔️</span></span>
+          </div>
+          <div class="lap">
+            <span class="rank">3</span>
+            <span class="time">7:12.440</span>
+            <span class="class" style="background:#FCC534;color:#000">C</span>
+            <span class="dt dt-fwd">FWD</span>
+            <span class="car">2017 Honda Civic Type R</span>
+            <span class="pi">PI 612</span>
+            <span class="rivals"><span class="muted">Seul sur la config</span></span>
+            <span class="actions"><span class="ic off">🎯</span><span class="ic">⚔️</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Circuit fermé -->
+      <div class="circuit">
+        <button class="circuit-head" onclick="this.parentElement.querySelector('.rows').classList.toggle('hidden'); this.querySelector('.chev').classList.toggle('open')">
+          <h2>Mount Panorama</h2><span class="km">· 6.2 km</span>
+          <span class="cfg">5 configs</span>
+          <svg class="chev" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="rows hidden">
+          <div class="lap"><span class="rank">1</span><span class="time">2:01.337</span><span class="class" style="background:#19D858;color:#000">X</span><span class="dt dt-awd">AWD</span><span class="car">2022 Koenigsegg Jesko</span><span class="pi">PI 998</span><span class="rivals"><span class="muted">Seul sur la config</span></span><span class="actions"><span class="ic off">🎯</span><span class="ic">⚔️</span></span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <style>.rows.hidden { display: none; }</style>
+</body>
+</html>

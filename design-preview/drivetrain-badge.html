@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Components" name="DrivetrainBadge" subtitle="AWD / RWD / FWD / null + filtres, thème clair & sombre" -->
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DrivetrainBadge — aperçu</title>
+<style>
+  :root {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px;
+    background: #fafafa;
+    color: #171717;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #737373; font-size: 13px; margin: 0 0 28px; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 760px;
+  }
+  .panel {
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid;
+  }
+  .panel.light { background: #ffffff; border-color: #e5e5e5; }
+  .panel.dark  { background: #0a0a0a; border-color: #262626; color: #fafafa; }
+  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; opacity: .6; margin: 0 0 16px; font-weight: 600; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+  .row:last-child { margin-bottom: 0; }
+  .label { font-size: 11px; opacity: .5; width: 100%; margin-bottom: 6px; }
+
+  /* === DrivetrainBadge : px-2 py-0.5 border rounded text-xs font-bold === */
+  .badge {
+    padding: 2px 8px;
+    border: 1px solid;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  /* DRIVETRAIN_COLORS (fond /20, bordure /50, texte -400) */
+  .b-awd  { background: rgba(59,130,246,.20); border-color: rgba(59,130,246,.50); color: #60a5fa; }
+  .b-rwd  { background: rgba(249,115,22,.20); border-color: rgba(249,115,22,.50); color: #fb923c; }
+  .b-fwd  { background: rgba(34,197,94,.20);  border-color: rgba(34,197,94,.50);  color: #4ade80; }
+  /* null — clair */
+  .light .b-null { background: #e5e5e5; border-color: #d4d4d4; color: #525252; }
+  /* null — sombre */
+  .dark  .b-null { background: #262626; border-color: #404040; color: #a3a3a3; }
+
+  /* === DRIVETRAIN_FILTER_COLORS (couleurs pleines, état actif) === */
+  .filter {
+    padding: 6px 14px;
+    border: 1px solid;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: default;
+  }
+  .light .f-tous { background: #171717; color: #fff; border-color: #171717; }
+  .dark  .f-tous { background: #fff; color: #000; border-color: #fff; }
+  .f-awd { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+  .f-rwd { background: #f97316; color: #fff; border-color: #f97316; }
+  .f-fwd { background: #22c55e; color: #fff; border-color: #22c55e; }
+</style>
+</head>
+<body>
+  <h1>DrivetrainBadge</h1>
+  <p class="sub">Aperçu local — généré depuis <code>components/DrivetrainBadge.tsx</code>. Couleurs exactes du composant.</p>
+
+  <div class="grid">
+    <!-- THÈME CLAIR -->
+    <div class="panel light">
+      <h2>Thème clair</h2>
+
+      <div class="label">Badge (DRIVETRAIN_COLORS)</div>
+      <div class="row">
+        <span class="badge b-awd">AWD</span>
+        <span class="badge b-rwd">RWD</span>
+        <span class="badge b-fwd">FWD</span>
+        <span class="badge b-null">—</span>
+      </div>
+
+      <div class="label">Filtre actif (DRIVETRAIN_FILTER_COLORS)</div>
+      <div class="row">
+        <span class="filter f-tous">Tous</span>
+        <span class="filter f-awd">AWD</span>
+        <span class="filter f-rwd">RWD</span>
+        <span class="filter f-fwd">FWD</span>
+      </div>
+    </div>
+
+    <!-- THÈME SOMBRE -->
+    <div class="panel dark">
+      <h2>Thème sombre</h2>
+
+      <div class="label">Badge (DRIVETRAIN_COLORS)</div>
+      <div class="row">
+        <span class="badge b-awd">AWD</span>
+        <span class="badge b-rwd">RWD</span>
+        <span class="badge b-fwd">FWD</span>
+        <span class="badge b-null">—</span>
+      </div>
+
+      <div class="label">Filtre actif (DRIVETRAIN_FILTER_COLORS)</div>
+      <div class="row">
+        <span class="filter f-tous">Tous</span>
+        <span class="filter f-awd">AWD</span>
+        <span class="filter f-rwd">RWD</span>
+        <span class="filter f-fwd">FWD</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

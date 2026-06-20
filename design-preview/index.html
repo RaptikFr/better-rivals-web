@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>better-rivals — Design System (aperçu local)</title>
+<style>
+  :root { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f4f4f5; color: #18181b; }
+  header { padding: 32px 40px 8px; }
+  header h1 { font-size: 24px; margin: 0 0 4px; }
+  header p { color: #71717a; font-size: 14px; margin: 0; }
+  .cards { display: flex; flex-direction: column; gap: 28px; padding: 24px 40px 60px; }
+  .card { background: #fff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .card-head { display: flex; align-items: baseline; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #f0f0f1; }
+  .card-head .name { font-weight: 700; font-size: 15px; }
+  .card-head .sub { color: #a1a1aa; font-size: 12px; }
+  .card-head .grp { margin-left: auto; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #a1a1aa; }
+  iframe { width: 100%; border: 0; display: block; background: #fafafa; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>better-rivals — Design System</h1>
+    <p>Aperçu local · galerie de composants UI · généré depuis <code>components/</code>. Ce dossier est une démo, il ne touche pas au site.</p>
+  </header>
+  <div class="cards">
+    <div class="card">
+      <div class="card-head"><span class="name">Profil joueur — page entière</span><span class="sub">Composants assemblés en vraie page</span><span class="grp">Pages</span></div>
+      <iframe src="profile-page.html" height="640" title="Profil joueur"></iframe>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="name">DrivetrainBadge</span><span class="sub">AWD / RWD / FWD / null + filtres</span><span class="grp">Components</span></div>
+      <iframe src="drivetrain-badge.html" height="280" title="DrivetrainBadge"></iframe>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="name">TypeBadge</span><span class="sub">6 types de course + fallback</span><span class="grp">Components</span></div>
+      <iframe src="type-badge.html" height="240" title="TypeBadge"></iframe>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="name">BadgesBar</span><span class="sub">Pastilles par ton, état déplié</span><span class="grp">Components</span></div>
+      <iframe src="badges-bar.html" height="260" title="BadgesBar"></iframe>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="name">FollowButton</span><span class="sub">Suivre / Suivi / désactivé</span><span class="grp">Components</span></div>
+      <iframe src="follow-button.html" height="300" title="FollowButton"></iframe>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="name">RivalsCell</span><span class="sub">Cible / menace / seul</span><span class="grp">Components</span></div>
+      <iframe src="rivals-cell.html" height="320" title="RivalsCell"></iframe>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="name">TargetButton + ChallengeButton</span><span class="sub">Objectif & Défi, états + compact</span><span class="grp">Components</span></div>
+      <iframe src="action-buttons.html" height="300" title="Boutons d'action"></iframe>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="name">GlobalSearch</span><span class="sub">Panneau de recherche ouvert</span><span class="grp">Components</span></div>
+      <iframe src="global-search.html" height="380" title="GlobalSearch"></iframe>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="name">DiscordTag</span><span class="sub">Lien icône Discord</span><span class="grp">Components</span></div>
+      <iframe src="discord-tag.html" height="240" title="DiscordTag"></iframe>
+    </div>
+  </div>
+</body>
+</html>
