@@ -48,6 +48,9 @@ next-env.d.ts
 # Supabase CLI — fichiers temporaires locaux
 supabase/.temp/
 
+# Handoff design des skins (référence locale Claude Design, non poussée)
+/Modernisation du site/
+
 # Relais desktop (outil local, jamais envoyé sur GitHub)
 /relais/
 relais*.py
