@@ -20,11 +20,11 @@ metadata:
 - C'est la **même validation que les secteurs** : si l'offset distance 292 est bon, la trace l'est aussi.
 
 **2. ✅ FAIT le 20/06 — recopier la version à jour du portable sur le fixe.**
-- Le proprio a recopié `relais_gui_v21.py` **v1.13.0** à la racine sur le fixe (`RAPTIK-PC`, APP_VERSION confirmé 1.13.0). Divergence résolue, voir [[relais-serveur-et-rang]].
+- Le proprio a recopié `relais_gui_v22.py` **v1.13.0** à la racine sur le fixe (`RAPTIK-PC`, APP_VERSION confirmé 1.13.0). Divergence résolue, voir [[relais-serveur-et-rang]].
 - (Le relais reste **gitignoré** → toujours travailler sur la copie à jour.)
 
 **3. Me prévenir une fois (1) validé.**
-- ⚠️ MISE À JOUR 20/06 : **le code relais du delta live est DÉJÀ écrit** (classe `LiveDelta` + overlay « DELTA LIVE vs PB » dans `relais_gui_v21.py`, `APP_VERSION=1.14.0`, sur le fixe — voir [[feature-delta-live]]). Donc dès que les offsets sont confirmés en jeu, il ne reste qu'à **build + release v1.14.0** (`gh` est sur le fixe) + bump `/telecharger`. Plus besoin de coder, juste valider + publier.
+- ⚠️ MISE À JOUR 20/06 : **le code relais du delta live est DÉJÀ écrit** (classe `LiveDelta` + overlay « DELTA LIVE vs PB » dans `relais_gui_v22.py`, `APP_VERSION=1.14.0`, sur le fixe — voir [[feature-delta-live]]). Donc dès que les offsets sont confirmés en jeu, il ne reste qu'à **build + release v1.14.0** (`gh` est sur le fixe) + bump `/telecharger`. Plus besoin de coder, juste valider + publier.
 
 ---
 

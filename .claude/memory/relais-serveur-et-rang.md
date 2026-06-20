@@ -1,15 +1,17 @@
 ---
 name: relais-serveur-et-rang
-description: "Relais Python relais_gui_v21.py (gitignoré, sur fixe+portable). Dernière release v1.13.0 (trace télémétrie) publiée 19/06 depuis le PORTABLE → ⚠️ portable = source à jour (v1.13.0), fixe en retard (v1.11.1). gh absent du portable → release via fallback Python/requests+git credential"
+description: "Relais Python relais_gui_v22.py (gitignoré, sur fixe+portable). Dernière release v1.13.0 (trace télémétrie) publiée 19/06 depuis le PORTABLE → ⚠️ portable = source à jour (v1.13.0), fixe en retard (v1.11.1). gh absent du portable → release via fallback Python/requests+git credential"
 metadata: 
   node_type: memory
   type: project
   originSessionId: cae85036-f3e2-4180-a051-95649963b520
 ---
 
-**Le code du relais existe sur LES DEUX machines** (fixe + portable) — fichier `relais_gui_v21.py` à la racine, gitignoré. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution du relais est éditable ici** (py_compile dispo en local pour le check syntaxe).
+**Le code du relais existe sur LES DEUX machines** (fixe + portable) — fichier `relais_gui_v22.py` à la racine, gitignoré. Appli Python/Tkinter qui capte la télémétrie UDP de Forza et appelle l'API. **Donc toute évolution du relais est éditable ici** (py_compile dispo en local pour le check syntaxe).
 
-✅ **DIVERGENCE RÉSOLUE LE 20/06 : le proprio a recopié `relais_gui_v21.py` v1.13.0 du portable vers le FIXE** (`RAPTIK-PC`, vérifié : `APP_VERSION="1.13.0"` à la racine). Les deux machines sont désormais alignées sur **v1.13.0**. Le fixe peut donc reprendre le développement relais sans risque de perdre les briques secteurs/trace. (Historique : les v1.11.2 #13, v1.12.0 secteurs, v1.13.0 trace ont été développées+buildées+publiées sur le PORTABLE, `gh` absent → fallback requests, exe 14,5 Mo.) Pour savoir sur quelle machine on est : [[identification-machine]].
+✅ **DIVERGENCE RÉSOLUE LE 20/06 : le proprio a recopié `relais_gui_v22.py` v1.13.0 du portable vers le FIXE** (`RAPTIK-PC`, vérifié : `APP_VERSION="1.13.0"` à la racine). Les deux machines sont désormais alignées sur **v1.13.0**. Le fixe peut donc reprendre le développement relais sans risque de perdre les briques secteurs/trace. (Historique : les v1.11.2 #13, v1.12.0 secteurs, v1.13.0 trace ont été développées+buildées+publiées sur le PORTABLE, `gh` absent → fallback requests, exe 14,5 Mo.) Pour savoir sur quelle machine on est : [[identification-machine]].
+
+📛 **RENOMMAGE 20/06 : `relais_gui_v21.py` → `relais_gui_v22.py`** (convention [[versionnage-relais]] : un fichier `vN` par grosse MAJ ; le delta live en est une). Titre du docstring + ligne « Packaging » mis à jour. ⚠️ Le fixe a maintenant `relais_gui_v22.py` ; **sur le portable il reste `relais_gui_v21.py` (v1.13.0) → à renommer/recopier en v22 avant d'y retoucher** sinon nouvelle divergence (cf. [[identification-machine]]).
 
 🔨 **v1.14.0 — CODE ÉCRIT le 20/06 (sur le FIXE `RAPTIK-PC`), PAS ENCORE RELEASE.** Feature **delta live vs PB** (#1 de la chaîne télémétrie) : classe `LiveDelta` (interpolation du temps de réf à distance égale) + helper `charger_trace_reference` (GET /api/traces) + panneau overlay « DELTA LIVE vs PB » (mode circuit, vert/rouge, chargement de la réf en live dès que la voiture est connue). `APP_VERSION="1.14.0"`, py_compile OK + logique d'interpolation testée hors jeu. **Lecture seule, best-effort, n'altère pas l'envoi.** RESTE avant release : (1) valider les offsets en jeu (mêmes que secteurs/trace), (2) build + `gh release create v1.14.0` + bump `/telecharger` v1.13.0→v1.14.0. Détails : [[feature-delta-live]].
 
