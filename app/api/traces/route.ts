@@ -133,24 +133,26 @@ export async function GET(request: NextRequest) {
       .from('players').select('id').eq('user_id', user.id).single();
     if (!player) return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
 
-    // PB du joueur sur la config exacte (au plus une ligne : unicité par config).
+    // Meilleur tour du joueur sur la config exacte QUI A UNE TRACE. La jointure
+    // interne sur lap_traces écarte les tours sans trace (ex. un tour d'avant la
+    // télémétrie qui serait le PB), et `order + limit(1)` gère proprement le cas
+    // où lap_times a plusieurs lignes pour une même config (sinon .maybeSingle()
+    // levait une erreur → 204, et le delta live ne s'affichait jamais).
     const { data: lap } = await supabaseAdmin
       .from('lap_times')
-      .select('id, time_ms')
+      .select('id, time_ms, lap_traces!inner(sample_dist_m, point_count, samples)')
       .eq('player_id',   player.id)
       .eq('track_id',    trackId)
       .eq('car_ordinal', carOrdinal)
       .eq('car_class',   carClass)
       .eq('drivetrain',  drivetrain)
+      .order('time_ms', { ascending: true })
+      .limit(1)
       .maybeSingle();
-    if (!lap) return new NextResponse(null, { status: 204 }); // pas de PB sur cette config
+    if (!lap) return new NextResponse(null, { status: 204 }); // pas de PB tracé sur cette config
 
-    const { data: trace } = await supabaseAdmin
-      .from('lap_traces')
-      .select('sample_dist_m, point_count, samples')
-      .eq('lap_time_id', lap.id)
-      .maybeSingle();
-    if (!trace) return new NextResponse(null, { status: 204 }); // PB sans trace enregistrée
+    const trace = Array.isArray(lap.lap_traces) ? lap.lap_traces[0] : lap.lap_traces;
+    if (!trace) return new NextResponse(null, { status: 204 });
 
     return NextResponse.json({
       lap_time_id:   lap.id,
