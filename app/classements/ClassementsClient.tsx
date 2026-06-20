@@ -11,11 +11,21 @@ import type { Drivetrain, CarClass } from '@/types/supabase';
 import { usePreferences } from '@/hooks/usePreferences';
 import { DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import {
-  type LapTime, type Track, type RankedLap, type SubGroup, type CircuitGroup,
+  type LapTime, type Track, type RankedLap, type SubGroup, type CircuitGroup, type BestSectorRow,
   CAR_CLASS_ORDER, CIRCUITS_PER_PAGE, STORAGE_KEY, CAR_CLASSES, DRIVETRAIN_OPTIONS,
-  ReportModal,
+  ReportModal, theoreticalFromBest,
 } from './classementsShared';
 import { RankingTableView, RankingCardView } from './RankingViews';
+
+// Ligne best_sectors telle que lue (anon) avec le pseudo du détenteur embarqué.
+type BestSectorRaw = {
+  car_ordinal: number;
+  car_class:   string;
+  drivetrain:  string;
+  sector_index: number;
+  best_ms:     number;
+  players:     { pseudo: string | null } | null;
+};
 
 export default function ClassementsClient({
   initialTrackId,
@@ -42,6 +52,8 @@ export default function ClassementsClient({
   const currentPlayerPseudo = player?.pseudo ?? null;
 
   const [lapTimes,   setLapTimes]   = useState<LapTime[]>([]);
+  // Meilleurs secteurs par config (best_sectors) du circuit affiché → tour optimal.
+  const [bestSectors, setBestSectors] = useState<BestSectorRaw[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
 
@@ -170,6 +182,17 @@ export default function ClassementsClient({
         .range(from, to);
     });
 
+    // Meilleurs secteurs (tour optimal) du circuit — best-effort, en parallèle.
+    // Si ça échoue, la bannière retombe sur le tour théorique (tours-PB chargés).
+    let bsQuery = supabase
+      .from('best_sectors')
+      .select('car_ordinal, car_class, drivetrain, sector_index, best_ms, players ( pseudo )')
+      .eq('track_id', selectedTrackId);
+    if (selectedClass !== 'Toutes')    bsQuery = bsQuery.eq('car_class', selectedClass);
+    if (selectedDrivetrain !== 'Tous') bsQuery = bsQuery.eq('drivetrain', selectedDrivetrain);
+    const { data: bsData } = await bsQuery;
+    setBestSectors((bsData as BestSectorRaw[] | null) ?? []);
+
     if (error) {
       setError("Impossible de charger les classements. Vérifie ta connexion ou réessaie dans quelques instants.");
     } else {
@@ -252,6 +275,14 @@ export default function ClassementsClient({
       byTrack.get(lap.track_id)!.push(lap);
     }
 
+    // best_sectors regroupés par config (même clé que les sous-groupes).
+    const bsByConfig = new Map<string, BestSectorRow[]>();
+    for (const r of bestSectors) {
+      const key = `${r.car_class}|${r.drivetrain}|${r.car_ordinal}`;
+      if (!bsByConfig.has(key)) bsByConfig.set(key, []);
+      bsByConfig.get(key)!.push({ sector_index: r.sector_index, best_ms: r.best_ms, pseudo: r.players?.pseudo ?? null });
+    }
+
     const groups: CircuitGroup[] = [];
 
     for (const [trackId, laps] of byTrack) {
@@ -279,7 +310,8 @@ export default function ClassementsClient({
           const carLabel = `${s.cars?.year ?? ''} ${s.cars?.manufacturer ?? ''} ${s.cars?.name ?? ''}`.trim() || 'Voiture inconnue';
           const sorted = [...subLaps].sort((a, b) => a.time_ms - b.time_ms);
           const rankedLaps = sorted.map((lap, i) => ({ ...lap, rank: i + 1 })) as RankedLap[];
-          return { key, carClass, drivetrain, carLabel, laps: rankedLaps };
+          const optimal = theoreticalFromBest(bsByConfig.get(key) ?? [], rankedLaps[0].time_ms);
+          return { key, carClass, drivetrain, carLabel, laps: rankedLaps, optimal };
         });
 
       groups.push({
@@ -293,7 +325,7 @@ export default function ClassementsClient({
     }
 
     return groups.sort((a, b) => a.trackName.localeCompare(b.trackName));
-  }, [filteredLaps]);
+  }, [filteredLaps, bestSectors]);
 
   // Navigue vers la page contenant la ligne mise en évidence et déplie sa config
   useEffect(() => {

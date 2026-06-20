@@ -217,6 +217,47 @@ export type Database = {
           },
         ]
       }
+      best_sectors: {
+        Row: {
+          best_ms: number
+          car_class: string
+          car_ordinal: number
+          drivetrain: string
+          player_id: string | null
+          recorded_at: string
+          sector_index: number
+          track_id: number
+        }
+        Insert: {
+          best_ms: number
+          car_class: string
+          car_ordinal: number
+          drivetrain: string
+          player_id?: string | null
+          recorded_at?: string
+          sector_index: number
+          track_id: number
+        }
+        Update: {
+          best_ms?: number
+          car_class?: string
+          car_ordinal?: number
+          drivetrain?: string
+          player_id?: string | null
+          recorded_at?: string
+          sector_index?: number
+          track_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "best_sectors_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lap_times: {
         Row: {
           car_class: string
@@ -706,6 +747,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      enregistrer_meilleurs_secteurs: {
+        Args: {
+          p_track_id: number
+          p_car_ordinal: number
+          p_car_class: string
+          p_drivetrain: string
+          p_player_id: string | null
+          p_sectors: number[]
+        }
+        Returns: undefined
+      }
       player_config_rankings: {
         Args: { p_player_id: string }
         Returns: {

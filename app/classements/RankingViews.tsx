@@ -113,7 +113,7 @@ export function RankingTableView({
                   {/* Tableau en colonnes — visible si la config est dépliée */}
                   {isOpen && (
                     <>
-                    <TheoreticalLapBanner laps={group.laps} />
+                    <TheoreticalLapBanner laps={group.laps} optimal={group.optimal} />
                     <div className="overflow-x-auto pb-2">
                       <table className="w-full text-sm border-collapse">
                         <thead>
@@ -283,7 +283,7 @@ export function RankingCardView({
                 </button>
 
                 {leaderTune(group)}
-                {openGroups.has(group.key) && <TheoreticalLapBanner laps={group.laps} />}
+                {openGroups.has(group.key) && <TheoreticalLapBanner laps={group.laps} optimal={group.optimal} />}
 
                 {/* Liste des temps — visible si ouvert.
                     Lignes empilées en carte sur mobile, alignées en

@@ -41,6 +41,7 @@ export interface SubGroup {
   drivetrain: Drivetrain;
   carLabel: string;
   laps: RankedLap[];
+  optimal?: TheoreticalLap | null;   // tour optimal (best_sectors, tous tours) si dispo
 }
 
 export interface CircuitGroup {
@@ -145,21 +146,65 @@ export function computeTheoretical(laps: LapTime[]): TheoreticalLap | null {
   return { totalMs, sectors: best, holders, realBestMs: tries[0].time_ms, count: eligibles.length };
 }
 
+// Une ligne de la table best_sectors (meilleur secteur par index, par config),
+// alimentée par TOUS les tours (pas seulement les PB) — voir best_sectors.sql.
+export interface BestSectorRow {
+  sector_index: number;
+  best_ms:      number;
+  pseudo:       string | null;
+}
+
+// Tour optimal depuis best_sectors : meilleur temps par index de secteur à
+// travers tous les tours de la config. Exige des indices contigus 1..N (sinon
+// l'agrégat est incomplet → on s'abstient). `realBestMs` = meilleur temps réel
+// de la config (pour afficher le gain). Préféré à computeTheoretical (qui ne
+// voit que les tours-PB) quand des données best_sectors existent.
+export function theoreticalFromBest(rows: BestSectorRow[], realBestMs: number): TheoreticalLap | null {
+  if (!rows || rows.length < 2) return null;
+  const byIdx = new Map<number, BestSectorRow>();
+  for (const r of rows) {
+    if (r.best_ms > 0) byIdx.set(r.sector_index, r);
+  }
+  const n = Math.max(...byIdx.keys());
+  if (n < 2) return null;
+  const sectors: number[] = [];
+  const holders: (string | null)[] = [];
+  for (let i = 1; i <= n; i++) {
+    const r = byIdx.get(i);
+    if (!r) return null;                 // index manquant → agrégat incomplet
+    sectors.push(r.best_ms);
+    holders.push(r.pseudo);
+  }
+  const totalMs = sectors.reduce((a, b) => a + b, 0);
+  const count   = new Set(holders.filter(Boolean)).size || 1;
+  return { totalMs, sectors, holders, realBestMs, count };
+}
+
 // Bannière compacte sous l'en-tête d'une config : tour théorique + gain vs
 // meilleur réel + détail des secteurs (détenteur en infobulle). Rien si aucun
 // tour de la config n'a de données de secteurs.
-export function TheoreticalLapBanner({ laps }: { laps: LapTime[] }) {
+export function TheoreticalLapBanner({ laps, optimal }: { laps: LapTime[]; optimal?: TheoreticalLap | null }) {
   const { formatTime, prefs } = usePreferences();
-  const theo = computeTheoretical(laps);
+  // `optimal` (best_sectors, tous les tours) est prioritaire ; sinon repli sur le
+  // calcul depuis les seuls tours-PB chargés.
+  const theo = optimal ?? computeTheoretical(laps);
   if (!theo) return null;
 
-  const decSep = prefs.decimalSep === 'comma' ? ',' : '.';
-  const gain   = theo.realBestMs - theo.totalMs;
+  const decSep   = prefs.decimalSep === 'comma' ? ',' : '.';
+  const gain     = theo.realBestMs - theo.totalMs;
+  const optimise = optimal != null;
 
   return (
     <div className="px-4 py-2 text-xs bg-sky-500/[0.06] border-t border-sky-500/20">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="font-bold text-sky-600 dark:text-sky-400 whitespace-nowrap">🧮 Tour théorique</span>
+        <span
+          className="font-bold text-sky-600 dark:text-sky-400 whitespace-nowrap"
+          title={optimise
+            ? 'Meilleur temps de chaque secteur sur TOUS les tours enregistrés (pas seulement les tours-record)'
+            : 'Meilleur temps de chaque secteur parmi les tours-record chargés'}
+        >
+          🧮 Tour {optimise ? 'optimal' : 'théorique'}
+        </span>
         <span className="font-mono font-bold text-neutral-800 dark:text-neutral-100">{formatTime(theo.totalMs)}</span>
         {gain > 0 && (
           <span className="font-mono text-emerald-500" title="Gain par rapport au meilleur temps réel de la config">

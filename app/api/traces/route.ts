@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/rate-limit';
 import { traceValide, nbSecteurs, secteursDepuisTrace, secteursValides } from '@/lib/lap-validation';
+import { enregistrerMeilleursSecteurs } from '@/lib/best-sectors';
 import type { Json } from '@/types/database.types';
 
 export const dynamic = 'force-dynamic';
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Le joueur ne peut attacher une trace qu'à SON propre tour.
     const [playerRes, lapRes] = await Promise.all([
       supabaseAdmin.from('players').select('id').eq('user_id', user.id).single(),
-      supabaseAdmin.from('lap_times').select('id, player_id, track_id, time_ms').eq('id', lap_time_id).maybeSingle(),
+      supabaseAdmin.from('lap_times').select('id, player_id, track_id, time_ms, car_ordinal, car_class, drivetrain').eq('id', lap_time_id).maybeSingle(),
     ]);
     const player = playerRes.data;
     const lap    = lapRes.data;
@@ -83,6 +84,11 @@ export async function POST(request: NextRequest) {
       // pas plutôt que d'afficher un tour théorique incohérent).
       if (secteurs && secteursValides(secteurs.map(ms => ms / 1000), lap.time_ms)) {
         await supabaseAdmin.from('lap_times').update({ sectors_ms: secteurs }).eq('id', lap.id);
+        // Alimente aussi le tour optimal (meilleur secteur par index, par config).
+        await enregistrerMeilleursSecteurs({
+          trackId: lap.track_id, carOrdinal: lap.car_ordinal, carClass: lap.car_class,
+          drivetrain: lap.drivetrain, playerId: player.id, sectorsMs: secteurs,
+        });
       }
     } catch { /* secteurs = bonus, jamais bloquant */ }
 
