@@ -201,6 +201,21 @@ export function TheoreticalLapBanner({ laps, optimal }: { laps: LapTime[]; optim
   const gain     = realBest - theo.totalMs;
   const optimise = optimal != null;
 
+  // Les secteurs ne sont PAS ceux du jeu (Forza n'expose pas de checkpoint) :
+  // le tour est découpé en N tronçons ÉGAUX EN DISTANCE. On ancre donc chaque
+  // secteur pour le joueur — secteur i+1 = de i/N à (i+1)/N du tour — en % et,
+  // si la longueur du circuit est connue, en ≈ km (les fractions égales se
+  // mappent sur la longueur officielle même si la distance télémétrie est faussée).
+  const n        = theo.sectors.length;
+  const lengthKm = laps.find(l => l.tracks?.length_km)?.tracks?.length_km ?? null;
+  const portionSecteur = (i: number) => {
+    const pct = `${Math.round((i / n) * 100)}–${Math.round(((i + 1) / n) * 100)} % du tour`;
+    if (!lengthKm) return pct;
+    const a = ((i / n) * lengthKm).toFixed(2).replace('.', decSep);
+    const b = (((i + 1) / n) * lengthKm).toFixed(2).replace('.', decSep);
+    return `${pct} · ≈ ${a}–${b} km`;
+  };
+
   return (
     <div className="px-4 py-2 text-xs bg-sky-500/[0.06] border-t border-sky-500/20">
       <div className="flex items-center gap-2 flex-wrap">
@@ -226,13 +241,16 @@ export function TheoreticalLapBanner({ laps, optimal }: { laps: LapTime[]; optim
         {theo.sectors.map((s, i) => (
           <span
             key={i}
-            title={theo.holders[i] ? `Secteur ${i + 1} — ${theo.holders[i]}` : `Secteur ${i + 1}`}
-            className="font-mono px-1.5 py-0.5 rounded bg-neutral-200/70 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300"
+            title={`Secteur ${i + 1}/${n} · ${portionSecteur(i)}${theo.holders[i] ? ` — meilleur : ${theo.holders[i]}` : ''}`}
+            className="font-mono px-1.5 py-0.5 rounded bg-neutral-200/70 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 cursor-help"
           >
             S{i + 1} {formatTime(s)}
           </span>
         ))}
       </div>
+      <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1">
+        Les secteurs découpent le tour en {n} tronçons égaux en distance (ce ne sont pas les secteurs du jeu). Survole un secteur pour voir sa portion du tour.
+      </p>
     </div>
   );
 }
