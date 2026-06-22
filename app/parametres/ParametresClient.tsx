@@ -312,6 +312,19 @@ export default function ParametresClient() {
           />
         </Section>
 
+        <Section title="Coach de pilotage">
+          <Segmented
+            label="Rapport post-tour"
+            hint="Analyse ta trace par secteur (où tu perds du temps, freinage, dosage du gaz) sur ton profil. Désactivé par défaut : aucun conseil tant que tu ne l'actives pas."
+            value={prefs.coachReport}
+            onChange={v => setPref('coachReport', v)}
+            options={[
+              { value: false, label: 'Désactivé' },
+              { value: true, label: 'Activé' },
+            ]}
+          />
+        </Section>
+
         <NotificationSettings />
 
         <div className="flex justify-end">

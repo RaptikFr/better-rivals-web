@@ -46,6 +46,9 @@ export interface Preferences {
   fontSize: FontSize;
   /** Contraste renforcé des textes secondaires et bordures (accessibilité). */
   contrast: Contrast;
+  /** Coach de pilotage : rapport post-tour (par secteur, depuis ta trace). OPT-IN,
+   *  désactivé par défaut — personne ne reçoit de conseils sans l'avoir activé. */
+  coachReport: boolean;
   /** Colonnes facultatives affichées dans la vue tableau des classements. */
   tableColumns: TableColumns;
 }
@@ -72,6 +75,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   skin: 'apex',
   fontSize: 'normal',
   contrast: 'normal',
+  coachReport: false,
   tableColumns: DEFAULT_TABLE_COLUMNS,
 };
 
@@ -95,6 +99,7 @@ export function sanitizePreferences(raw: unknown): Preferences {
     skin: pick('skin', ['classic', 'apex', 'telemetry', 'arcade']),
     fontSize: pick('fontSize', ['normal', 'large']),
     contrast: pick('contrast', ['normal', 'high']),
+    coachReport: typeof r.coachReport === 'boolean' ? r.coachReport : DEFAULT_PREFERENCES.coachReport,
     tableColumns: sanitizeTableColumns(r.tableColumns),
   };
 }

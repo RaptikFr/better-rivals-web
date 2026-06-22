@@ -13,9 +13,11 @@ import { computeBadges } from '@/lib/badges';
 import { BadgesBar } from '@/components/BadgesBar';
 import { EmptyState, LapTable, ProgressionChart, type ProfileLap, type Stats } from './profilShared';
 import { SuiviTab } from './SuiviTab';
+import { CoachTab } from './CoachTab';
 import { ClassementsTab, RivauxTab, StatsTab } from './ProfilTabs';
+import { usePreferences } from '@/hooks/usePreferences';
 
-type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'suivi' | 'rivaux';
+type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'suivi' | 'rivaux' | 'coach';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'recents',     label: 'Récents',        icon: '🕐' },
@@ -26,9 +28,15 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'stats',       label: 'Statistiques',    icon: '📊' },
 ];
 
+// L'onglet Coach n'apparaît que si le joueur a activé le rapport post-tour
+// (opt-in dans /paramètres, désactivé par défaut).
+const COACH_TAB: { id: Tab; label: string; icon: string } = { id: 'coach', label: 'Coach', icon: '🧠' };
+
 export default function ProfilClient() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { prefs } = usePreferences();
+  const visibleTabs = useMemo(() => (prefs.coachReport ? [...TABS, COACH_TAB] : TABS), [prefs.coachReport]);
 
   const [activeTab, setActiveTab] = useState<Tab>('recents');
   const [pseudo,      setPseudo]      = useState<string>('');
@@ -283,7 +291,7 @@ export default function ProfilClient() {
 
         {/* ── ONGLETS ── */}
         <div className="flex gap-1 mb-6 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-1 overflow-x-auto">
-          {TABS.map(tab => (
+          {visibleTabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               aria-label={tab.label}
               aria-pressed={activeTab === tab.id}
@@ -455,6 +463,7 @@ export default function ProfilClient() {
         {activeTab === 'suivi'       && playerId !== null && <SuiviTab playerId={playerId} laps={laps} />}
         {activeTab === 'rivaux'      && playerId !== null && <RivauxTab playerId={playerId} />}
         {activeTab === 'stats'       && <StatsTab stats={stats} laps={laps} />}
+        {activeTab === 'coach'       && prefs.coachReport && <CoachTab laps={laps} />}
 
       </div>
     </main>
