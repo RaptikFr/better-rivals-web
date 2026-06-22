@@ -28,21 +28,17 @@ export interface BadgeContext {
   laps:    BadgeLap[];
   /** Rang du joueur par config (podiums dérivés du rang). */
   ranked:  BadgeRank[];
-  /** Rang du joueur au classement général (1 = premier), si connu. */
-  generalRank?:  number | null;
-  /** Nombre total de pilotes classés, si connu. */
-  generalTotal?: number | null;
 }
 
 const plural = (n: number) => (n > 1 ? 's' : '');
 
 /**
  * Dérive des badges d'accomplissement à partir des données existantes
- * (podiums, polyvalence, volume, classement général). Purement descriptif —
+ * (podiums, polyvalence, volume). Purement descriptif —
  * aucune comparaison aux records du monde.
  */
 export function computeBadges(ctx: BadgeContext): Badge[] {
-  const { laps, ranked, generalRank, generalTotal } = ctx;
+  const { laps, ranked } = ctx;
   const badges: Badge[] = [];
   if (laps.length === 0) return badges;
 
@@ -107,18 +103,6 @@ export function computeBadges(ctx: BadgeContext): Badge[] {
     null;
   if (volume) {
     badges.push({ id: 'volume', emoji: volume.emoji, tone: 'neutral', label: volume.label });
-  }
-
-  // ── Classement général (achievement uniquement dans le top 10) ──
-  if (generalRank != null && generalRank <= 10) {
-    const onTotal = generalTotal ? ` sur ${generalTotal} pilotes` : '';
-    badges.push({
-      id: 'general', emoji: '📈',
-      tone: generalRank <= 3 ? 'gold' : 'violet',
-      label: generalRank <= 3
-        ? `${generalRank}ᵉ au classement général${onTotal}`
-        : `Top 10 du classement général (#${generalRank})`,
-    });
   }
 
   return badges;

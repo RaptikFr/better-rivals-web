@@ -11,7 +11,6 @@ const routes: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: '/',                     priority: 1.0, changeFrequency: 'daily' },
   { path: '/classements',          priority: 0.9, changeFrequency: 'daily' },
   { path: '/classements-communaute', priority: 0.9, changeFrequency: 'daily' },
-  { path: '/classement-general',   priority: 0.8, changeFrequency: 'daily' },
   { path: '/comparaison',          priority: 0.7, changeFrequency: 'weekly' },
   { path: '/voitures',             priority: 0.7, changeFrequency: 'weekly' },
   { path: '/circuits',             priority: 0.8, changeFrequency: 'weekly' },

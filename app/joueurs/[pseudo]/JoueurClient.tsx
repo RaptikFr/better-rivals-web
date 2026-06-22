@@ -41,8 +41,6 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
   const [playerId,     setPlayerId]     = useState<string | null>(null);
   const [rankings,     setRankings]     = useState<PlayerRankings | null>(null);
   const [podiums,      setPodiums]      = useState({ gold: 0, silver: 0, bronze: 0 });
-  const [generalRank,  setGeneralRank]  = useState<number | null>(null);
-  const [generalTotal, setGeneralTotal] = useState<number | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [notFound,     setNotFound]     = useState(false);
   const [openCircuits, setOpenCircuits] = useState<Set<number>>(new Set());
@@ -88,16 +86,6 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
       setRankings(ranks);
       setPodiums(ranks.podiums);
 
-      // Rang au classement général (endpoint mis en cache côté serveur)
-      try {
-        const res = await fetch('/api/classement-general');
-        if (res.ok) {
-          const { ranking } = await res.json() as { ranking: { player_id: string }[] };
-          const idx = ranking.findIndex(r => r.player_id === player.id);
-          if (idx !== -1) { setGeneralRank(idx + 1); setGeneralTotal(ranking.length); }
-        }
-      } catch { /* le classement général reste optionnel */ }
-
       // Mes objectifs visant CE joueur → état initial des boutons « 🎯 »
       // (uniquement si connecté ; sinon les boutons restent masqués).
       try {
@@ -121,8 +109,8 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
   }, [pseudo]);
 
   const badges = useMemo(
-    () => computeBadges({ laps, ranked: rankings?.ranked ?? [], generalRank, generalTotal }),
-    [laps, rankings, generalRank, generalTotal]
+    () => computeBadges({ laps, ranked: rankings?.ranked ?? [] }),
+    [laps, rankings]
   );
 
   if (loading) return (

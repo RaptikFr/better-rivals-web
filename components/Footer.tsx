@@ -6,7 +6,6 @@ const SECTIONS: { title: string; links: { href: string; label: string }[] }[] = 
     links: [
       { href: '/classements',            label: 'Classements officiels' },
       { href: '/classements-communaute', label: 'Classements communauté' },
-      { href: '/classement-general',     label: 'Classement général' },
       { href: '/circuits',               label: 'Circuits' },
       { href: '/voitures',               label: 'Voitures' },
     ],

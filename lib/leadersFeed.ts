@@ -31,8 +31,8 @@ export interface LeaderFeedItem {
 
 async function computeFeed(): Promise<LeaderFeedItem[]> {
   // Temps actuels (avec les jointures pour l'affichage) + historique complet.
-  // Comme classement-general, on télécharge tout puis on agrège — à déplacer
-  // côté Postgres/RPC quand la base grossira (cf. roadmap point 5).
+  // On télécharge tout puis on agrège côté serveur — à déplacer côté
+  // Postgres/RPC quand la base grossira (cf. roadmap point 5).
   const [currentRes, historyRes] = await Promise.all([
     fetchAllRows<CurrentRow>((from, to) =>
       supabase

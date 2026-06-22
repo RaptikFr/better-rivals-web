@@ -40,8 +40,6 @@ export default function ProfilClient() {
   const [laps,      setLaps]      = useState<ProfileLap[]>([]);
   const [rankings,  setRankings]  = useState<PlayerRankings | null>(null);
   const [podiums,   setPodiums]   = useState<Podiums>({ gold: 0, silver: 0, bronze: 0 });
-  const [generalRank,  setGeneralRank]  = useState<number | null>(null);
-  const [generalTotal, setGeneralTotal] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
 
@@ -93,16 +91,6 @@ export default function ProfilClient() {
     setRankings(ranks);
     setPodiums(ranks.podiums);
 
-    // Rang au classement général (endpoint mis en cache côté serveur)
-    try {
-      const res = await fetch('/api/classement-general');
-      if (res.ok) {
-        const { ranking } = await res.json() as { ranking: { player_id: string }[] };
-        const idx = ranking.findIndex(r => r.player_id === playerData.id);
-        if (idx !== -1) { setGeneralRank(idx + 1); setGeneralTotal(ranking.length); }
-      }
-    } catch { /* le classement général reste optionnel */ }
-
     setIsLoading(false);
   }
 
@@ -134,8 +122,8 @@ export default function ProfilClient() {
   const recentLaps = useMemo(() => laps.slice(0, 20), [laps]);
 
   const badges = useMemo(
-    () => computeBadges({ laps, ranked: rankings?.ranked ?? [], generalRank, generalTotal }),
-    [laps, rankings, generalRank, generalTotal]
+    () => computeBadges({ laps, ranked: rankings?.ranked ?? [] }),
+    [laps, rankings]
   );
 
   const filteredLaps = useMemo(() =>

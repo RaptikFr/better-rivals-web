@@ -117,7 +117,7 @@ export default async function Home() {
             <div className="text-violet-500 font-black text-4xl mb-4">04</div>
             <h3 className="text-xl font-bold mb-2">Roule et bats des records</h3>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Fais le meilleur tour possible. Ton temps est automatiquement enregistré et comparé aux autres joueurs avec la même voiture, la même classe et la même transmission. Bats des records, grimpe dans le classement général et défie tes rivaux&nbsp;!
+              Fais le meilleur tour possible. Ton temps est automatiquement enregistré et comparé aux autres joueurs avec la même voiture, la même classe et la même transmission. Bats des records, vise la 1ʳᵉ place et défie tes rivaux&nbsp;!
             </p>
           </div>
 

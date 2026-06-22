@@ -12,7 +12,6 @@ import GlobalSearch from '@/components/GlobalSearch';
 // Liens principaux : toujours visibles dans la barre desktop.
 const navLinks = [
   { href: '/comparaison',        label: 'Comparer'           },
-  { href: '/classement-general', label: 'Classement général' },
   { href: '/voitures',           label: 'Voitures'           },
   { href: '/circuits',           label: 'Circuits'           },
   { href: '/reglages',           label: 'Réglages'           },
