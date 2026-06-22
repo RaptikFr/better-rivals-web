@@ -107,12 +107,24 @@ export interface TraceSamples {
   thr: number[];   // accélérateur (0-100)
   brk: number[];   // frein (0-100)
   str: number[];   // volant (-100..100)
+  // [v2] Températures pneus (°F), OPTIONNELLES — n'arrivent qu'avec les relais
+  // ≥ 2.1 ; absentes sur les traces existantes. Quand présentes : 4 roues,
+  // même longueur que les autres tableaux. Servent à l'équilibre thermique du
+  // copilote de réglage (côté site : surchauffe d'un pneu + tendance AV/AR).
+  tfl?: number[];  // pneu avant-gauche
+  tfr?: number[];  // pneu avant-droit
+  trl?: number[];  // pneu arrière-gauche
+  trr?: number[];  // pneu arrière-droit
 }
+
+const TEMP_KEYS = ['tfl', 'tfr', 'trl', 'trr'] as const;
 
 /**
  * Valide la trace échantillonnée envoyée par le relais : 6 tableaux parallèles
  * de même longueur, finis, avec distance et temps monotones croissants. Renvoie
- * la trace normalisée ou `null` (la route rejette alors la trace).
+ * la trace normalisée ou `null` (la route rejette alors la trace). Les 4 tableaux
+ * de température pneus sont OPTIONNELS (best-effort) : présents et valides → on
+ * les garde ; absents ou malformés → on les ignore sans rejeter la trace.
  */
 export function traceValide(samples: unknown): TraceSamples | null {
   if (!samples || typeof samples !== 'object') return null;
@@ -136,7 +148,18 @@ export function traceValide(samples: unknown): TraceSamples | null {
   for (let i = 1; i < n; i++) {
     if (out.d[i] < out.d[i - 1] || out.t[i] < out.t[i - 1]) return null;
   }
-  return out as TraceSamples;
+
+  const result = out as TraceSamples;
+  // Températures : on n'accepte les 4 roues QUE si toutes sont présentes, de bonne
+  // longueur et finies (température partielle = inexploitable → on laisse tomber tout).
+  const temps = TEMP_KEYS.map(k => src[k]);
+  if (temps.every(a => Array.isArray(a) && (a as unknown[]).length === n)) {
+    const parsed = temps.map(a => (a as unknown[]).map(Number));
+    if (parsed.every(arr => arr.every(x => Number.isFinite(x)))) {
+      TEMP_KEYS.forEach((k, i) => { result[k] = parsed[i]; });
+    }
+  }
+  return result;
 }
 
 /**

@@ -7,7 +7,39 @@ import {
   plusRapideQueRecord,
   nbSecteurs,
   secteursDepuisTrace,
+  traceValide,
 } from './lap-validation';
+
+describe('traceValide — températures optionnelles', () => {
+  const base = () => {
+    const d: number[] = [], t: number[] = [];
+    for (let i = 0; i < 12; i++) { d.push(i * 10); t.push(i * 0.5); }
+    const v = d.map(() => 100), thr = d.map(() => 50), brk = d.map(() => 0), str = d.map(() => 0);
+    return { d, t, v, thr, brk, str };
+  };
+
+  it('garde les 4 températures quand toutes présentes et valides', () => {
+    const s = base();
+    const temp = s.d.map(() => 160);
+    const r = traceValide({ ...s, tfl: temp, tfr: temp, trl: temp, trr: temp });
+    expect(r?.tfl).toHaveLength(12);
+    expect(r?.trr?.[0]).toBe(160);
+  });
+
+  it('ignore les températures partielles (sans rejeter la trace)', () => {
+    const s = base();
+    const temp = s.d.map(() => 160);
+    const r = traceValide({ ...s, tfl: temp, tfr: temp }); // 2 roues seulement
+    expect(r).not.toBeNull();
+    expect(r?.tfl).toBeUndefined();
+  });
+
+  it('reste rétro-compatible : trace sans aucune température', () => {
+    const r = traceValide(base());
+    expect(r).not.toBeNull();
+    expect(r?.tfl).toBeUndefined();
+  });
+});
 
 describe('formatTime', () => {
   it('formate mm:ss.mmm avec zéros de remplissage', () => {

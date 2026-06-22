@@ -129,3 +129,63 @@ export function analyserPilotage(
   }
   return { sectors, worstIndex, totalLossMs };
 }
+
+// ============================================================================
+// ÉQUILIBRE THERMIQUE (copilote de réglage, aperçu site) — depuis les
+// températures pneus de la trace (optionnelles, relais ≥ 2.1).
+// ----------------------------------------------------------------------------
+// Deux signaux (cf. coach_diag.py, calibré en jeu) :
+//  • SURCHAUFFE d'un pneu : un pneu nettement au-dessus de la moyenne des 4 =
+//    il glisse/travaille trop. ACTIONNABLE en absolu (pas besoin de baseline) →
+//    viser une pression à chaud plus basse / vérifier le carrossage de ce côté.
+//  • TENDANCE AV/AR : l'avant qui chauffe nettement plus = train avant surchargé
+//    (sous-vireur) ; l'arrière = survireur. À lire EN RELATIF (le neutre d'une
+//    voiture n'est PAS Δ=0 : l'avant chauffe déjà plus via les freins) → on garde
+//    une marge (seuil 12 °F) et on reste descriptif.
+const SEUIL_TEMP_DELTA = 12;  // °F : écart AV−AR au-delà = un essieu travaille nettement plus
+const SEUIL_TEMP_CHAUD = 18;  // °F au-dessus de la moyenne des 4 = pneu en surchauffe relative
+
+export const NOMS_ROUE = ['AV-G', 'AV-D', 'AR-G', 'AR-D'] as const;
+
+export interface ThermalReport {
+  available: boolean;
+  med: [number, number, number, number];  // médianes FL FR RL RR (°F)
+  avgAv: number;
+  avgAr: number;
+  deltaAvAr: number;                       // AV − AR (>0 = avant plus chaud)
+  hottest: number;                         // index 0-3 du pneu le plus chaud
+  overheat: boolean;                       // le plus chaud dépasse la moyenne de +SEUIL
+  tendency: 'survirage' | 'sous-virage' | 'neutre';
+}
+
+function mediane(xs: number[]): number {
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)];
+}
+
+const THERMAL_VIDE: ThermalReport = {
+  available: false, med: [0, 0, 0, 0], avgAv: 0, avgAr: 0,
+  deltaAvAr: 0, hottest: 0, overheat: false, tendency: 'neutre',
+};
+
+/** Équilibre thermique d'un tour depuis les températures pneus de la trace.
+ *  `available:false` si la trace n'a pas de températures (relais trop ancien). */
+export function analyseThermique(trace: TraceSamples): ThermalReport {
+  const arrs = [trace.tfl, trace.tfr, trace.trl, trace.trr];
+  if (arrs.some(a => !a || a.length < 5)) return THERMAL_VIDE;
+  const med = arrs.map(a => mediane(a!)) as [number, number, number, number];
+  const avg = (med[0] + med[1] + med[2] + med[3]) / 4;
+  const avgAv = (med[0] + med[1]) / 2;
+  const avgAr = (med[2] + med[3]) / 2;
+  const deltaAvAr = avgAv - avgAr;
+  let hottest = 0;
+  for (let i = 1; i < 4; i++) if (med[i] > med[hottest]) hottest = i;
+  const tendency: ThermalReport['tendency'] =
+    deltaAvAr > SEUIL_TEMP_DELTA ? 'sous-virage'
+      : deltaAvAr < -SEUIL_TEMP_DELTA ? 'survirage'
+        : 'neutre';
+  return {
+    available: true, med, avgAv, avgAr, deltaAvAr, hottest,
+    overheat: med[hottest] - avg > SEUIL_TEMP_CHAUD, tendency,
+  };
+}

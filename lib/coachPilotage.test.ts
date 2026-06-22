@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { analyserPilotage } from './coachPilotage';
+import { analyserPilotage, analyseThermique } from './coachPilotage';
 import type { TraceSamples } from './lap-validation';
+
+function cst(val: number, n = 21): number[] { return Array.from({ length: n }, () => val); }
 
 // Trace synthétique sur 200 m, 21 points (pas de 10 m), 2 secteurs égaux :
 //  • secteur 0 (0–100 m) : plein gaz, rapide, propre ;
@@ -57,5 +59,38 @@ describe('analyserPilotage', () => {
     expect(r.totalLossMs).toBeNull();
     expect(r.sectors[1].deltaMs).toBeNull();
     expect(r.sectors[1].tips).toHaveLength(0); // pas d'optimal → pas de conseil de perte
+  });
+});
+
+describe('analyseThermique', () => {
+  it('renvoie available:false sans températures (relais ancien)', () => {
+    const t = analyseThermique(traceFixture());
+    expect(t.available).toBe(false);
+  });
+
+  it('détecte l’arrière plus chaud (tendance survirage) + surchauffe d’un pneu', () => {
+    const trace: TraceSamples = {
+      ...traceFixture(),
+      tfl: cst(160), tfr: cst(155), trl: cst(175), trr: cst(190),
+    };
+    const t = analyseThermique(trace);
+    expect(t.available).toBe(true);
+    expect(t.med).toEqual([160, 155, 175, 190]);
+    expect(t.avgAv).toBe(157.5);
+    expect(t.avgAr).toBe(182.5);
+    expect(t.deltaAvAr).toBe(-25);           // arrière nettement plus chaud
+    expect(t.tendency).toBe('survirage');
+    expect(t.hottest).toBe(3);               // AR-D
+    expect(t.overheat).toBe(true);           // 190 vs moyenne 170 → +20 > 18
+  });
+
+  it('températures proches → neutre, pas de surchauffe', () => {
+    const trace: TraceSamples = {
+      ...traceFixture(),
+      tfl: cst(162), tfr: cst(160), trl: cst(158), trr: cst(159),
+    };
+    const t = analyseThermique(trace);
+    expect(t.tendency).toBe('neutre');
+    expect(t.overheat).toBe(false);
   });
 });
