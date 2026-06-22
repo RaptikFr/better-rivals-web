@@ -6,22 +6,21 @@ import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { usePreferences } from '@/hooks/usePreferences';
+import { classementHref } from '@/lib/classementLink';
 import type { Chrono } from '@/lib/derniersChronos';
 import type { Drivetrain } from '@/types/supabase';
 
 // Construit le lien vers le classement filtré sur la config de ce chrono,
 // en mettant la ligne en évidence (déplie le sous-groupe + scroll).
 function chronoHref(lap: Chrono): string {
-  const params = new URLSearchParams();
-  params.set('track_id', String(lap.track_id));
-  if (lap.car_class) params.set('class', lap.car_class);
-  if (lap.drivetrain) params.set('drivetrain', lap.drivetrain);
   const car = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
-  // Double-encodage volontaire : la page /classements décode une fois (decodeURIComponent),
-  // aligné sur le bouton « Partager » du classement.
-  if (car) params.set('car', encodeURIComponent(car));
-  params.set('highlight', lap.id);
-  return `/classements?${params.toString()}`;
+  return classementHref({
+    trackId:     lap.track_id,
+    carClass:    lap.car_class,
+    drivetrain:  lap.drivetrain,
+    car:         car || null,
+    highlightId: lap.id,
+  });
 }
 
 export default function DerniersChronos({ chronos }: { chronos: Chrono[] }) {
