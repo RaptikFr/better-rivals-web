@@ -52,7 +52,7 @@ Toutes **✅ appliquées** (vérifié le 19/06/2026).
 | Fichier | Rôle |
 |---|---|
 | `classement_rpc.sql` | RPC `player_config_rankings` — classements par config d'un joueur. |
-| `general_ranking_rpc.sql` | RPC `general_ranking` — classement général agrégé. |
+| `general_ranking_rpc.sql` | RPC `general_ranking` — classement général agrégé. ⚠️ **fonction supprimée** le 22/06 (feature retirée), cf. `nettoyage_post_classement_general.sql`. |
 | `track_best_times_rpc.sql` | RPC `track_best_times` — meilleurs temps dédupliqués par circuit (remplace le `.limit(100)` + dédup JS de `GET /api/times`). |
 
 ### Sécurité & audits
@@ -72,4 +72,5 @@ Toutes **✅ appliquées** (vérifié le 19/06/2026).
 | `renommage_touge.sql` | Renommage data « Toge » → « Touge » (5 circuits). |
 | `suppression_pin_code.sql` | Suppression de `players.pin_code`. |
 | `suppression_leaderboard_defis.sql` | Suppression de l'ancienne vue `leaderboard` + table `defis`. |
+| `nettoyage_post_classement_general.sql` | DROP de la RPC `general_ranking()` (feature retirée) + de l'index redondant `idx_lap_traces_lap_time`. Appliqué le 22/06. |
 | `world_records_63_72.sql` | Remplissage `world_records` circuits 63-72 (anti-triche). |
