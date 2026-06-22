@@ -12,7 +12,9 @@ Intégration au site du **coach** (idée #3 de [[roadmap-idees-juin-2026]]), dé
 - **Phase 1 (FAITE 22/06)** = ce qu'on peut tirer des données DÉJÀ là (pilotage). Aucun changement relais, aucune migration DB.
 - **Phase 2 (PLUS TARD)** = étendre `lap_traces` avec slip/β/température/suspension + **re-release relais** + porter le diagnostic de [[coach-copilote-reglage]] côté serveur. Plus lourd (propagation relais lente).
 
-## Phase 1 — livré le 22/06/2026 (build + lint + 23 tests vitest verts ; PAS encore commité au moment de l'écriture)
+**Phase 1 livrée + déployée le 22/06/2026** : site commit 1e2772b (poussé). **+ Coach EN JEU (overlay relais) livré dans la foulée** : release relais **v2.0.0** (source v26, saut majeur) — panneau overlay « 🧠 COACH (vs PB) » qui pointe après chaque tour le secteur le plus perdant vs PB + conseils, opt-in dans la SetupWindow (pas la connexion, sinon l'auto-connexion la masque), 100 % local. Voir `distribution-relais.md` (auto-memory). Boutons /telecharger bumpés v2.0.0 (commit 1bd8822).
+
+## Phase 1 — détails (build + lint + 23 tests vitest verts)
 
 - **Opt-in** : `lib/preferences.ts` → préférence `coachReport: boolean` (défaut **false** = OFF, c'est l'exigence proprio « personne ne reçoit de conseils sans activer »). Sanitize + DEFAULT mis à jour. Section « Coach de pilotage » dans `app/parametres/ParametresClient.tsx` (toggle Activé/Désactivé).
 - **Lib d'analyse** : `lib/coachPilotage.ts` (PUR, testé `coachPilotage.test.ts`, 4 tests). `analyserPilotage(trace, sectorsMs, bestMs[])` → par secteur (mêmes bornes que `secteursDepuisTrace` = fractions de d[last]) : Δ temps vs optimal, vitesse d'apex (min v), point de freinage (% du secteur), **roue libre** (% ni gaz ni frein), réaccélération (% où le plein gaz revient après la corde), + 1-2 conseils ancrés au secteur. Seuil `SEUIL_PERTE_MS=80` (on ne conseille un secteur que s'il coûte > 80 ms, anti-bruit). Renvoie `worstIndex` + `totalLossMs` (gain potentiel).
