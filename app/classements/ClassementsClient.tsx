@@ -395,7 +395,7 @@ export default function ClassementsClient({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600">
-              {communityOnly ? 'Classements Communauté' : 'Leaderboards'}
+              {communityOnly ? 'Classements Communauté' : 'Classements'}
             </h1>
             <p className="text-neutral-600 dark:text-neutral-400 text-lg">
               {communityOnly
