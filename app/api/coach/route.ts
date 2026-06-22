@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/rate-limit';
 import { traceValide, nbSecteurs, secteursDepuisTrace } from '@/lib/lap-validation';
-import { analyserPilotage } from '@/lib/coachPilotage';
+import { analyserPilotage, analyseThermique } from '@/lib/coachPilotage';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,7 +92,8 @@ export async function GET(request: NextRequest) {
     }
 
     const report = analyserPilotage(trace, sectorsMs, bestMs);
-    return NextResponse.json({ time_ms: lap.time_ms, sectorsMs, heldByYou, report }, { status: 200 });
+    const thermal = analyseThermique(trace);  // équilibre thermique (relais ≥ 2.1)
+    return NextResponse.json({ time_ms: lap.time_ms, sectorsMs, heldByYou, report, thermal }, { status: 200 });
   } catch {
     return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
   }

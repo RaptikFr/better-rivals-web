@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { PilotageReport, SectorCoaching } from '@/lib/coachPilotage';
+import type { PilotageReport, SectorCoaching, ThermalReport } from '@/lib/coachPilotage';
+import { NOMS_ROUE } from '@/lib/coachPilotage';
 import { EmptyState, type ProfileLap } from './profilShared';
 
 interface Config {
@@ -20,7 +21,10 @@ interface CoachResponse {
   sectorsMs: number[];
   heldByYou: boolean[];
   report: PilotageReport;
+  thermal: ThermalReport;
 }
+
+const fC = (f: number) => Math.round((f - 32) * 5 / 9); // °F (télémétrie) → °C lisible
 
 type Status = 'idle' | 'loading' | 'ready' | 'empty' | 'error';
 
@@ -152,12 +156,44 @@ function CoachReport({ data }: { data: CoachResponse }) {
         )}
       </div>
 
+      {/* Équilibre thermique (relais ≥ 2.1) */}
+      {data.thermal?.available && <ThermalCard t={data.thermal} />}
+
       {/* Secteurs */}
       <div className="flex flex-col gap-2">
         {report.sectors.map(s => (
           <SectorCard key={s.index} s={s} held={heldByYou[s.index]} isWorst={s.index === worst} total={report.sectors.length} />
         ))}
       </div>
+    </div>
+  );
+}
+
+function ThermalCard({ t }: { t: ThermalReport }) {
+  const tendances: Record<ThermalReport['tendency'], { txt: string; cls: string }> = {
+    survirage:     { txt: "L'arrière chauffe plus → tendance survirage", cls: 'text-amber-500' },
+    'sous-virage': { txt: "L'avant chauffe plus → tendance sous-virage", cls: 'text-amber-500' },
+    neutre:        { txt: 'Avant / arrière équilibrés', cls: 'text-emerald-500' },
+  };
+  const tend = tendances[t.tendency];
+  return (
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 p-4">
+      <p className="text-sm font-bold text-neutral-900 dark:text-white mb-1">🌡️ Équilibre thermique des pneus</p>
+      <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-neutral-500">
+        <span>Avant : <strong className="text-neutral-700 dark:text-neutral-300">{fC(t.avgAv)} °C</strong></span>
+        <span>Arrière : <strong className="text-neutral-700 dark:text-neutral-300">{fC(t.avgAr)} °C</strong></span>
+        <span className={tend.cls}>{tend.txt}</span>
+      </div>
+      {t.overheat && (
+        <p className="mt-2 text-sm text-amber-600 dark:text-amber-400 flex gap-2">
+          <span aria-hidden="true">⚠️</span>
+          <span>Pneu <strong>{NOMS_ROUE[t.hottest]}</strong> en surchauffe ({fC(t.med[t.hottest])} °C) : il glisse/travaille le plus →
+            vise une pression à chaud plus basse de ce côté, ou vérifie le carrossage.</span>
+        </p>
+      )}
+      <p className="mt-2 text-[11px] text-neutral-400 leading-snug">
+        Indicatif : la tendance AV/AR dépend aussi du réglage de freins. Le copilote complet (sous/survirage, amortisseurs…) est dans le relais en jeu.
+      </p>
     </div>
   );
 }
