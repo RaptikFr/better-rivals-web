@@ -1,5 +1,8 @@
 # Mémoire — Better Rivals Web
 
+- [Copilote de réglage](coach-copilote-reglage.md) — brique télémétrie #5 : prototype `coach_diag.py` (local, hors repo). Offsets confirmés, diagnostic équilibre à 3 juges (β robuste), fiabilisé le 22/06 (filtrage bordures + segmentation + apex). RESTE : valider en jeu + leviers amortisseurs/aéro
+- [Accès Supabase via PAT](acces-supabase-pat.md) — PAT gardé dans `.env.local` (SUPABASE_ACCESS_TOKEN) ; SQL/DDL via Management API + PowerShell Invoke-RestMethod (curl casse en TLS). Ref projet hmtgzqbxymspauusziyh
+- [Suppression du classement général](suppression-classement-general.md) — retiré le 22/06 (exploitable : points « gratuits » via voiture peu utilisée). NE PAS le re-proposer ; classements restent par config à armes égales
 - [À RESTITUER au proprio — actions delta live](todo-proprio-delta-live.md) — sur le PC fixe : (2) recopier le relais du portable ✅ FAIT 20/06 (v1.13.0 à la racine du fixe) ; RESTE (1) valider les offsets trace en jeu, puis (3) me prévenir → on enchaîne le code delta live. GET /api/traces déjà fait (e1b2cfa).
 - [Responsive navbar petits écrans — RÉSOLU](todo-responsive-petits-ecrans.md) — débordement navbar (~17") corrigé via dropdown « Plus ▾ » regroupant les liens secondaires (commit 5f590cc). Reste : confirmation visuelle côté proprio.
 
