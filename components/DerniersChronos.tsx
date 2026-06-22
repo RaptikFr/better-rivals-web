@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DiscordTag } from '@/components/DiscordTag';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
@@ -8,8 +9,24 @@ import { usePreferences } from '@/hooks/usePreferences';
 import type { Chrono } from '@/lib/derniersChronos';
 import type { Drivetrain } from '@/types/supabase';
 
+// Construit le lien vers le classement filtré sur la config de ce chrono,
+// en mettant la ligne en évidence (déplie le sous-groupe + scroll).
+function chronoHref(lap: Chrono): string {
+  const params = new URLSearchParams();
+  params.set('track_id', String(lap.track_id));
+  if (lap.car_class) params.set('class', lap.car_class);
+  if (lap.drivetrain) params.set('drivetrain', lap.drivetrain);
+  const car = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
+  // Double-encodage volontaire : la page /classements décode une fois (decodeURIComponent),
+  // aligné sur le bouton « Partager » du classement.
+  if (car) params.set('car', encodeURIComponent(car));
+  params.set('highlight', lap.id);
+  return `/classements?${params.toString()}`;
+}
+
 export default function DerniersChronos({ chronos }: { chronos: Chrono[] }) {
   const { formatTime, formatDate } = usePreferences();
+  const router = useRouter();
 
   if (chronos.length === 0) return null;
 
@@ -24,7 +41,17 @@ export default function DerniersChronos({ chronos }: { chronos: Chrono[] }) {
         {chronos.map((lap) => (
           <div
             key={lap.id}
-            className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
+            role="link"
+            tabIndex={0}
+            onClick={() => router.push(chronoHref(lap))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                router.push(chronoHref(lap));
+              }
+            }}
+            title="Voir ce temps dans le classement"
+            className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 cursor-pointer hover:border-pink-400/60 hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
           >
             <div className="flex items-center gap-2 shrink-0">
               <span className="font-mono font-bold text-pink-400 text-xl">
@@ -44,6 +71,7 @@ export default function DerniersChronos({ chronos }: { chronos: Chrono[] }) {
               <p className="font-bold truncate">
                 <Link
                   href={`/joueurs/${encodeURIComponent(lap.players?.pseudo ?? '')}`}
+                  onClick={(e) => e.stopPropagation()}
                   className="hover:text-pink-400 transition-colors"
                 >
                   {lap.players?.pseudo ?? '—'}

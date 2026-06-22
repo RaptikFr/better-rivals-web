@@ -7,6 +7,7 @@ export interface Chrono {
   previous_time_ms: number | null;
   car_class:        string;
   drivetrain:       string | null;
+  track_id:         number;
   recorded_at:      string;
   players:          { pseudo: string; discord_tag: string | null } | null;
   cars:             { manufacturer: string | null; name: string; year: number | null } | null;
@@ -18,7 +19,7 @@ async function fetchDerniersChronos(): Promise<Chrono[]> {
     .from('lap_times')
     // recorded_at (mis à jour à chaque amélioration) plutôt que created_at,
     // pour que les records améliorés remontent dans le flux
-    .select('id, time_ms, previous_time_ms, car_class, drivetrain, recorded_at, players ( pseudo, discord_tag:discord_tag_public ), cars ( manufacturer, name, year ), tracks ( name )')
+    .select('id, time_ms, previous_time_ms, car_class, drivetrain, track_id, recorded_at, players ( pseudo, discord_tag:discord_tag_public ), cars ( manufacturer, name, year ), tracks ( name )')
     .order('recorded_at', { ascending: false })
     .limit(5);
 
