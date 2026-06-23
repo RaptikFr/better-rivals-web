@@ -28,7 +28,7 @@ npm run test       # vitest run (tests unitaires dans lib/)
 
 ### Vue d'ensemble
 
-**Better Rivals FH6** est une plateforme de classements alternatifs pour Forza Horizon 6 (égalité à voiture identique). Stack : Next.js 16 App Router + Supabase (Postgres + auth + RLS).
+**Better Rivals FH6** est une plateforme de classements alternatifs pour Forza Horizon 6 (égalité à voiture identique). Stack : Next.js 16.2 App Router · React 19 · TypeScript · Tailwind CSS v4 · Supabase (Postgres + auth + RLS) · Vitest · Vercel.
 
 Le flux central est : **Relais Python (UDP Forza → HTTP)** → `/api/times` → `lap_times` → triggers notifs + classements. Le relais poste aussi les traces (télémétrie) et les diagnostics de réglage.
 
@@ -51,7 +51,6 @@ Pages notables : `/profil` (onglets : Récents, Tous, Suivi, Classements, Rivaux
 | `players` | Compte utilisateur + préférences JSON cross-device. |
 | `duels` | Défi challenger vs opponent sur une config, avec deadline. |
 | `objectifs` | Objectif personnel : battre le PB d'un autre joueur sur une config. |
-| `best_sectors` | Tour optimal par config (meilleur secteur de chaque index, tous joueurs). |
 
 **RLS :** `lap_times`, `players` = lecture publique. `lap_traces`, `duels`, `objectifs`, `coach_reglage_reports` = fermés (service role only via API routes avec vérif JWT Bearer).
 
