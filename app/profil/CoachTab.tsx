@@ -54,6 +54,8 @@ export function CoachTab({ laps }: { laps: ProfileLap[] }) {
   const [selectedKey, setSelectedKey] = useState<string>('');
   const [status, setStatus] = useState<Status>('idle');
   const [data, setData] = useState<CoachResponse | null>(null);
+  const [search, setSearch] = useState('');
+  const [showList, setShowList] = useState(false);
 
   // Sélection par défaut : la première config disponible.
   useEffect(() => {
@@ -62,6 +64,12 @@ export function CoachTab({ laps }: { laps: ProfileLap[] }) {
   }, [configs, selectedKey]);
 
   const selected = configs.find(c => c.key === selectedKey) ?? null;
+
+  const filteredConfigs = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return configs;
+    return configs.filter(c => c.label.toLowerCase().includes(q));
+  }, [configs, search]);
 
   useEffect(() => {
     if (!selected) return;
@@ -103,13 +111,37 @@ export function CoachTab({ laps }: { laps: ProfileLap[] }) {
         <label className="block text-sm font-bold text-neutral-600 dark:text-neutral-400 mb-1">
           Config à analyser
         </label>
-        <select
-          value={selectedKey}
-          onChange={e => setSelectedKey(e.target.value)}
-          className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
-        >
-          {configs.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-        </select>
+        <div className="relative">
+          <input
+            type="text"
+            value={showList ? search : (selected?.label ?? '')}
+            onChange={e => { setSearch(e.target.value); setShowList(true); }}
+            onFocus={() => { setSearch(''); setShowList(true); }}
+            onBlur={() => setTimeout(() => setShowList(false), 150)}
+            placeholder="Rechercher un circuit, une voiture…"
+            className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+          />
+          <span aria-hidden="true" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">🔍</span>
+          {showList && (
+            <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+              {filteredConfigs.length === 0 ? (
+                <p className="px-3 py-2 text-sm text-neutral-500">Aucune config ne correspond.</p>
+              ) : filteredConfigs.map(c => (
+                <button
+                  key={c.key}
+                  onMouseDown={() => { setSelectedKey(c.key); setSearch(''); setShowList(false); }}
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                    c.key === selectedKey
+                      ? 'bg-pink-500/20 text-pink-400'
+                      : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <p className="text-xs text-neutral-500 mt-2">
           Analyse de ton meilleur tour tracé, découpé en tronçons <strong>égaux en distance</strong>
           {' '}(pas les secteurs du jeu : Forza n&apos;expose pas de checkpoint). Les conseils portent
