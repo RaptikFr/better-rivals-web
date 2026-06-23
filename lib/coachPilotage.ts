@@ -19,6 +19,8 @@ const SEUIL_PERTE_MS = 80; // on ne conseille un secteur que s'il coûte > 80 ms
 
 export interface SectorCoaching {
   index: number;                  // secteur 0-based
+  startM: number;                 // distance de début du secteur depuis le départ (m)
+  endM: number;                   // distance de fin du secteur depuis le départ (m)
   yourMs: number;                 // ton temps de secteur (ms)
   bestMs: number | null;          // meilleur secteur de la config (best_sectors), ms
   deltaMs: number | null;         // yourMs - bestMs (> 0 = tu perds du temps)
@@ -75,7 +77,7 @@ export function analyserPilotage(
     const deltaMs = bMs !== null ? yourMs - bMs : null;
 
     if (idx.length === 0) {
-      sectors.push({ index: i, yourMs, bestMs: bMs, deltaMs, apexKmh: 0,
+      sectors.push({ index: i, startM: lo, endM: hi, yourMs, bestMs: bMs, deltaMs, apexKmh: 0,
         brakeStartPct: null, brakeLenPct: 0, coastPct: 0, fullThrottlePct: null, tips: [] });
       continue;
     }
@@ -114,7 +116,7 @@ export function analyserPilotage(
       }
     }
 
-    sectors.push({ index: i, yourMs, bestMs: bMs, deltaMs, apexKmh,
+    sectors.push({ index: i, startM: lo, endM: hi, yourMs, bestMs: bMs, deltaMs, apexKmh,
       brakeStartPct, brakeLenPct, coastPct, fullThrottlePct, tips });
   }
 

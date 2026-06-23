@@ -240,6 +240,9 @@ function SectorCard({ s, held, isWorst, total }: { s: SectorCoaching; held: bool
     }`}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="font-bold text-neutral-900 dark:text-white">Secteur {s.index + 1}/{total}</span>
+        <span className="text-xs text-neutral-400 font-mono">
+          km {(s.startM / 1000).toFixed(2).replace('.', ',')} → {(s.endM / 1000).toFixed(2).replace('.', ',')}
+        </span>
         <span className="font-mono text-sm text-neutral-700 dark:text-neutral-300">{fmtSec(s.yourMs)}</span>
         {s.deltaMs !== null && (
           <span className={`text-sm font-bold ${losing ? 'text-amber-500' : 'text-emerald-500'}`}>
