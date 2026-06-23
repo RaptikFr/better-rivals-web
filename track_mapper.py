@@ -15,23 +15,26 @@ import struct
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
 # ─── Paramètres configurables ─────────────────────────────────────────────────
-UDP_PORT       = 5700
+UDP_PORT       = 5300    # port configuré dans FH6 (même que le relais Better Rivals)
 SAMPLE_EVERY_N = 10      # 1 sample tous les N paquets (≈ 6 Hz à 60 Hz)
 OUTPUT_DIR     = "."     # dossier d'export (relatif au script)
 DEBUG          = False   # True → affiche X/Y/Z bruts toutes les secondes
+SITE_URL       = "https://better-rivals-fh6.org"  # API liste des circuits
 # ─────────────────────────────────────────────────────────────────────────────
 
 PACKET_SIZE = 324
 
 # Offsets FH6 (float32 little-endian sauf indication)
 OFF_IS_RACE_ON        = 0    # int32
-OFF_POSITION_X        = 232  # float32
-OFF_POSITION_Y        = 236  # float32  (hauteur, non utilisée dans le SVG)
-OFF_POSITION_Z        = 240  # float32
+OFF_POSITION_X        = 244  # float32  (232 standard FM + 12 décalage FH6)
+OFF_POSITION_Y        = 248  # float32  (hauteur, non utilisée dans le SVG)
+OFF_POSITION_Z        = 252  # float32
 OFF_SPEED             = 256  # float32  m/s
 OFF_DISTANCE_TRAVELED = 292  # float32  m (reset à 0 au départ)
 OFF_BEST_LAP          = 296  # float32  s
@@ -262,8 +265,9 @@ def export_svg(samples: list, checkpoints: list, track_name: str, out_path: Path
 
 
 def export_json(samples: list, checkpoints: list, track_name: str,
-                lap_time_s: float, out_path: Path) -> None:
+                lap_time_s: float, out_path: Path, track_id: int | None = None) -> None:
     data = {
+        'track_id':         track_id,
         'track_name':       track_name,
         'recorded_at':      datetime.now().isoformat(timespec='seconds'),
         'lap_time_s':       round(lap_time_s, 3),
@@ -285,13 +289,14 @@ def export_json(samples: list, checkpoints: list, track_name: str,
     out_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
-def do_export(samples: list, checkpoints: list, track_name: str, lap_time_s: float) -> None:
+def do_export(samples: list, checkpoints: list, track_name: str,
+              lap_time_s: float, track_id: int | None = None) -> None:
     ts      = datetime.now().strftime('%Y%m%d_%H%M%S')
     stem    = track_name.replace(' ', '_').replace('/', '-')
     out_dir = Path(OUTPUT_DIR)
     j_out   = out_dir / f'{stem}_{ts}.json'
     s_out   = out_dir / f'{stem}_{ts}.svg'
-    export_json(samples, checkpoints, track_name, lap_time_s, j_out)
+    export_json(samples, checkpoints, track_name, lap_time_s, j_out, track_id)
     export_svg(samples, checkpoints, track_name, s_out)
     print(f'\n✅ Exporté :\n   {j_out}\n   {s_out}')
 
@@ -343,6 +348,57 @@ def _wait_key_choice(valid: str) -> str:
         time.sleep(0.05)
 
 
+# ─── Sélection du circuit ─────────────────────────────────────────────────────
+
+def _fetch_circuits(timeout: float = 6.0) -> list:
+    """Liste des circuits approuvés via GET {SITE_URL}/api/circuits (public)."""
+    req = urllib.request.Request(
+        f'{SITE_URL}/api/circuits', headers={'User-Agent': 'track_mapper'}
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        payload = json.loads(resp.read().decode('utf-8'))
+    return payload.get('circuits', [])
+
+
+def _saisie_manuelle() -> tuple[int | None, str]:
+    nom = input('Nom du circuit : ').strip() or 'Circuit'
+    return None, nom
+
+
+def choisir_circuit() -> tuple[int | None, str]:
+    """Menu numéroté depuis l'API → (track_id, track_name).
+    track_id None = saisie manuelle (réseau coupé, API vide, ou choix [M])."""
+    try:
+        circuits = _fetch_circuits()
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        print(f'⚠  Liste des circuits indisponible ({e.__class__.__name__}).')
+        print('   → saisie manuelle (le tracé ne sera pas rattaché à un track_id).')
+        return _saisie_manuelle()
+
+    if not circuits:
+        print('⚠  Aucun circuit renvoyé par l\'API → saisie manuelle.')
+        return _saisie_manuelle()
+
+    print(f'\n{len(circuits)} circuits disponibles (★ = officiel) :\n')
+    for i, c in enumerate(circuits, 1):
+        km   = f'{c["length_km"]:.1f} km' if c.get('length_km') else '—'
+        kind = 'sprint' if c.get('is_sprint') else (c.get('type') or 'circuit')
+        off  = '★' if c.get('is_official') else ' '
+        print(f'  {i:>3}. {off} {c["name"]:<32} ({kind}, {km})')
+    print('    M.   Saisie manuelle (autre nom)')
+
+    while True:
+        choix = input('\nChoisis un circuit (numéro ou M) : ').strip().lower()
+        if choix == 'm':
+            return _saisie_manuelle()
+        if choix.isdigit():
+            n = int(choix)
+            if 1 <= n <= len(circuits):
+                c = circuits[n - 1]
+                return c['id'], c['name']
+        print('  Entrée invalide.')
+
+
 # ─── Boucle principale ────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -356,12 +412,13 @@ def main() -> None:
     print('║  [Espace]  : marquer un checkpoint                      ║')
     print('║  [Q]       : forcer export et quitter                   ║')
     print('║                                                          ║')
-    print('║  FH6 : Paramètres → Télémétrie → 127.0.0.1:5700        ║')
+    print(f'║  FH6 : Paramètres → Télémétrie → 127.0.0.1:{UDP_PORT}        ║')
     print('╚══════════════════════════════════════════════════════════╝')
     print()
 
-    track_name = input('Nom du circuit (ex: Montellino Sprint) : ').strip() or 'Circuit'
-    print(f'\nEnregistrement pour « {track_name} » — en attente des paquets...\n')
+    track_id, track_name = choisir_circuit()
+    ref = f'track_id #{track_id}' if track_id is not None else 'saisie manuelle'
+    print(f'\nEnregistrement pour « {track_name} » ({ref}) — en attente des paquets...\n')
 
     # Démarrage des threads (après input() pour éviter conflit sur stdin)
     threading.Thread(target=_udp_listener, daemon=True).start()
@@ -398,7 +455,7 @@ def main() -> None:
                 cp = list(_checkpoints)
                 lt = _lap_time_s
             if s:
-                do_export(s, cp, track_name, lt)
+                do_export(s, cp, track_name, lt, track_id)
             else:
                 print('⚠  Aucun sample enregistré.')
             break
@@ -422,12 +479,12 @@ def main() -> None:
             choice = _wait_key_choice('srq')
 
             if choice == 's':
-                do_export(saved_samples, saved_cps, track_name, saved_lap_t)
+                do_export(saved_samples, saved_cps, track_name, saved_lap_t, track_id)
                 print('\n[Espace]=nouveau CP  [Q]=quitter — continue à rouler...\n')
             elif choice == 'r':
                 print('↺ Nouveau lap — roule !\n')
             elif choice == 'q':
-                do_export(saved_samples, saved_cps, track_name, saved_lap_t)
+                do_export(saved_samples, saved_cps, track_name, saved_lap_t, track_id)
                 break
 
         time.sleep(0.02)

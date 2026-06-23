@@ -49,7 +49,7 @@ Le relais v3.0.0 (OneDrive\Relais\relais_gui_v300.py) n'a **pas encore été tes
 
 ### 🟢 Côté site — vérification visuelle
 
-- Confirmer que le changement d'onglet navigateur ne reset plus la page Profil.
+- ✅ **Confirmé OK (23/06, RAPTIK-PC)** : le changement d'onglet navigateur ne reset plus la page Profil.
 - Vérifier l'affichage des plages km dans l'onglet Coach (nécessite une trace existante).
 
 ### ⚪ En attente

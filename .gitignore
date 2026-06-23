@@ -1,5 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Exports de track_mapper.py (traces de circuits, fichiers horodatés à la racine)
+/*_20*.json
+/*_20*.svg
+
 # dependencies
 /node_modules
 /.pnp
