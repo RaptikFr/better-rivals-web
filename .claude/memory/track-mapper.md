@@ -33,6 +33,8 @@ Script Python standalone créé le 23/06 à la racine du repo (`track_mapper.py`
 
 **Modèle de tour (corrigé 23/06)** : enregistre dès `is_race_on==1`, **1er tour INCLUS** (LapNumber=0 pendant tout le 1er tour en Forza). Fin détectée au 1er incrément LapNumber (0→1) → **UN tour complet suffit** pour une carte. Avant ce fix, la capture ne démarrait qu'à LapNumber≥1 → il fallait 2 tours et on n'obtenait que des bouts (3-5 points en fin de tour). `SAMPLE_EVERY_N` passé 10→**5** (~12 Hz, ~2,7 m entre points).
 
+**Distance = géométrique, PAS le champ Forza (corrigé 23/06)** : `DistanceTraveled` (offset 292) n'est PAS en mètres réels — sur Irokawa il donnait 5949 m pour un tour de 1888 m (≈ 3,15× trop ; 366 km/h de moyenne, impossible). Déjà connu côté relais v25 (« distance Forza ≠ mètres réels »). Fix mapper : `cumulative_distance_m()` somme les segments XZ (positions validées) → `total_distance_m` + `dist_m` par point + `dist_m` des checkpoints sont en MÈTRES RÉELS ; le champ brut Forza est conservé sous `dist_forza`. Vérifié : 1888,5 m, 116 km/h moy. ⚠️ L'affichage live console montre encore le brut Forza (cosmétique, non corrigé).
+
 **Clavier en jeu (gotcha 23/06)** : `msvcrt` ne lit le clavier QUE si la console a le focus → pendant qu'on roule (FH6 au 1er plan), [Espace]/[S] n'arrivaient jamais (checkpoints=0 dans l'export). Fix : poller **global** via `ctypes.windll.user32.GetAsyncKeyState(vk) & 0x8000` (front montant), qui lit l'état physique sans consommer la touche (le jeu la reçoit aussi). Config `CHECKPOINT_VK=0x20` (Espace) + `SAVE_VK=0x53` (S). R/Q restent console. Idéal si on pilote à la manette/volant (clavier libre).
 
 ## Validation

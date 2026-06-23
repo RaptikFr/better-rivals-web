@@ -224,6 +224,21 @@ def mark_checkpoint() -> None:
         _print_msg(f'✓ {label} marqué à {s["dist_m"]:.1f} m.')
 
 
+def cumulative_distance_m(samples: list) -> list[float]:
+    """Distance cumulée RÉELLE (mètres) le long du tracé, depuis les positions XZ.
+    Le champ DistanceTraveled de Forza (offset 292) n'est PAS en mètres réels
+    (≈ 3× trop grand) — on calcule donc la distance par somme des segments XZ,
+    comme le relais (cf. mémoire v25 « distance Forza ≠ mètres réels »)."""
+    cum  = [0.0] * len(samples)
+    dist = 0.0
+    for i in range(1, len(samples)):
+        dx = samples[i]['x'] - samples[i - 1]['x']
+        dz = samples[i]['z'] - samples[i - 1]['z']
+        dist += math.hypot(dx, dz)
+        cum[i] = dist
+    return cum
+
+
 def normalize_path(samples: list) -> list[tuple[float, float]]:
     if not samples:
         return []
@@ -295,25 +310,33 @@ def export_svg(samples: list, checkpoints: list, track_name: str, out_path: Path
 
 def export_json(samples: list, checkpoints: list, track_name: str,
                 lap_time_s: float, out_path: Path, track_id: int | None = None) -> None:
+    cum = cumulative_distance_m(samples)
+    # dist_m = distance RÉELLE géométrique (m) ; dist_forza = champ brut Forza (non métrique)
+    cp_out = [
+        {**cp, 'dist_m': round(cum[cp['sample_index']], 2)}
+        if 0 <= cp.get('sample_index', -1) < len(cum) else cp
+        for cp in checkpoints
+    ]
     data = {
         'track_id':         track_id,
         'track_name':       track_name,
         'recorded_at':      datetime.now().isoformat(timespec='seconds'),
         'lap_time_s':       round(lap_time_s, 3),
-        'total_distance_m': round(samples[-1]['dist_m'], 2) if samples else 0.0,
+        'total_distance_m': round(cum[-1], 2) if samples else 0.0,
         'sample_count':     len(samples),
         'path': [
             {
-                'x':      round(s['x'],      3),
-                'z':      round(s['z'],      3),
-                'y':      round(s['y'],      3),
-                'dist_m': round(s['dist_m'], 2),
-                't_s':    round(s['t_s'],    3),
-                'spd_ms': round(s['spd_ms'], 2),
+                'x':          round(s['x'],      3),
+                'z':          round(s['z'],      3),
+                'y':          round(s['y'],      3),
+                'dist_m':     round(cum[i],      2),
+                'dist_forza': round(s['dist_m'], 2),
+                't_s':        round(s['t_s'],    3),
+                'spd_ms':     round(s['spd_ms'], 2),
             }
-            for s in samples
+            for i, s in enumerate(samples)
         ],
-        'checkpoints': checkpoints,
+        'checkpoints': cp_out,
     }
     out_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
