@@ -7,14 +7,18 @@ metadata:
   originSessionId: cae85036-f3e2-4180-a051-95649963b520
 ---
 
-Le projet est édité depuis **deux machines** du proprio. Comme `relais_gui_v22.py` est **gitignoré** (non synchronisé par git), savoir sur quelle machine on est est crucial pour la divergence de source du relais — voir [[relais-serveur-et-rang]].
+Le projet est édité depuis **deux machines** du proprio. L'instance Claude sur chaque machine a un surnom :
+- **Claude Portable** → `PC-RENAUD` (PC portable)
+- **Claude Fixe** → `RAPTIK-PC` (PC fixe)
+
+Comme le relais est **gitignoré**, savoir sur quelle machine on est est crucial pour éviter les divergences — voir [[relais-serveur-et-rang]].
 
 **Auto-détection au besoin** (PowerShell) : `$env:COMPUTERNAME`.
 
-| Machine | COMPUTERNAME | Python | `gh` | `upx` |
-|---|---|---|---|---|
-| **PORTABLE** | `PC-RENAUD` | 3.14.0 | absent | absent |
-| **FIXE** | `RAPTIK-PC` | 3.13.2 | présent (2.94) | absent |
+| Machine | Surnom Claude | COMPUTERNAME | Python | `gh` | `upx` |
+|---|---|---|---|---|---|
+| **PORTABLE** | Claude Portable | `PC-RENAUD` | 3.14.0 | absent | absent |
+| **FIXE** | Claude Fixe | `RAPTIK-PC` | 3.13.2 | présent (2.94) | absent |
 
 → Si `COMPUTERNAME == "PC-RENAUD"` ⇒ **portable** ; si `RAPTIK-PC` ⇒ **fixe**. (COMPUTERNAME du fixe relevé le 20/06.)
 

@@ -88,6 +88,14 @@ Le relais Python capture l'UDP Forza et poste :
 
 Les secteurs sont des **tranches égales en distance** (N = max(5, min(20, round(km/1.5)))), pas les checkpoints Forza. Chaque `SectorCoaching` expose `startM`/`endM` en mètres depuis le départ pour localiser les conseils.
 
+### Instances Claude sur ce projet
+
+Ce projet est édité depuis deux machines. Chaque instance Claude a un surnom :
+- **Claude Portable** — `PC-RENAUD` (portable). Pas de `gh`, releases via fallback Python/requests.
+- **Claude Fixe** — `RAPTIK-PC` (fixe). `gh` disponible, tests en jeu possibles.
+
+Auto-détection : `$env:COMPUTERNAME`. Le relais Python (`relais_gui_v300.py`) est **gitignoré** et synchronisé via OneDrive — toujours faire `git fetch` avant d'éditer sur le portable (Claude Fixe pousse sur origin).
+
 ### Conventions notables
 
 - **Format temps** : contrôlé par `usePreferences().formatTime(ms)` — ne jamais formater directement avec `formatTime` de `components/formatTime.ts` dans un client component qui utilise les préférences.
