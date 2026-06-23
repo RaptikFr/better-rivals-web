@@ -31,14 +31,11 @@ Le portable a poussé plusieurs commits depuis la dernière sync. Le repo web es
 
 ## 3. Ce qu'il reste à faire (par priorité)
 
-### 🔴 À tester en jeu — `track_mapper.py`
+### ✅ FAIT (23/06) — `track_mapper.py` validé en jeu
 
-1. Ouvrir `track_mapper.py` et passer `DEBUG = True` en haut.
-2. Lancer `python track_mapper.py`.
-3. Démarrer FH6 en mode circuit, faire un tour.
-4. Vérifier dans le terminal que X/Y/Z varient de façon cohérente avec le mouvement.
-5. Si les coordonnées sont aberrantes (toutes à 0 ou invraisemblables), les offsets 232/236/240 sont à recalibrer — voir [[track-mapper]] pour le contexte.
-6. Si OK : faire un lap propre (pilote auto si dispo), marquer des checkpoints [Espace] aux drapeaux verts, exporter et vérifier le SVG généré.
+- Offsets Position **validés** après correction (232/236/240 → **244/248/252**, +12 FH6 ; cf. [[track-mapper]]). Test Irokawa : |ΔXZ| = vitesse × dt. `DEBUG` repassé à False.
+- **Sélection circuit par menu API** ajoutée (track_id dans le JSON) + port corrigé **5300**. Commit `7c04b50`, poussé.
+- ⏳ Reste (quand tu veux) : enregistrer de **vrais laps complets** par circuit (lap propre, checkpoints [Espace] aux repères) pour bâtir la bibliothèque de tracés. ⚠️ **Fermer le relais** avant (même port UDP 5300).
 
 ### 🟡 À tester en jeu — relais v3.0.0
 
