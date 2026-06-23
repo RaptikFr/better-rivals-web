@@ -22,7 +22,7 @@ from pathlib import Path
 
 # ─── Paramètres configurables ─────────────────────────────────────────────────
 UDP_PORT       = 5300    # port configuré dans FH6 (même que le relais Better Rivals)
-SAMPLE_EVERY_N = 10      # 1 sample tous les N paquets (≈ 6 Hz à 60 Hz)
+SAMPLE_EVERY_N = 5       # 1 sample tous les N paquets (≈ 12 Hz à 60 Hz)
 OUTPUT_DIR     = "."     # dossier d'export (relatif au script)
 DEBUG          = False   # True → affiche X/Y/Z bruts toutes les secondes
 SITE_URL       = "https://better-rivals-fh6.org"  # API liste des circuits
@@ -70,7 +70,7 @@ _samples: list      = []          # {x, z, y, dist_m, t_s, spd_ms}
 _checkpoints: list  = []          # {label, sample_index, x, z, dist_m}
 _last_packet: dict  = {}
 _lap_number   = 0
-_recording    = False             # True quand is_race_on==1 et LapNumber>=1
+_recording    = False             # True quand is_race_on==1 (1er tour inclus)
 _had_recording = False            # a-t-on déjà commencé à enregistrer ce lap ?
 _lap_done     = False
 _lap_time_s   = 0.0
@@ -105,10 +105,12 @@ def _udp_listener() -> None:
             _last_packet = p
             pkt_since_sample += 1
 
-            now_recording = (p['is_race_on'] == 1 and p['lap_number'] >= 1)
+            # On enregistre dès que la course est active, y compris le 1er tour
+            # (LapNumber vaut 0 pendant tout le premier tour en Forza).
+            now_recording = (p['is_race_on'] == 1)
 
-            # Détection fin de lap : LapNumber s'incrémente ET on enregistrait
-            if _had_recording and p['lap_number'] > _lap_number and _lap_number >= 1:
+            # Fin de lap : LapNumber s'incrémente (0→1 inclus) ET on enregistrait
+            if _had_recording and p['lap_number'] > _lap_number:
                 _lap_done   = True
                 _lap_time_s = p['best_lap'] if p['best_lap'] > 0.1 else p['t_s']
 
@@ -418,7 +420,9 @@ def main() -> None:
 
     track_id, track_name = choisir_circuit()
     ref = f'track_id #{track_id}' if track_id is not None else 'saisie manuelle'
-    print(f'\nEnregistrement pour « {track_name} » ({ref}) — en attente des paquets...\n')
+    print(f'\nEnregistrement pour « {track_name} » ({ref}).')
+    print('→ Pars de la ligne de départ et roule UN tour complet ; au passage')
+    print('  de la ligne, le script propose [S] Sauvegarder. En attente des paquets...\n')
 
     # Démarrage des threads (après input() pour éviter conflit sur stdin)
     threading.Thread(target=_udp_listener, daemon=True).start()

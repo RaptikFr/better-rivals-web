@@ -29,7 +29,9 @@ Script Python standalone créé le 23/06 à la racine du repo (`track_mapper.py`
 | CurrentLap | 304 | float32 |
 | LapNumber | 312 | uint16 |
 
-**Offsets Position CORRIGÉS le 23/06 (test en jeu)** : au premier essai, X/Y/Z étaient à 232/236/240 → lus à **0.0** (alors que Speed/Distance étaient bons). Cause : Position avait été oublié dans le décalage **+12** que reçoivent tous les champs Dash en FH6 (3 champs FH6-only insérés après NumCylinders offset 228). Tout le reste était déjà à +12 (Speed 244→256, Distance 280→292, laps idem). Corrigé : **244/248/252** (= 232/236/240 standard FM + 12), 4 floats contigus avant Speed (256). ⏳ Re-test en jeu attendu pour confirmer que X/Z varient cohéremment.
+**Offsets Position CORRIGÉS le 23/06 (test en jeu)** : au premier essai, X/Y/Z étaient à 232/236/240 → lus à **0.0** (alors que Speed/Distance étaient bons). Cause : Position avait été oublié dans le décalage **+12** que reçoivent tous les champs Dash en FH6 (3 champs FH6-only insérés après NumCylinders offset 228). Tout le reste était déjà à +12 (Speed 244→256, Distance 280→292, laps idem). Corrigé : **244/248/252** (= 232/236/240 standard FM + 12), 4 floats contigus avant Speed (256). ✅ **CONFIRMÉ en jeu (Irokawa, 23/06)** : |ΔXZ| par pas = vitesse × dt → coordonnées bonnes.
+
+**Modèle de tour (corrigé 23/06)** : enregistre dès `is_race_on==1`, **1er tour INCLUS** (LapNumber=0 pendant tout le 1er tour en Forza). Fin détectée au 1er incrément LapNumber (0→1) → **UN tour complet suffit** pour une carte. Avant ce fix, la capture ne démarrait qu'à LapNumber≥1 → il fallait 2 tours et on n'obtenait que des bouts (3-5 points en fin de tour). `SAMPLE_EVERY_N` passé 10→**5** (~12 Hz, ~2,7 m entre points).
 
 ## Validation
 
@@ -42,6 +44,6 @@ Mettre `DEBUG = True` en haut du fichier → affiche `X / Y / Z` bruts toutes le
 ```
 python track_mapper.py
 ```
-Lancer AVANT de démarrer une session Forza (ou pendant une pause). FH6 : Paramètres → Télémétrie → IP 127.0.0.1, Port 5700.
+Lancer AVANT de démarrer une session Forza (ou pendant une pause). FH6 : Paramètres → Télémétrie → IP 127.0.0.1, **Port 5300**. Puis rouler UN tour complet depuis la ligne ; au passage de la ligne → prompt [S] Sauvegarder.
 
 **Why:** [[todo-claude-fixe]] — premier outil de cartographie manuelle des circuits pour ancrer les conseils du Coach à des repères géographiques réels.
