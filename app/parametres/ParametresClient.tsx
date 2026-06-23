@@ -312,10 +312,10 @@ export default function ParametresClient() {
           />
         </Section>
 
-        <Section title="Coach de pilotage">
+        <Section title="Coach &amp; copilote">
           <Segmented
-            label="Rapport post-tour"
-            hint="Analyse ta trace par secteur (où tu perds du temps, freinage, dosage du gaz) sur ton profil. Désactivé par défaut : aucun conseil tant que tu ne l'actives pas."
+            label="Conseils sur ton profil"
+            hint="Débloque deux onglets sur ton profil : 🧠 Coach (analyse de ta trace par secteur — où tu perds du temps, freinage, dosage du gaz) et 🔧 Copilote (compte rendu des soucis de réglage relevés en jeu par le relais). Désactivé par défaut : aucun conseil tant que tu ne l'actives pas."
             value={prefs.coachReport}
             onChange={v => setPref('coachReport', v)}
             options={[

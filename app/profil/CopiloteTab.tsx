@@ -1,0 +1,191 @@
+"use client";
+
+import { useEffect, useMemo, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { dateRelative } from '@/lib/dateRelative';
+import { EmptyState } from './profilShared';
+
+interface Report {
+  id: string;
+  track_id: number;
+  car_ordinal: number;
+  car_class: string;
+  drivetrain: string;
+  titre: string;
+  conseils: string[];
+  transmission: string | null;
+  n_virages: number | null;
+  created_at: string;
+  track_name: string;
+  car_label: string;
+}
+
+interface ConfigGroup {
+  key: string;
+  label: string;
+  reports: Report[];
+  /** Soucis récurrents (titre ou conseil vu ≥ 2 fois sur la config). */
+  recurring: { texte: string; count: number }[];
+}
+
+type Status = 'loading' | 'ready' | 'empty' | 'error';
+
+/** Onglet « Copilote de réglage » : boîte de réception des diagnostics de
+ *  réglage relevés en jeu par le relais. Agrège par config pour révéler les
+ *  soucis RÉCURRENTS, et laisse évacuer chaque diagnostic une fois lu. */
+export function CopiloteTab() {
+  const [status, setStatus]   = useState<Status>('loading');
+  const [reports, setReports] = useState<Report[]>([]);
+
+  useEffect(() => {
+    let annule = false;
+    (async () => {
+      setStatus('loading');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { if (!annule) setStatus('error'); return; }
+      try {
+        const res = await fetch('/api/coach-reports', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (annule) return;
+        if (!res.ok) { setStatus('error'); return; }
+        const json = await res.json();
+        const rows: Report[] = json.reports ?? [];
+        setReports(rows);
+        setStatus(rows.length ? 'ready' : 'empty');
+      } catch {
+        if (!annule) setStatus('error');
+      }
+    })();
+    return () => { annule = true; };
+  }, []);
+
+  async function supprimer(id: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    // Optimiste : on retire tout de suite, on remet en cas d'échec.
+    const avant = reports;
+    const apres = reports.filter(r => r.id !== id);
+    setReports(apres);
+    setStatus(apres.length ? 'ready' : 'empty');
+    try {
+      const res = await fetch(`/api/coach-reports/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setReports(avant);
+      setStatus('ready');
+    }
+  }
+
+  const groups = useMemo<ConfigGroup[]>(() => {
+    const m = new Map<string, ConfigGroup>();
+    for (const r of reports) {
+      const key = `${r.track_id}|${r.car_ordinal}|${r.car_class}|${r.drivetrain}`;
+      const label = `${r.track_name} · ${r.car_label || 'Voiture'} · ${r.car_class}/${r.drivetrain}`;
+      if (!m.has(key)) m.set(key, { key, label, reports: [], recurring: [] });
+      m.get(key)!.reports.push(r);
+    }
+    // Soucis récurrents : on compte chaque énoncé (titre hors « neutre », + conseils).
+    for (const g of m.values()) {
+      const counts = new Map<string, number>();
+      for (const r of g.reports) {
+        if (r.titre && !/neutre/i.test(r.titre)) {
+          counts.set(r.titre, (counts.get(r.titre) ?? 0) + 1);
+        }
+        for (const c of r.conseils) counts.set(c, (counts.get(c) ?? 0) + 1);
+      }
+      g.recurring = [...counts.entries()]
+        .filter(([, n]) => n >= 2)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([texte, count]) => ({ texte, count }));
+    }
+    // Configs triées par diagnostic le plus récent.
+    return [...m.values()].sort((a, b) =>
+      b.reports[0].created_at.localeCompare(a.reports[0].created_at));
+  }, [reports]);
+
+  if (status === 'loading') return <p className="text-neutral-500 animate-pulse px-1">Chargement de tes diagnostics…</p>;
+  if (status === 'error')   return <p className="text-red-400 px-1">Impossible de charger tes diagnostics. Réessaie plus tard.</p>;
+  if (status === 'empty') {
+    return (
+      <EmptyState message="Aucun diagnostic de réglage reçu. Active le copilote 🔧 RÉGLAGE dans le relais (≥ v3) et roule un tour : ses soucis de réglage arriveront ici." />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-sm text-neutral-500 px-1">
+        Les soucis de <strong>réglage</strong> relevés en jeu par le copilote, regroupés par config.
+        Un diagnostic <strong>récurrent</strong> (vu plusieurs fois) est un vrai axe d&apos;amélioration,
+        pas un tour isolé. Supprime ceux que tu as traités.
+      </p>
+      {groups.map(g => (
+        <div key={g.key} className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 p-4">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
+            <span className="font-bold text-neutral-900 dark:text-white">{g.label}</span>
+            <span className="text-xs text-neutral-500">{g.reports.length} diagnostic{g.reports.length > 1 ? 's' : ''}</span>
+          </div>
+
+          {g.recurring.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3 mt-1">
+              {g.recurring.map(rc => (
+                <span key={rc.texte}
+                  className="text-xs font-semibold rounded-full px-2.5 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/30">
+                  🔁 {rc.texte} <span className="opacity-70">×{rc.count}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            {g.reports.map(r => (
+              <ReportCard key={r.id} r={r} onDelete={() => supprimer(r.id)} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReportCard({ r, onDelete }: { r: Report; onDelete: () => void }) {
+  const neutre = /neutre/i.test(r.titre);
+  return (
+    <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className={`font-bold ${neutre ? 'text-emerald-500' : 'text-amber-500'}`}>{r.titre}</span>
+            <span className="text-xs text-neutral-400">· {dateRelative(r.created_at)}</span>
+            {r.n_virages != null && (
+              <span className="text-xs text-neutral-400">· {r.n_virages} virage{r.n_virages > 1 ? 's' : ''}</span>
+            )}
+          </div>
+          {r.conseils.length > 0 ? (
+            <ul className="mt-1.5 flex flex-col gap-1">
+              {r.conseils.map((c, i) => (
+                <li key={i} className="text-sm text-neutral-700 dark:text-neutral-300 flex gap-2">
+                  <span aria-hidden="true">🔧</span><span>{c}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1.5 text-sm text-neutral-500">Rien à signaler sur ce tour 👍</p>
+          )}
+        </div>
+        <button
+          onClick={onDelete}
+          aria-label="Supprimer ce diagnostic"
+          title="✓ Traité / supprimer"
+          className="shrink-0 text-xs font-semibold text-neutral-500 hover:text-pink-500 border border-neutral-300 dark:border-neutral-700 hover:border-pink-500 rounded-lg px-2.5 py-1 transition-colors"
+        >
+          ✓ Traité
+        </button>
+      </div>
+    </div>
+  );
+}

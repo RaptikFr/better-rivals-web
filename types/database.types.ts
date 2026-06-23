@@ -217,6 +217,56 @@ export type Database = {
           },
         ]
       }
+      coach_reglage_reports: {
+        Row: {
+          car_class: string
+          car_ordinal: number
+          conseils: string[]
+          created_at: string
+          drivetrain: string
+          id: string
+          n_virages: number | null
+          player_id: string
+          titre: string
+          track_id: number
+          transmission: string | null
+        }
+        Insert: {
+          car_class: string
+          car_ordinal: number
+          conseils?: string[]
+          created_at?: string
+          drivetrain: string
+          id?: string
+          n_virages?: number | null
+          player_id: string
+          titre: string
+          track_id: number
+          transmission?: string | null
+        }
+        Update: {
+          car_class?: string
+          car_ordinal?: number
+          conseils?: string[]
+          created_at?: string
+          drivetrain?: string
+          id?: string
+          n_virages?: number | null
+          player_id?: string
+          titre?: string
+          track_id?: number
+          transmission?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_reglage_reports_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       best_sectors: {
         Row: {
           best_ms: number
