@@ -1,8 +1,10 @@
 ---
 name: coach-copilote-reglage
-description: Copilote de réglage (brique télémétrie #5) — prototype coach_diag.py, offsets, fiabilisation, roadmap des leviers
-metadata:
+description: Copilote de réglage (brique télémétrie
+metadata: 
+  node_type: memory
   type: project
+  originSessionId: b2b7fdc8-c25c-475f-8715-03ae17566fd0
 ---
 
 Chantier **copilote de réglage** (brique télémétrie #5). Outils LOCAUX dans `C:\Users\night\OneDrive\Relais\` (gitignorés, hors repo web) :
@@ -26,6 +28,22 @@ Chantier **copilote de réglage** (brique télémétrie #5). Outils LOCAUX dans 
 - `analyser_amortisseurs` : compte les inversions de débattement/s par essieu (hystérésis MIN_OSC_AMPL). NIVEAU absolu NON calibré → conseil émis SEULEMENT sur déséquilibre AV/AR (>1,4×). Sur la capture test : AV 7,2 ≈ AR 7,1 → aucun conseil (bien).
 - `analyser_aero` : équilibre virages lents vs rapides, découpage ADAPTATIF (médiane des vitesses de virage) + garde d'écart ≥8 m/s ; comparaison RELATIVE du ratio slip-angle (annule le biais constant). β en virage rapide = appui AR. Sur capture test : ratios 1,23 vs 1,18 → « appui cohérent ».
 Les deux demandent une CALIBRATION en jeu (rouler soft/stiff dampers, plus/moins d'aileron) avant de durcir les seuils.
+
+**Port relais `coach_reglage.py` LIVRÉ** (présent dans `OneDrive\Relais`, daté 23/06) : version COMPACTE de coach_diag (mêmes juges/seuils) qui sort `diagnostic_compact()` → `{titre, conseils[:2]}` pour l'overlay en jeu. Pur, sans dépendance, bundlé par PyInstaller et importé en best-effort dans le relais (`import coach_reglage`, désactivé si absent). Intégré au relais **v300 / APP_VERSION 3.0.0** (« copilote de réglage en jeu » — voir [[relais-serveur-et-rang]]).
+
+**Captures de calibration RÉALISÉES par le proprio + analysées le 23/06** (`coach_diag.py <fichier>.bin` sur neutre/sousvireuse/survireuse/amorto_mou/amorto_dur/aero_min/aero_max). ⚠️ **Le journal « vérité terrain » du PROTOCOLE est resté VIDE** (aucun ressenti noté). Résultats bruts :
+- `neutre` → verdict neutre ✅ (Δtemp AV/AR +6 °F, β absent).
+- `sousvireuse` (ARB AV dur attendu) → **AUCUN conseil de sous-virage ❌** : Δtemp +6 (= neutre), slip-angle ne franchit pas le seuil. Le levier équilibre n'a PAS détecté la voiture sous-vireuse.
+- `survireuse` (ARB AR dur attendu) → **neutre ❌** : Δtemp −0, β absent, pas de glisse.
+- `amorto_mou` → σ débattement **0.18** (vs 0.13 neutre) + **talonnage** détecté, MAIS AV/AR équilibrés → aucun conseil amortisseur (la règle « déséquilibre AV/AR seulement » étouffe le signal de NIVEAU, pourtant présent).
+- `amorto_dur` → σ ~0.11, équilibré, aucun conseil.
+- `aero_min`/`aero_max` → **les DEUX** : AV surchauffe nettement (Δ +27 / +21 °F) → diagnostiqués sous-virage ; mais le levier aéro (ratio lents vs rapides) **ne sépare PAS** min de max (ratios quasi identiques ~0.98-0.99 en rapide). Captures faites sur un circuit/voiture différents (front très chargé).
+**⚠️ CORRECTION (même jour) : ces résultats sont ceux du RAPPORT SIMPLE, qui n'émet un conseil que sur déséquilibre AV/AR ou seuil absolu → trompeur pour un changement symétrique. Le bon outil pour juger un réglage = le mode `compare avant.bin apres.bin`.** En `compare`, les offsets d'hier (temp 268-280, susp 68-80) détectent bien 2 des 3 :
+- **amortisseurs** ✅ net : `compare neutre→amorto_mou` = +0,8 osc/s, σ +0,052 « caisse plus FLOTTANTE (sous-amortie) » ; `mou→dur` = −3,2 osc/s « plus POSÉE ». σ mou 0,182 vs neutre 0,130 vs dur 0,155 — discriminateur fiable EN RELATIF (= le « +40 % » noté dans le code).
+- **survirage** ✅ détecté : `compare neutre→survireuse` = Δtemp AV−AR +8 → +2 (**−5 °F**) « l'ARRIÈRE travaille +, plus survireur ».
+- **sous-virage** ⚠️ FAIBLE : `compare neutre→sousvireuse` = Δtemp +8 → +8 (thermiquement PLAT) ; seul β baisse (1,65→1,19). C'est la SEULE capture à reprendre : soit ARB AV pas assez tranché, soit le sous-virage gratte la vitesse sans chauffer l'avant sur cette voiture/circuit.
+Bonus : les 3 réglages poussés sont plus LENTS au chrono (+1,07s sousvireuse, +0,69s survireuse) → l'outil conseille « reviens au neutre » = cohérent.
+**RESTE proprio** : (a) refaire UNE capture `sousvireuse` plus extrême (ARB AV aux butées) pour confirmer le seul levier faible ; (b) remplir le journal ressenti. **Piste code** : faire remonter le signal de NIVEAU (compare/ancre) dans le rapport simple/overlay, pour ne plus rester muet sur un réglage symétrique.
 
 **Diff DÉCÉLÉRATION + pression de frein AJOUTÉS le 22/06** (`analyser_entree`, `diagnostic_entree`) : isole le trail-braking (frein>40/255 + |volant|>12 + v>8 m/s) et compte les frames en glisse arrière (β) → entrée survireuse = diff décel trop ouvert/arrière trop libre/frein trop AR. Pression de frein : si blocage AV+AR ≥30 % du freinage → réduire la pression globale. Ajouté aussi au mode `compare` (ligne « Entrée survireuse % »). Sur capture test : 104 frames trail-braking, 0 glisse → « entrée stable » (pas de faux positif).
 
