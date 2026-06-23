@@ -6,6 +6,7 @@ Aucune dépendance externe (stdlib uniquement).
 Cible principale : Windows (msvcrt). Fallback Linux via termios/select.
 """
 
+import ctypes
 import json
 import math
 import os
@@ -26,6 +27,11 @@ SAMPLE_EVERY_N = 5       # 1 sample tous les N paquets (≈ 12 Hz à 60 Hz)
 OUTPUT_DIR     = "."     # dossier d'export (relatif au script)
 DEBUG          = False   # True → affiche X/Y/Z bruts toutes les secondes
 SITE_URL       = "https://better-rivals-fh6.org"  # API liste des circuits
+CHECKPOINT_VK  = 0x20    # touche checkpoint, détectée GLOBALEMENT (jeu au 1er plan).
+                         # 0x20 = Espace. Choisir une touche non utilisée pour piloter
+                         # (ex. clavier libre si tu roules à la manette/au volant).
+SAVE_VK        = 0x53    # touche « Sauvegarder » au prompt fin de tour, aussi GLOBALE.
+                         # 0x53 = S. (R=Recommencer / Q=Quitter restent console au focus.)
 # ─────────────────────────────────────────────────────────────────────────────
 
 PACKET_SIZE = 324
@@ -136,13 +142,34 @@ def _udp_listener() -> None:
 
 def _kb_thread_windows() -> None:
     import msvcrt
+    user32 = ctypes.windll.user32
+
+    # Touches lues GLOBALEMENT (même si FH6 est au 1er plan) → (VK, char émis).
+    global_keys = [(CHECKPOINT_VK, ' '), (SAVE_VK, 's')]
+    global_chars = {ch for _, ch in global_keys}
+    prev_down = {vk: False for vk, _ in global_keys}
+
     while True:
+        # Touches console — uniquement quand la console a le focus. On laisse les
+        # touches globales au poller ci-dessous (évite le double-comptage).
         if msvcrt.kbhit():
             ch = msvcrt.getch()
             try:
-                _key_queue.put(ch.decode('utf-8', errors='ignore').lower())
+                k = ch.decode('utf-8', errors='ignore').lower()
+                if k and k not in global_chars:
+                    _key_queue.put(k)
             except Exception:
                 pass
+
+        # Poller global : GetAsyncKeyState lit l'état physique sans consommer la
+        # touche (le jeu la reçoit aussi). Bit 0x8000 = enfoncée ; on ne déclenche
+        # qu'au front montant (appui → relâché → appui = un seul événement).
+        for vk, emit in global_keys:
+            down = bool(user32.GetAsyncKeyState(vk) & 0x8000)
+            if down and not prev_down[vk]:
+                _key_queue.put(emit)
+            prev_down[vk] = down
+
         time.sleep(0.02)
 
 
@@ -411,8 +438,8 @@ def main() -> None:
     print('╠══════════════════════════════════════════════════════════╣')
     print(f'║  Port UDP  : {UDP_PORT:<45}║')
     print(f'║  Debug     : {"ON — X/Y/Z affichés" if DEBUG else "OFF (DEBUG=True pour valider les offsets)":<45}║')
-    print('║  [Espace]  : marquer un checkpoint                      ║')
-    print('║  [Q]       : forcer export et quitter                   ║')
+    print('║  [Espace]  : checkpoint (marche EN JEU, focus FH6 OK)   ║')
+    print('║  [Q]       : forcer export et quitter (console au focus)║')
     print('║                                                          ║')
     print(f'║  FH6 : Paramètres → Télémétrie → 127.0.0.1:{UDP_PORT}        ║')
     print('╚══════════════════════════════════════════════════════════╝')
@@ -479,7 +506,7 @@ def main() -> None:
         if done:
             t_fmt = f'{saved_lap_t:.3f} s' if saved_lap_t > 0.1 else '—'
             print(f'\n\n🏁 Lap terminé — {t_fmt}  ({len(saved_samples)} points)')
-            print('   [S] Sauvegarder   [R] Recommencer   [Q] Quitter')
+            print('   [S] Sauvegarder (marche EN JEU)   [R] Recommencer   [Q] Quitter')
             choice = _wait_key_choice('srq')
 
             if choice == 's':

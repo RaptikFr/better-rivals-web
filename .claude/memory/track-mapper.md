@@ -33,6 +33,8 @@ Script Python standalone créé le 23/06 à la racine du repo (`track_mapper.py`
 
 **Modèle de tour (corrigé 23/06)** : enregistre dès `is_race_on==1`, **1er tour INCLUS** (LapNumber=0 pendant tout le 1er tour en Forza). Fin détectée au 1er incrément LapNumber (0→1) → **UN tour complet suffit** pour une carte. Avant ce fix, la capture ne démarrait qu'à LapNumber≥1 → il fallait 2 tours et on n'obtenait que des bouts (3-5 points en fin de tour). `SAMPLE_EVERY_N` passé 10→**5** (~12 Hz, ~2,7 m entre points).
 
+**Clavier en jeu (gotcha 23/06)** : `msvcrt` ne lit le clavier QUE si la console a le focus → pendant qu'on roule (FH6 au 1er plan), [Espace]/[S] n'arrivaient jamais (checkpoints=0 dans l'export). Fix : poller **global** via `ctypes.windll.user32.GetAsyncKeyState(vk) & 0x8000` (front montant), qui lit l'état physique sans consommer la touche (le jeu la reçoit aussi). Config `CHECKPOINT_VK=0x20` (Espace) + `SAVE_VK=0x53` (S). R/Q restent console. Idéal si on pilote à la manette/volant (clavier libre).
+
 ## Validation
 
 Mettre `DEBUG = True` en haut du fichier → affiche `X / Y / Z` bruts toutes les secondes. Si X et Z varient de façon cohérente avec le mouvement en jeu et Y suit les dénivelés, les offsets sont bons. Si tout est 0 ou aberrant, chercher les bons offsets dans le format FH6 réel.
