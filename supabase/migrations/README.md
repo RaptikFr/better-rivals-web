@@ -46,6 +46,7 @@ Toutes **✅ appliquées** (vérifié le 19/06/2026).
 | `config_semaine.sql` | Table `weekly_config` (pack social #9) — config de la semaine. |
 | `secteurs.sql` | Colonne `lap_times.sectors_ms` (brique télémétrie #2). |
 | `lap_traces.sql` | Table `lap_traces` — trace échantillonnée d'un tour (fondation télémétrie). |
+| `coach_reglage_reports.sql` | Table `coach_reglage_reports` — comptes rendus du copilote de réglage (relais ≥ v3 → onglet 🔧 Copilote). **Appliqué le 23/06.** |
 
 ### RPC (scalabilité — calcul côté Postgres)
 
