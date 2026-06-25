@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { carSlug as buildCarSlug } from '@/lib/carSlug';
 import { parsePerfInput, type TunePerfStats } from '@/lib/tunePerf';
 import type { ReglageEntry } from '@/lib/reglages';
+import type { FlatPerf, OcrPerfResult } from '@/lib/ocrPerf';
 
 interface CarHit { car_ordinal: number; manufacturer: string | null; name: string; year: number | null }
 
@@ -31,22 +32,25 @@ const EMPTY_PERF: PerfForm = {
 };
 
 function PerfInput({
-  label, name, value, onChange, hint,
+  label, name, value, onChange, hint, autoFilled,
 }: {
   label: string; name: keyof PerfForm; value: string;
   onChange: (name: keyof PerfForm, v: string) => void; hint?: string;
+  autoFilled?: boolean;
 }) {
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
-        {label}{hint && <span className="ml-1 text-neutral-400 font-normal">{hint}</span>}
+      <label className="flex items-center gap-1 text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
+        {label}
+        {hint && <span className="text-neutral-400 font-normal">{hint}</span>}
+        {autoFilled && <span className="ml-auto text-[9px] font-bold text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/40 px-1 rounded">auto</span>}
       </label>
       <input
         type="text"
         inputMode="decimal"
         value={value}
         onChange={e => onChange(name, e.target.value)}
-        className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-pink-500 transition-colors"
+        className={`w-full bg-white dark:bg-neutral-950 border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-pink-500 transition-colors ${autoFilled ? 'border-teal-400 dark:border-teal-600' : 'border-neutral-300 dark:border-neutral-700'}`}
       />
     </div>
   );
@@ -72,13 +76,80 @@ export function ShareTuneModal({
   const [shareCode, setShareCode] = useState('');
   const [label,     setLabel]     = useState('');
   const [isOriginal, setIsOriginal] = useState(false);
-  const [perfOpen,  setPerfOpen]  = useState(false);
-  const [perf,      setPerf]      = useState<PerfForm>(EMPTY_PERF);
-  const [submitting, setSubmitting] = useState(false);
-  const [error,     setError]     = useState<string | null>(null);
+  const [perfOpen,    setPerfOpen]    = useState(false);
+  const [perf,        setPerf]        = useState<PerfForm>(EMPTY_PERF);
+  const [autoFields,  setAutoFields]  = useState<Set<keyof PerfForm>>(new Set());
+  const [ocrStatus,   setOcrStatus]   = useState<'idle' | 'loading' | 'error'>('idle');
+  const [ocrMsg,      setOcrMsg]      = useState('');
+  const [submitting,  setSubmitting]  = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragRef      = useRef<HTMLDivElement>(null);
 
   function setPerfField(name: keyof PerfForm, value: string) {
+    setAutoFields(prev => { const s = new Set(prev); s.delete(name); return s; });
     setPerf(prev => ({ ...prev, [name]: value }));
+  }
+
+  const runOcr = useCallback(async (files: FileList | File[]) => {
+    const images = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (images.length === 0) {
+      setOcrStatus('error');
+      setOcrMsg('Lecture impossible, complète manuellement.');
+      return;
+    }
+    setOcrStatus('loading');
+    setOcrMsg('');
+    try {
+      const { preprocessImage, ocrImage, extractPerfFromOcr } = await import('@/lib/ocrPerf');
+      const results: OcrPerfResult[] = [];
+      for (const img of images.slice(0, 2)) {
+        const canvas  = await preprocessImage(img);
+        const words   = await ocrImage(canvas);
+        results.push(extractPerfFromOcr(words));
+      }
+      // Fusion : priorité à la 1re valeur non vide ; accel_0_161_s : source « Régler » (2e image) préférée
+      const merged: Partial<FlatPerf> = {};
+      const newAuto = new Set<keyof PerfForm>();
+      // 1re image d'abord
+      for (const [k, v] of Object.entries(results[0]?.values ?? {})) {
+        if (v !== undefined && v !== '') merged[k as keyof FlatPerf] = v;
+      }
+      // 2e image : complète les vides ET surcharge accel_0_161_s
+      if (results[1]) {
+        for (const [k, v] of Object.entries(results[1].values)) {
+          if (v === undefined || v === '') continue;
+          if (k === 'accel_0_161_s' || merged[k as keyof FlatPerf] === undefined) {
+            merged[k as keyof FlatPerf] = v;
+          }
+        }
+      }
+
+      const updatedPerf: PerfForm = { ...EMPTY_PERF };
+      for (const [k, v] of Object.entries(merged)) {
+        if (v !== undefined) {
+          updatedPerf[k as keyof PerfForm] = v;
+          newAuto.add(k as keyof PerfForm);
+        }
+      }
+
+      setPerf(updatedPerf);
+      setAutoFields(newAuto);
+      const count = newAuto.size;
+      setOcrStatus(count > 0 ? 'idle' : 'error');
+      setOcrMsg(count > 0 ? `${count} champ${count > 1 ? 's' : ''} pré-rempli${count > 1 ? 's' : ''} — vérifie avant de valider.` : 'Aucun champ reconnu. Complète manuellement.');
+    } catch {
+      setOcrStatus('error');
+      setOcrMsg('Lecture impossible, complète manuellement.');
+    }
+  }, []);
+
+  function resetPerf() {
+    setPerf(EMPTY_PERF);
+    setAutoFields(new Set());
+    setOcrStatus('idle');
+    setOcrMsg('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   // Recherche voiture type-ahead (debounce 250 ms), tant qu'aucune n'est choisie.
@@ -268,16 +339,57 @@ export function ShareTuneModal({
                 Laisse tout vide si tu ne veux pas renseigner les perfs.
               </p>
 
+              {/* Zone import OCR */}
+              <div
+                ref={dragRef}
+                className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl p-4 text-center transition-colors hover:border-teal-400 dark:hover:border-teal-600 cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={e => { e.preventDefault(); dragRef.current?.classList.add('border-teal-400'); }}
+                onDragLeave={() => dragRef.current?.classList.remove('border-teal-400')}
+                onDrop={e => { e.preventDefault(); dragRef.current?.classList.remove('border-teal-400'); if (e.dataTransfer.files.length) runOcr(e.dataTransfer.files); }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={e => { if (e.target.files?.length) runOcr(e.target.files); }}
+                />
+                {ocrStatus === 'loading' ? (
+                  <p className="text-xs text-teal-600 dark:text-teal-400 animate-pulse">Lecture de la capture…</p>
+                ) : (
+                  <p className="text-xs text-neutral-500">
+                    📷 <span className="font-semibold text-neutral-700 dark:text-neutral-300">Importer 1 ou 2 captures</span> pour pré-remplir les champs
+                    <span className="block mt-0.5 text-[11px]">Écrans « Mes réglages » + « Régler » pour tout couvrir</span>
+                  </p>
+                )}
+              </div>
+              {ocrMsg && (
+                <p className={`text-xs px-2 py-1.5 rounded-lg ${ocrStatus === 'error' ? 'text-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20'}`}>
+                  {ocrMsg}
+                </p>
+              )}
+              {autoFields.size > 0 && (
+                <button
+                  type="button"
+                  onClick={resetPerf}
+                  className="text-xs text-neutral-400 hover:text-red-400 transition-colors"
+                >
+                  Réinitialiser les valeurs
+                </button>
+              )}
+
               {/* Radar */}
               <div>
                 <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide mb-2">Radar</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <PerfInput label="Accélération (0-10)"     name="acceleration"   value={perf.acceleration}   onChange={setPerfField} />
-                  <PerfInput label="Vitesse (0-10)"          name="vitesse"        value={perf.vitesse}        onChange={setPerfField} />
-                  <PerfInput label="Freinage (0-10)"         name="freinage"       value={perf.freinage}       onChange={setPerfField} />
-                  <PerfInput label="Tout-terrain (0-10)"     name="tout_terrain"   value={perf.tout_terrain}   onChange={setPerfField} />
-                  <PerfInput label="Départ arrêté (0-10)"    name="depart_arrete"  value={perf.depart_arrete}  onChange={setPerfField} />
-                  <PerfInput label="Tenue de route (0-10)"   name="tenue_de_route" value={perf.tenue_de_route} onChange={setPerfField} />
+                  <PerfInput label="Accélération (0-10)"     name="acceleration"   value={perf.acceleration}   onChange={setPerfField} autoFilled={autoFields.has('acceleration')} />
+                  <PerfInput label="Vitesse (0-10)"          name="vitesse"        value={perf.vitesse}        onChange={setPerfField} autoFilled={autoFields.has('vitesse')} />
+                  <PerfInput label="Freinage (0-10)"         name="freinage"       value={perf.freinage}       onChange={setPerfField} autoFilled={autoFields.has('freinage')} />
+                  <PerfInput label="Tout-terrain (0-10)"     name="tout_terrain"   value={perf.tout_terrain}   onChange={setPerfField} autoFilled={autoFields.has('tout_terrain')} />
+                  <PerfInput label="Départ arrêté (0-10)"    name="depart_arrete"  value={perf.depart_arrete}  onChange={setPerfField} autoFilled={autoFields.has('depart_arrete')} />
+                  <PerfInput label="Tenue de route (0-10)"   name="tenue_de_route" value={perf.tenue_de_route} onChange={setPerfField} autoFilled={autoFields.has('tenue_de_route')} />
                 </div>
               </div>
 
@@ -285,10 +397,10 @@ export function ShareTuneModal({
               <div>
                 <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide mb-2">Mesures</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <PerfInput label="Vitesse de pointe (km/h)" name="top_speed_kmh" value={perf.top_speed_kmh} onChange={setPerfField} />
-                  <PerfInput label="0-161 km/h (s)"           name="accel_0_161_s" value={perf.accel_0_161_s} onChange={setPerfField} hint="«0-100» dans le jeu" />
-                  <PerfInput label="Freinage 161→0 (m)"       name="braking_161_m" value={perf.braking_161_m} onChange={setPerfField} />
-                  <PerfInput label="G latéraux 97 km/h (g)"   name="lateral_g_97"  value={perf.lateral_g_97}  onChange={setPerfField} />
+                  <PerfInput label="Vitesse de pointe (km/h)" name="top_speed_kmh" value={perf.top_speed_kmh} onChange={setPerfField} autoFilled={autoFields.has('top_speed_kmh')} />
+                  <PerfInput label="0-161 km/h (s)"           name="accel_0_161_s" value={perf.accel_0_161_s} onChange={setPerfField} hint="«0-100» dans le jeu" autoFilled={autoFields.has('accel_0_161_s')} />
+                  <PerfInput label="Freinage 161→0 (m)"       name="braking_161_m" value={perf.braking_161_m} onChange={setPerfField} autoFilled={autoFields.has('braking_161_m')} />
+                  <PerfInput label="G latéraux 97 km/h (g)"   name="lateral_g_97"  value={perf.lateral_g_97}  onChange={setPerfField} autoFilled={autoFields.has('lateral_g_97')} />
                 </div>
               </div>
 
@@ -296,9 +408,9 @@ export function ShareTuneModal({
               <div>
                 <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide mb-2">Équilibres</p>
                 <div className="grid grid-cols-3 gap-3">
-                  <PerfInput label="Mécanique"          name="mecanique"       value={perf.mecanique}       onChange={setPerfField} />
-                  <PerfInput label="Aérodynamique"      name="aero"            value={perf.aero}            onChange={setPerfField} />
-                  <PerfInput label="Efficacité aéro"    name="efficacite_aero" value={perf.efficacite_aero} onChange={setPerfField} />
+                  <PerfInput label="Mécanique"          name="mecanique"       value={perf.mecanique}       onChange={setPerfField} autoFilled={autoFields.has('mecanique')} />
+                  <PerfInput label="Aérodynamique"      name="aero"            value={perf.aero}            onChange={setPerfField} autoFilled={autoFields.has('aero')} />
+                  <PerfInput label="Efficacité aéro"    name="efficacite_aero" value={perf.efficacite_aero} onChange={setPerfField} autoFilled={autoFields.has('efficacite_aero')} />
                 </div>
               </div>
 
@@ -306,9 +418,9 @@ export function ShareTuneModal({
               <div>
                 <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide mb-2">Moteur & poids</p>
                 <div className="grid grid-cols-3 gap-3">
-                  <PerfInput label="Puissance (ch)"  name="puissance_ch" value={perf.puissance_ch} onChange={setPerfField} />
-                  <PerfInput label="Couple (N.m)"    name="couple_nm"    value={perf.couple_nm}    onChange={setPerfField} />
-                  <PerfInput label="Poids (kg)"      name="poids_kg"     value={perf.poids_kg}     onChange={setPerfField} />
+                  <PerfInput label="Puissance (ch)"  name="puissance_ch" value={perf.puissance_ch} onChange={setPerfField} autoFilled={autoFields.has('puissance_ch')} />
+                  <PerfInput label="Couple (N.m)"    name="couple_nm"    value={perf.couple_nm}    onChange={setPerfField} autoFilled={autoFields.has('couple_nm')} />
+                  <PerfInput label="Poids (kg)"      name="poids_kg"     value={perf.poids_kg}     onChange={setPerfField} autoFilled={autoFields.has('poids_kg')} />
                 </div>
               </div>
 
@@ -317,11 +429,14 @@ export function ShareTuneModal({
                 <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide mb-2">Classe de référence</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Classe</label>
+                    <label className="flex items-center gap-1 text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
+                      Classe
+                      {autoFields.has('ref_class') && <span className="ml-auto text-[9px] font-bold text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/40 px-1 rounded">auto</span>}
+                    </label>
                     <select
                       value={perf.ref_class}
-                      onChange={e => setPerfField('ref_class', e.target.value)}
-                      className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-pink-500 transition-colors"
+                      onChange={e => { setPerfField('ref_class', e.target.value); }}
+                      className={`w-full bg-white dark:bg-neutral-950 border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-pink-500 transition-colors ${autoFields.has('ref_class') ? 'border-teal-400 dark:border-teal-600' : 'border-neutral-300 dark:border-neutral-700'}`}
                     >
                       <option value="">—</option>
                       {(['D','C','B','A','S1','S2','R','X'] as const).map(c => (
@@ -329,7 +444,7 @@ export function ShareTuneModal({
                       ))}
                     </select>
                   </div>
-                  <PerfInput label="PI de référence" name="ref_pi" value={perf.ref_pi} onChange={setPerfField} />
+                  <PerfInput label="PI de référence" name="ref_pi" value={perf.ref_pi} onChange={setPerfField} autoFilled={autoFields.has('ref_pi')} />
                 </div>
               </div>
             </div>
