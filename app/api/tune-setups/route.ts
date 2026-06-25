@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/rate-limit';
+import { parsePerfInput } from '@/lib/tunePerf';
+import type { Json } from '@/types/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,10 +34,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { car_ordinal, share_code, label, track_id, track_type, is_original } = body;
+    const { car_ordinal, share_code, label, track_id, track_type, is_original, perf_stats: rawPerf } = body;
 
     if (!car_ordinal || !share_code) {
       return NextResponse.json({ error: 'Données incomplètes.' }, { status: 400 });
+    }
+
+    let perf_stats: Json | null = null;
+    if (rawPerf !== undefined && rawPerf !== null) {
+      const parsed = parsePerfInput(rawPerf);
+      if ('error' in parsed) {
+        return NextResponse.json({ error: `Profil de performances invalide : ${parsed.error}` }, { status: 400 });
+      }
+      perf_stats = parsed as unknown as Json;
     }
 
     // Vérification de conflit : ce share_code est-il déjà revendiqué comme original par quelqu'un d'autre ?
@@ -65,6 +76,7 @@ export async function POST(request: NextRequest) {
         track_id:    track_id || null,
         track_type:  track_type || null,
         is_original: is_original ?? false,
+        perf_stats:  perf_stats ?? null,
       }])
       .select()
       .single();

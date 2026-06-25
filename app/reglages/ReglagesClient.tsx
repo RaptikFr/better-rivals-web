@@ -7,6 +7,7 @@ import { usePlayer } from '@/hooks/usePlayer';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { ShareTuneModal } from './ShareTuneModal';
+import { ReglagePerfBlock } from './ReglagePerfBlock';
 import type { ReglageEntry } from '@/lib/reglages';
 import type { Drivetrain } from '@/types/supabase';
 
@@ -233,6 +234,8 @@ function ReglageCard({ r, formatTime }: { r: ReglageEntry; formatTime: (ms: numb
           )}
         </div>
       </div>
+
+      {r.perfStats && <ReglagePerfBlock stats={r.perfStats} />}
     </div>
   );
 }

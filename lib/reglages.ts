@@ -1,6 +1,7 @@
 import { unstable_cache } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { fetchAllRows } from '@/lib/fetchAllRows';
+import { isTunePerfStats, type TunePerfStats } from '@/lib/tunePerf';
 
 // Bibliothèque de réglages — source HYBRIDE (décidée le 16/06) :
 //   - tune_setups : réglages explicitement partagés (label, ⭐ original, circuit).
@@ -26,6 +27,7 @@ export interface ReglageEntry {
   usageCount:         number;         // pilotes distincts ayant utilisé ce code
   classes:            string[];       // classes vues avec ce code (pour filtrer)
   drivetrains:        string[];
+  perfStats:          TunePerfStats | null; // fiche perf optionnelle (tune_setups uniquement)
 }
 
 import { carSlug as buildCarSlug } from '@/lib/carSlug';
@@ -53,6 +55,7 @@ interface TuneRow {
   is_original: boolean;
   track_type:  string | null;
   player_id:   string;
+  perf_stats:  unknown;
   players:     PlayerRel;
   cars:        CarRel;
   tracks:      TrackRel;
@@ -84,6 +87,7 @@ interface Acc {
   isOriginal:   boolean;
   claimedAuthor: string | null;
   optimizedFor: string | null;
+  perfStats:    TunePerfStats | null;
 }
 
 async function buildReglages(): Promise<ReglageEntry[]> {
@@ -99,7 +103,7 @@ async function buildReglages(): Promise<ReglageEntry[]> {
     ),
     supabaseAdmin
       .from('tune_setups')
-      .select(`share_code, car_ordinal, label, is_original, track_type, player_id, players(pseudo), cars(${carSel}), tracks(name)`)
+      .select(`share_code, car_ordinal, label, is_original, track_type, perf_stats, player_id, players(pseudo), cars(${carSel}), tracks(name)`)
       .then(r => ({ data: (r.data ?? []) as unknown as TuneRow[] })),
   ]);
 
@@ -125,6 +129,7 @@ async function buildReglages(): Promise<ReglageEntry[]> {
         isOriginal:  false,
         claimedAuthor: null,
         optimizedFor: null,
+        perfStats:   null,
       };
       acc.set(k, a);
     }
@@ -146,7 +151,7 @@ async function buildReglages(): Promise<ReglageEntry[]> {
     }
   }
 
-  // 2. Réglages partagés (tune_setups) : label, ⭐ original, « optimisé pour ».
+  // 2. Réglages partagés (tune_setups) : label, ⭐ original, « optimisé pour », perfs.
   for (const t of tunes) {
     const a = ensure(t.car_ordinal, t.share_code, t.cars);
     a.label = t.label ?? a.label;
@@ -154,6 +159,9 @@ async function buildReglages(): Promise<ReglageEntry[]> {
     if (t.is_original) {
       a.isOriginal = true;
       a.claimedAuthor = t.players?.pseudo ?? a.claimedAuthor;
+    }
+    if (isTunePerfStats(t.perf_stats)) {
+      a.perfStats = t.perf_stats;
     }
   }
 
@@ -174,6 +182,7 @@ async function buildReglages(): Promise<ReglageEntry[]> {
     usageCount:         a.players.size,
     classes:            [...a.classes],
     drivetrains:        [...a.drivetrains],
+    perfStats:          a.perfStats,
   }));
 
   // Tri par défaut : originaux d'abord, puis les plus utilisés, puis le meilleur temps.

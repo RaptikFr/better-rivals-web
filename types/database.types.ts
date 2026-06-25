@@ -625,6 +625,7 @@ export type Database = {
           id: string
           is_original: boolean
           label: string | null
+          perf_stats: Json | null
           player_id: string
           share_code: string
           track_id: number | null
@@ -636,6 +637,7 @@ export type Database = {
           id?: string
           is_original?: boolean
           label?: string | null
+          perf_stats?: Json | null
           player_id: string
           share_code: string
           track_id?: number | null
@@ -647,6 +649,7 @@ export type Database = {
           id?: string
           is_original?: boolean
           label?: string | null
+          perf_stats?: Json | null
           player_id?: string
           share_code?: string
           track_id?: number | null
