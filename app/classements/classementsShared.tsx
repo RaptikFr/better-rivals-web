@@ -176,6 +176,11 @@ export function theoreticalFromBest(rows: BestSectorRow[], realBestMs: number): 
     holders.push(r.pseudo);
   }
   const totalMs = sectors.reduce((a, b) => a + b, 0);
+  // Données corrompues : aucun secteur ne peut être combiné pour donner un
+  // optimal > 30 % plus rapide que le vrai meilleur (résidu stale de vieux
+  // tours fantômes dont les petits ms ont écrasé les valeurs correctes via
+  // l'upsert best_ms < bs.best_ms du RPC).
+  if (realBestMs > 0 && totalMs < realBestMs * 0.70) return null;
   const count   = new Set(holders.filter(Boolean)).size || 1;
   return { totalMs, sectors, holders, realBestMs, count };
 }
