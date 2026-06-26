@@ -11,6 +11,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 import Footer from "@/components/Footer";
 import { Providers } from "./providers";
 import { siteUrl } from "@/lib/site";
@@ -98,6 +99,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SKIN }} />
         <Providers>
           <Navbar />
+          <AnnouncementBanner />
           <div className="flex-1">{children}</div>
           <Footer />
         </Providers>
