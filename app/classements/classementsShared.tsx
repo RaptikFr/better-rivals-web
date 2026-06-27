@@ -260,6 +260,80 @@ export function TheoreticalLapBanner({ laps, optimal }: { laps: LapTime[]; optim
   );
 }
 
+// Détail des secteurs d'UN tour (la ligne d'un pilote dépliée), avec l'écart de
+// chaque secteur vs le MEILLEUR secteur de la config (best_sectors / tour
+// optimal). Permet de voir ses propres temps par secteur même sans le meilleur
+// temps au scratch. Rien à afficher si le tour n'a pas de données de secteurs
+// (tour posé avant la télémétrie ou par un vieux relais) — géré par l'appelant.
+export function SectorBreakdown({
+  sectorsMs,
+  bestSectors,
+  lengthKm,
+  className = '',
+}: {
+  sectorsMs: number[];
+  bestSectors?: number[] | null;
+  lengthKm?: number | null;
+  className?: string;
+}) {
+  const { formatTime, prefs } = usePreferences();
+  const decSep = prefs.decimalSep === 'comma' ? ',' : '.';
+  const n = sectorsMs.length;
+  // On ne compare secteur à secteur que si le découpage correspond (même N) :
+  // les bornes de découpe diffèrent sinon, l'écart n'aurait pas de sens.
+  const best = bestSectors && bestSectors.length === n ? bestSectors : null;
+  const total = sectorsMs.reduce((a, b) => a + b, 0);
+
+  const portion = (i: number) => {
+    const pct = `${Math.round((i / n) * 100)}–${Math.round(((i + 1) / n) * 100)} % du tour`;
+    if (!lengthKm) return pct;
+    const a = ((i / n) * lengthKm).toFixed(2).replace('.', decSep);
+    const b = (((i + 1) / n) * lengthKm).toFixed(2).replace('.', decSep);
+    return `${pct} · ≈ ${a}–${b} km`;
+  };
+
+  return (
+    <div className={`rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-200/40 dark:bg-neutral-950/60 px-3 py-2.5 ${className}`}>
+      <div className="flex items-center gap-2 mb-2 text-xs flex-wrap">
+        <span className="font-bold text-neutral-700 dark:text-neutral-200">⏱️ Secteurs de ce tour</span>
+        <span className="text-neutral-500">· somme {formatTime(total)}</span>
+        {best && <span className="text-neutral-500">· écart vs meilleur secteur de la config</span>}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {sectorsMs.map((s, i) => {
+          const delta = best ? s - best[i] : null;
+          const isBest = delta !== null && delta <= 0;
+          return (
+            <span
+              key={i}
+              title={`Secteur ${i + 1}/${n} · ${portion(i)}`}
+              className={`font-mono px-2 py-1 rounded text-xs cursor-help border ${
+                isBest
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-neutral-100 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300'
+              }`}
+            >
+              <span className="text-neutral-400 dark:text-neutral-500">S{i + 1}</span>{' '}
+              {formatTime(s)}
+              {delta !== null && (
+                <span className={`ml-1 font-bold ${isBest ? 'text-emerald-500' : 'text-amber-500'}`}>
+                  {isBest ? '★' : `+${(delta / 1000).toFixed(3).replace('.', decSep)}`}
+                </span>
+              )}
+            </span>
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-2">
+        {best
+          ? '★ = meilleur secteur de la config (tu es en tête sur ce tronçon). '
+          : ''}
+        Les secteurs sont des tronçons égaux en distance, pas les secteurs du jeu.
+      </p>
+    </div>
+  );
+}
+
 export function ReportModal({
   lap,
   onClose,

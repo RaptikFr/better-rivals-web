@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { CLASS_STYLES } from '@/components/ClassStyles';
@@ -8,7 +9,26 @@ import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 import type { Preferences } from '@/lib/preferences';
 import { TargetButton } from '@/components/TargetButton';
 import { ChallengeButton } from '@/components/ChallengeButton';
-import { TuneCell, LeaderTuneCell, TheoreticalLapBanner, type CircuitGroup, type LapTime, type RankedLap, type SubGroup } from './classementsShared';
+import { TuneCell, LeaderTuneCell, TheoreticalLapBanner, SectorBreakdown, type CircuitGroup, type LapTime, type RankedLap, type SubGroup } from './classementsShared';
+
+// Un tour a un détail de secteurs exploitable s'il a au moins 2 tronçons.
+const hasSectors = (lap: LapTime) => Array.isArray(lap.sectors_ms) && lap.sectors_ms.length >= 2;
+
+// Bouton qui déplie/replie le détail des secteurs d'une ligne. Affiché seulement
+// si le tour a des données de secteurs (sinon rien à montrer).
+function SectorToggle({ open, onClick }: { open: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title={open ? 'Masquer les secteurs' : 'Voir les secteurs de ce tour'}
+      aria-label={open ? 'Masquer les secteurs' : 'Voir les secteurs de ce tour'}
+      aria-expanded={open}
+      className={`text-xs transition-colors ${open ? 'text-pink-400' : 'text-neutral-400 hover:text-pink-400'}`}
+    >
+      ⏱️
+    </button>
+  );
+}
 
 // Ligne « Réglage du n°1 » sous l'en-tête d'une config, si le leader a renseigné
 // un code de réglage. Le leader est le 1er temps (laps triés par temps croissant).
@@ -56,6 +76,17 @@ export function RankingTableView({
   isAuthed, currentPlayerId, copiedRowId, onShareRow, onReport,
   cols,
 }: RankingViewProps & { cols: Preferences['tableColumns'] }) {
+  const [openSectors, setOpenSectors] = useState<Set<string>>(new Set());
+  const toggleSectors = (id: string) => setOpenSectors(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  // Nombre de colonnes du tableau (pour le colSpan de la ligne de secteurs).
+  const colCount = 3 // classement + pseudo + meilleur temps
+    + (cols.previousTime ? 1 : 0) + (cols.diff ? 1 : 0) + (cols.gapLeader ? 1 : 0)
+    + (cols.gapPrev ? 1 : 0) + (cols.gapNext ? 1 : 0) + (cols.pi ? 1 : 0) + (cols.tune ? 1 : 0)
+    + 1; // actions
   return (
     <div className="space-y-6">
       {groups.map(circuit => (
@@ -136,11 +167,14 @@ export function RankingTableView({
                             const leader  = group.laps[0];
                             const prevLap = group.laps[i - 1];
                             const nextLap = group.laps[i + 1];
+                            const sectorsOpen = openSectors.has(lap.id);
                             return (
+                              <Fragment key={lap.id}>
                               <tr
-                                key={lap.id}
                                 data-lap-id={lap.id}
                                 className={`border-b border-neutral-200/60 dark:border-neutral-800/60 last:border-0 hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors ${
+                                  sectorsOpen ? '!border-b-0' : ''
+                                } ${
                                   lap.id === highlightId ? 'bg-pink-500/20 dark:bg-pink-500/20' : ''
                                 }`}
                               >
@@ -184,6 +218,9 @@ export function RankingTableView({
                                 {cols.tune && <td className="px-3 py-2"><TuneCell lap={lap} /></td>}
                                 <td className="px-3 py-2">
                                   <div className="flex items-center gap-2">
+                                    {hasSectors(lap) && (
+                                      <SectorToggle open={sectorsOpen} onClick={() => toggleSectors(lap.id)} />
+                                    )}
                                     <button
                                       onClick={() => onShareRow(lap.id)}
                                       title="Copier le lien vers ce temps"
@@ -210,6 +247,18 @@ export function RankingTableView({
                                   </div>
                                 </td>
                               </tr>
+                              {sectorsOpen && hasSectors(lap) && (
+                                <tr className={`border-b border-neutral-200/60 dark:border-neutral-800/60 ${lap.id === highlightId ? 'bg-pink-500/10' : ''}`}>
+                                  <td colSpan={colCount} className="px-3 pb-3 pt-0">
+                                    <SectorBreakdown
+                                      sectorsMs={lap.sectors_ms!}
+                                      bestSectors={group.optimal?.sectors}
+                                      lengthKm={circuit.trackLengthKm}
+                                    />
+                                  </td>
+                                </tr>
+                              )}
+                              </Fragment>
                             );
                           })}
                         </tbody>
@@ -231,6 +280,12 @@ export function RankingCardView({
   groups, openGroups, toggleGroup, highlightId, formatTime, gapStr,
   isAuthed, currentPlayerId, copiedRowId, onShareRow, onReport,
 }: RankingViewProps) {
+  const [openSectors, setOpenSectors] = useState<Set<string>>(new Set());
+  const toggleSectors = (id: string) => setOpenSectors(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
   return (
     <div className="space-y-6">
       {groups.map(circuit => (
@@ -292,12 +347,14 @@ export function RankingCardView({
                 {openGroups.has(group.key) && (
                 <div className="px-4 pb-4 text-sm">
                   {group.laps.map((lap, lapIndex) => (
+                    <Fragment key={lap.id}>
                     <div
-                      key={lap.id}
                       data-lap-id={lap.id}
                       className={`flex flex-col gap-2 rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 mb-2
                                   sm:flex-row sm:items-start sm:gap-3 sm:rounded-none sm:border-0 sm:border-b sm:last:border-0 sm:p-0 sm:py-3 sm:mb-0
                                   hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors ${
+                        openSectors.has(lap.id) ? 'sm:border-b-0' : ''
+                      } ${
                         lap.id === highlightId ? 'bg-pink-500/20 dark:bg-pink-500/20' : ''
                       }`}
                     >
@@ -350,6 +407,9 @@ export function RankingCardView({
                           <TuneCell lap={lap} />
                         </span>
                         <span className="flex items-center justify-end gap-1.5 sm:ml-auto">
+                          {hasSectors(lap) && (
+                            <SectorToggle open={openSectors.has(lap.id)} onClick={() => toggleSectors(lap.id)} />
+                          )}
                           <button
                             onClick={() => onShareRow(lap.id)}
                             title="Copier le lien vers ce temps"
@@ -378,6 +438,15 @@ export function RankingCardView({
                         </span>
                       </div>
                     </div>
+                    {openSectors.has(lap.id) && hasSectors(lap) && (
+                      <SectorBreakdown
+                        className="mb-2"
+                        sectorsMs={lap.sectors_ms!}
+                        bestSectors={group.optimal?.sectors}
+                        lengthKm={circuit.trackLengthKm}
+                      />
+                    )}
+                    </Fragment>
                   ))}
                 </div>
                 )}
