@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-06-v3.0.3",
+  id: "2026-06-secteurs-perso",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Le relais v3.0.3 est disponible — coach pilotage, copilote de réglage (conseils plus clairs) et secteurs optimaux.",
+  message: "Changement sur le site ! Désormais, si vous utilisez la dernière version du relais, vos meilleurs secteurs sont enregistrés. Si vous voulez les afficher, rendez-vous dans vos options et activez « Tour optimal par pilote ».",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
-  link: "/telecharger",
-  linkLabel: "Télécharger",
+  link: "/parametres",
+  linkLabel: "Mes options",
 
   /**
    * Style de la bannière.
