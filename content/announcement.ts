@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-06-v3",
+  id: "2026-06-v3.0.3",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Le relais v3.0 est disponible — coach pilotage, copilote de réglage et secteurs optimaux.",
+  message: "Le relais v3.0.3 est disponible — coach pilotage, copilote de réglage (conseils plus clairs) et secteurs optimaux.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
