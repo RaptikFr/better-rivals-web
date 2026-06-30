@@ -13,8 +13,9 @@ export function formatTime(ms: number): string {
 // marge de 20 % pour absorber les imprécisions.
 // Sprints : bornes volontairement très larges (10 à 150 m/s) — length_km est la
 // distance point à point, parcourue parfois très vite (drags) ou très lentement
-// (cross-country) ; ça filtre au moins les temps absurdes en attendant des
-// records de référence OCR.
+// (cross-country) ; ce filtre grossier n'écarte que les temps absurdes. La garde
+// fine vient ensuite du world record (plusRapideQueRecord), désormais renseigné
+// pour toutes les épreuves officielles.
 export function bornesTempsMs(lengthKm: number, isSprint: boolean): { minMs: number; maxMs: number } {
   const [vMax, vMin] = isSprint ? [150, 10] : [100, 20];
   return {

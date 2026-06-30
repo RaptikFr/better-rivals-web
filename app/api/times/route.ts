@@ -505,8 +505,11 @@ export async function POST(request: NextRequest) {
     const [playerRes, trackRes, worldRecordRes, existingCarRes] = await Promise.all([
       supabaseAdmin.from('players').select('id, pseudo').eq('user_id', user.id).single(),
       supabaseAdmin.from('tracks').select('length_km, name, is_sprint').eq('id', numTrackId).maybeSingle(),
-      // ⚠ World records : couverture partielle (circuits 7-28 et 63-72, classes
-      // D→R) ; les autres seront couverts au fur et à mesure (script OCR).
+      // World records : couverture complète des 85 circuits officiels (les 6
+      // types d'épreuves : route, tous chemins, cross-country, rue, drag, touge),
+      // classes D→R (X exclue volontairement, records trop instables). L'anti-
+      // triche s'applique donc à toute config officielle ayant une référence ;
+      // une config sans record (classe X, circuit communauté) n'est pas jugée.
       supabaseAdmin.from('world_records').select('time_ms').eq('track_id', numTrackId).eq('car_class', car_class).maybeSingle(),
       supabaseAdmin.from('cars').select('car_ordinal').eq('car_ordinal', numCarOrdinal).maybeSingle(),
     ]);
