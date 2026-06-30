@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-06-secteurs-perso",
+  id: "2026-06-relais-v305",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Changement sur le site ! Désormais, si vous utilisez la dernière version du relais, vos meilleurs secteurs sont enregistrés. Si vous voulez les afficher, rendez-vous dans vos options et activez « Tour optimal par pilote ».",
+  message: "Nouvelle version du relais (v3.0.5) : le dernier tour des épreuves à nombre de tours fixe est désormais bien enregistré s'il est votre meilleur (chrono, secteurs et trace). Pensez à télécharger la mise à jour.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
-  link: "/parametres",
-  linkLabel: "Mes options",
+  link: "/telecharger",
+  linkLabel: "Télécharger",
 
   /**
    * Style de la bannière.
