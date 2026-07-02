@@ -35,7 +35,7 @@ export default function TelechargerPage() {
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Télécharger v3.0.5
+            Télécharger v3.0.7
           </a>
           <Link
             href="/inscription"
@@ -149,6 +149,32 @@ export default function TelechargerPage() {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Bon à savoir — limitation télémétrie */}
+      <div className="mt-20 max-w-3xl mx-auto w-full">
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="text-2xl leading-none mt-0.5">⚠️</div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-amber-900 dark:text-amber-200">
+                Épreuves à nombre de tours fixe&nbsp;: le dernier tour n&apos;est pas capté
+              </h3>
+              <p className="text-sm text-amber-800/90 dark:text-amber-100/80">
+                Sur les épreuves à <strong>nombre de tours fixe</strong> (défis communauté notamment), Forza
+                <strong> arrête d&apos;émettre sa télémétrie juste avant la ligne d&apos;arrivée du dernier tour</strong> et
+                remet les temps à zéro dès la fin de la course. Le temps du tour final n&apos;est donc jamais
+                transmis&nbsp;: c&apos;est une limite de Forza, pas du Relais — il est impossible de le récupérer.
+              </p>
+              <p className="text-sm text-amber-800/90 dark:text-amber-100/80">
+                <strong>Conséquence&nbsp;:</strong> tous tes tours sont enregistrés <em>sauf</em> le dernier. Si ton
+                meilleur tour risque d&apos;être le dernier, privilégie un mode où tu peux <strong>enchaîner les tours
+                sans limite</strong> (contre-la-montre / rivals), ou fais un tour supplémentaire après ton tour rapide
+                quand l&apos;épreuve le permet.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-06-relais-v305",
+  id: "2026-07-relais-v307",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.0.5) : le dernier tour des épreuves à nombre de tours fixe est désormais bien enregistré s'il est votre meilleur (chrono, secteurs et trace). Pensez à télécharger la mise à jour.",
+  message: "Nouvelle version du relais (v3.0.7) : les boutons « Changer de circuit » et « Se déconnecter » de l'overlay restent toujours visibles, et le relais apparaît désormais dans la barre des tâches. Pensez à télécharger la mise à jour.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
