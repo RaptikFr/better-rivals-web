@@ -267,6 +267,60 @@ export type Database = {
           },
         ]
       }
+      track_geometries: {
+        Row: {
+          bounds: Json | null
+          car_class: string | null
+          car_ordinal: number | null
+          created_at: string
+          lap_time_ms: number | null
+          point_count: number
+          points: Json
+          sample_dist_m: number
+          source_player_id: string | null
+          track_id: number
+        }
+        Insert: {
+          bounds?: Json | null
+          car_class?: string | null
+          car_ordinal?: number | null
+          created_at?: string
+          lap_time_ms?: number | null
+          point_count: number
+          points: Json
+          sample_dist_m?: number
+          source_player_id?: string | null
+          track_id: number
+        }
+        Update: {
+          bounds?: Json | null
+          car_class?: string | null
+          car_ordinal?: number | null
+          created_at?: string
+          lap_time_ms?: number | null
+          point_count?: number
+          points?: Json
+          sample_dist_m?: number
+          source_player_id?: string | null
+          track_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "track_geometries_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: true
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "track_geometries_source_player_id_fkey"
+            columns: ["source_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       best_sectors: {
         Row: {
           best_ms: number
