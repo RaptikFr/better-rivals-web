@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/rate-limit';
-import { nbSecteurs, secteursValides } from '@/lib/lap-validation';
+import { nbSecteurs, secteursValides, secteursPlausibles } from '@/lib/lap-validation';
 import { enregistrerMeilleursSecteurs } from '@/lib/best-sectors';
 
 export const dynamic = 'force-dynamic';
@@ -50,8 +50,11 @@ export async function POST(request: NextRequest) {
     }
 
     // secteursValides : durées positives + somme ≈ temps du tour → tableau en ms.
+    // secteursPlausibles : aucun secteur plus rapide que la physique (rejette les
+    // tours fantômes d'anciens relais — tour interrompu finalisé avec le temps du
+    // tour précédent, dont la somme est valide mais les tranches impossibles).
     const secteursMs = secteursValides(sectors, lapTimeMs);
-    if (!secteursMs) {
+    if (!secteursMs || !secteursPlausibles(secteursMs, track?.length_km)) {
       return NextResponse.json({ error: 'Secteurs incohérents.' }, { status: 400 });
     }
 

@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v308",
+  id: "2026-07-relais-v309",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.0.8) : le copilote de réglage 🔧 se limite désormais à l'asphalte (route, rue, touge) — sur le tout-chemins et le cross-country, son diagnostic n'était pas fiable. Pensez à télécharger la mise à jour.",
+  message: "Nouvelle version du relais (v3.0.9) : correction des « secteurs fantômes » — quitter, recommencer ou rembobiner en plein tour pouvait fausser le tour optimal et les gains affichés par le Coach. Les données corrompues ont été nettoyées ; mettez à jour le relais pour ne pas en recréer.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",

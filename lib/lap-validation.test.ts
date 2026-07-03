@@ -7,6 +7,7 @@ import {
   plusRapideQueRecord,
   nbSecteurs,
   secteursDepuisTrace,
+  secteursPlausibles,
   traceValide,
 } from './lap-validation';
 
@@ -133,6 +134,33 @@ describe('nbSecteurs', () => {
     expect(nbSecteurs(null)).toBe(0);
     expect(nbSecteurs(undefined)).toBe(0);
     expect(nbSecteurs(0)).toBe(0);
+  });
+});
+
+describe('secteursPlausibles', () => {
+  // Circuit de 7 km, 5 secteurs → 1,4 km/secteur. Borne : 1400 m / 150 m/s ≈ 9,33 s.
+  it('accepte des secteurs réalistes', () => {
+    expect(secteursPlausibles([16_798, 20_301, 15_727, 18_728, 19_054], 7)).toBe(true);
+  });
+
+  it('rejette un tour fantôme (mini-secteurs physiquement impossibles)', () => {
+    // Cas réel du 3 juil 2026 (autoroute / NSX S2 AWD) : tour interrompu finalisé
+    // par le relais avec le temps du tour précédent → 4 tranches à ~5,2 s.
+    expect(secteursPlausibles([5_245, 5_301, 5_044, 5_232, 69_800], 7)).toBe(false);
+  });
+
+  it('rejette dès qu\'UN seul secteur est impossible', () => {
+    expect(secteursPlausibles([16_798, 5_301, 15_727, 18_728, 19_054], 7)).toBe(false);
+  });
+
+  it('accepte un secteur très rapide mais possible (ligne droite ~500 km/h)', () => {
+    // 1,4 km à 500 km/h = 10,08 s > borne 9,33 s → accepté.
+    expect(secteursPlausibles([10_080, 20_301, 15_727, 18_728, 19_054], 7)).toBe(true);
+  });
+
+  it('longueur inconnue → pas de filtre', () => {
+    expect(secteursPlausibles([100, 100], null)).toBe(true);
+    expect(secteursPlausibles([100, 100], 0)).toBe(true);
   });
 });
 

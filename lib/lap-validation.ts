@@ -95,6 +95,27 @@ export function secteursValides(
   return ms;
 }
 
+// Vitesse moyenne maximale plausible sur UN secteur : 150 m/s (540 km/h), au-delà
+// du vrai plafond des voitures les plus rapides (~480 km/h), même sur une ligne
+// droite d'autoroute. Un secteur plus rapide que ça est forcément un artefact
+// (ex. tour fantôme du relais : tour interrompu finalisé avec le temps du tour
+// précédent → mini-secteurs qui verrouillent best_sectors via l'upsert MIN).
+const SECTEUR_V_MAX_MS = 150;
+
+/**
+ * Les durées de secteur sont-elles physiquement possibles vu la longueur du
+ * circuit ? Les secteurs sont des tranches ÉGALES en distance : chaque durée
+ * doit être ≥ (longueur/n) / SECTEUR_V_MAX_MS. Longueur inconnue → pas de filtre.
+ */
+export function secteursPlausibles(
+  sectorsMs: number[],
+  lengthKm: number | null | undefined,
+): boolean {
+  if (!lengthKm || lengthKm <= 0) return true;
+  const minMs = (lengthKm * 1000 / sectorsMs.length / SECTEUR_V_MAX_MS) * 1000;
+  return sectorsMs.every(ms => ms >= minMs);
+}
+
 // Bornes sur le nombre de points d'une trace (brique télémétrie, fondation).
 // Échantillonnée par distance (~10-15 m/point) : un tour fait quelques
 // centaines de points ; on plafonne large pour ne pas stocker n'importe quoi.
