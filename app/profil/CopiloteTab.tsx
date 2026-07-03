@@ -112,7 +112,7 @@ export function CopiloteTab() {
   if (status === 'error')   return <p className="text-red-400 px-1">Impossible de charger tes diagnostics. Réessaie plus tard.</p>;
   if (status === 'empty') {
     return (
-      <EmptyState message="Aucun diagnostic de réglage reçu. Active le copilote 🔧 RÉGLAGE dans le relais (≥ v3) et roule un tour : ses soucis de réglage arriveront ici." />
+      <EmptyState message="Aucun diagnostic de réglage reçu. Active le copilote 🔧 RÉGLAGE dans le relais (≥ v3) et roule un tour sur asphalte : ses soucis de réglage arriveront ici. Le copilote n'analyse que les courses sur route, les courses de rue et les touges — pas le tout-chemin ni le cross-country." />
     );
   }
 
@@ -121,7 +121,9 @@ export function CopiloteTab() {
       <p className="text-sm text-neutral-500 px-1">
         Les soucis de <strong>réglage</strong> relevés en jeu par le copilote, regroupés par config.
         Un diagnostic <strong>récurrent</strong> (vu plusieurs fois) est un vrai axe d&apos;amélioration,
-        pas un tour isolé. Supprime ceux que tu as traités.
+        pas un tour isolé. Supprime ceux que tu as traités. Le copilote n&apos;analyse que
+        l&apos;<strong>asphalte</strong> (route, rue, touge) — hors de là, la physique tout-terrain
+        fausserait le diagnostic.
       </p>
       {groups.map(g => (
         <div key={g.key} className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 p-4">
