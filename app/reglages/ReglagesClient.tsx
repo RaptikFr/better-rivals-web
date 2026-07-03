@@ -2,12 +2,21 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePreferences } from '@/hooks/usePreferences';
 import { usePlayer } from '@/hooks/usePlayer';
 import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { ShareTuneModal } from './ShareTuneModal';
-import { ReglagePerfBlock } from './ReglagePerfBlock';
+
+// recharts (~100 KB gz) n'est chargé que si un réglage a des stats de perf
+const ReglagePerfBlock = dynamic(
+  () => import('./ReglagePerfBlock').then((m) => m.ReglagePerfBlock),
+  {
+    ssr: false,
+    loading: () => <p className="text-neutral-500 animate-pulse text-sm py-8">Chargement des performances…</p>,
+  }
+);
 import type { ReglageEntry } from '@/lib/reglages';
 import type { Drivetrain } from '@/types/supabase';
 
