@@ -30,8 +30,25 @@ async function authUser(request: NextRequest) {
   return { user };
 }
 
+/** Nombre de points d'une signature de tracé (matching auto-détection). */
+const SIGNATURE_POINTS = 50;
+
+/** Sous-échantillonne un tableau à `n` points répartis uniformément (premier et
+ *  dernier inclus), valeurs arrondies au décimètre pour alléger la réponse. */
+function signature(valeurs: number[], n: number): number[] {
+  if (valeurs.length <= n) return valeurs.map(v => Math.round(v * 10) / 10);
+  const out = new Array<number>(n);
+  for (let i = 0; i < n; i++) {
+    out[i] = Math.round(valeurs[Math.round((i * (valeurs.length - 1)) / (n - 1))] * 10) / 10;
+  }
+  return out;
+}
+
 // GET /api/track-geometry?track_id=X — le relais demande si le tracé existe déjà
 // (déduplication). Renvoie { exists: boolean }.
+// GET /api/track-geometry?all=1 — signatures compactes (~50 points x/z par
+// circuit) de TOUS les tracés connus, pour l'auto-détection du circuit dans le
+// relais (matcher ~20 s de positions contre chaque polyline).
 export async function GET(request: NextRequest) {
   try {
     const limited = await rateLimit(request, 'track-geometry-get', 60, 60_000);
@@ -39,6 +56,23 @@ export async function GET(request: NextRequest) {
 
     const auth = await authUser(request);
     if (auth.error) return auth.error;
+
+    if (request.nextUrl.searchParams.get('all') === '1') {
+      const { data } = await supabaseAdmin
+        .from('track_geometries')
+        .select('track_id, points')
+        .order('track_id');
+      const tracks = (data ?? []).flatMap(row => {
+        const p = row.points as { x?: unknown; z?: unknown } | null;
+        if (!p || !Array.isArray(p.x) || !Array.isArray(p.z)) return [];
+        return [{
+          track_id: row.track_id,
+          x: signature(p.x as number[], SIGNATURE_POINTS),
+          z: signature(p.z as number[], SIGNATURE_POINTS),
+        }];
+      });
+      return NextResponse.json({ tracks }, { status: 200 });
+    }
 
     const trackId = parseInt(request.nextUrl.searchParams.get('track_id') ?? '', 10);
     if (!Number.isInteger(trackId) || trackId <= 0) {
