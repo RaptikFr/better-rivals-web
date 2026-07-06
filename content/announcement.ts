@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v309",
+  id: "2026-07-relais-v310",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.0.9) : correction des « secteurs fantômes » — quitter, recommencer ou rembobiner en plein tour pouvait fausser le tour optimal et les gains affichés par le Coach. Les données corrompues ont été nettoyées ; mettez à jour le relais pour ne pas en recréer.",
+  message: "Nouvelle version du relais (v3.1.0) : 🧭 détection automatique du circuit — lance une épreuve, le relais reconnaît le circuit couru et bascule tout seul (pour les circuits dont le tracé est déjà capturé ; la capture est silencieuse, il suffit de rouler).",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
