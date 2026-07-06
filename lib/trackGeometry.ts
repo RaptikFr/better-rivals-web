@@ -16,7 +16,15 @@ async function fetchCarteCircuit(trackId: number): Promise<CarteCircuit | null> 
 
   const points = data?.points as { x?: unknown; z?: unknown } | null;
   if (!points || !Array.isArray(points.x) || !Array.isArray(points.z)) return null;
-  return construireCarte({ x: points.x as number[], z: points.z as number[] });
+  // L'axe Z de Forza pointe vers le NORD alors que le SVG dessine les y vers le
+  // bas : sans inversion la carte sort en miroir vertical (confirmé le 6 juil
+  // 2026 en comparant à la carte du monde en jeu — départ de l'autoroute en
+  // haut). On inverse z à la lecture : nord en haut, et les libellés
+  // gauche/droite des virages (calculés en coordonnées écran) tombent juste.
+  return construireCarte({
+    x: points.x as number[],
+    z: (points.z as number[]).map(v => -v),
+  });
 }
 
 /** Carte du circuit prête à dessiner, ou null si aucun tracé capturé. Cache 5 min. */

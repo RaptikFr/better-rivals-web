@@ -145,16 +145,19 @@ export default function CircuitMap({
     return configsDispo[0] ?? null;
   }, [selectedKey, configsDispo, player, rowsParConfig]);
 
-  // Un SecteurInfo par index : meilleur de la config (+ détenteur) et mon temps.
+  // Un SecteurInfo par secteur : meilleur de la config (+ détenteur) et mon
+  // temps. ⚠️ `sector_index` est 1-BASED en base (RPC enregistrer_meilleurs_
+  // secteurs, tableaux Postgres) — même piège que l'off-by-one corrigé dans
+  // /api/coach : le secteur k du tour est à l'indice k-1 ici.
   const secteurs = useMemo<SecteurInfo[]>(() => {
     if (!configActive) return [];
     const lignes = rowsParConfig.get(configActive.key)!;
-    const n = Math.max(...lignes.map(r => r.sector_index)) + 1;
+    const n = Math.max(...lignes.map(r => r.sector_index));
     const infos: SecteurInfo[] = Array.from({ length: n }, () => ({
       bestMs: null, bestPseudo: null, mienMs: null, deltaMs: null,
     }));
     for (const r of lignes) {
-      const s = infos[r.sector_index];
+      const s = infos[r.sector_index - 1];
       if (!s) continue;
       if (s.bestMs === null || r.best_ms < s.bestMs) {
         s.bestMs = r.best_ms;
