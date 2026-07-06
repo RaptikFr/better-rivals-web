@@ -43,7 +43,7 @@ Toutes **✅ appliquées** (vérifié le 19/06/2026).
 | `masquer_discord.sql` | Confidentialité : `discord_tag_public` + RPC `my_discord_tag`. |
 | `objectifs_a_battre.sql` | Table `objectifs` — battre un pilote précis sur une config. |
 | `duels.sql` | Table `duels` (pack social #8) — défi entre deux joueurs. |
-| `config_semaine.sql` | Table `weekly_config` (pack social #9) — config de la semaine. |
+| `config_semaine.sql` | Table `weekly_config` (pack social #9) — config de la semaine. ⚠️ **feature retirée** le 06/07, cf. `suppression_config_semaine.sql`. |
 | `secteurs.sql` | Colonne `lap_times.sectors_ms` (brique télémétrie #2). |
 | `lap_traces.sql` | Table `lap_traces` — trace échantillonnée d'un tour (fondation télémétrie). |
 | `coach_reglage_reports.sql` | Table `coach_reglage_reports` — comptes rendus du copilote de réglage (relais ≥ v3 → onglet 🔧 Copilote). **Appliqué le 23/06.** |
@@ -74,4 +74,5 @@ Toutes **✅ appliquées** (vérifié le 19/06/2026).
 | `suppression_pin_code.sql` | Suppression de `players.pin_code`. |
 | `suppression_leaderboard_defis.sql` | Suppression de l'ancienne vue `leaderboard` + table `defis`. |
 | `nettoyage_post_classement_general.sql` | DROP de la RPC `general_ranking()` (feature retirée) + de l'index redondant `idx_lap_traces_lap_time`. Appliqué le 22/06. |
+| `suppression_config_semaine.sql` | DROP de la table `weekly_config` (feature « config de la semaine » retirée). Appliqué le 06/07. |
 | `world_records_63_72.sql` | Remplissage `world_records` circuits 63-72 (anti-triche). |

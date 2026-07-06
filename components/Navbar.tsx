@@ -21,7 +21,6 @@ const navLinks = [
 // (pour éviter que la barre déborde sur les petits écrans). En mobile,
 // ils restent listés normalement dans le menu burger.
 const PLUS_LINKS = [
-  { href: '/config-semaine', label: '⭐ Config de la semaine' },
   { href: '/stats',          label: 'Stats'                   },
   { href: '/telecharger',    label: 'Télécharger'             },
   { href: '/contact',        label: 'Contact'                 },
