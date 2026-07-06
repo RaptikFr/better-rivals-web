@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { dateRelative } from '@/lib/dateRelative';
+import { syntheseParVoiture, type SyntheseVoiture } from '@/lib/copiloteSynthese';
 import { EmptyState } from './profilShared';
 
 interface Report {
@@ -29,6 +30,7 @@ interface ConfigGroup {
 }
 
 type Status = 'loading' | 'ready' | 'empty' | 'error';
+type Vue = 'circuit' | 'voiture';
 
 /** Onglet « Copilote de réglage » : boîte de réception des diagnostics de
  *  réglage relevés en jeu par le relais. Agrège par config pour révéler les
@@ -36,6 +38,7 @@ type Status = 'loading' | 'ready' | 'empty' | 'error';
 export function CopiloteTab() {
   const [status, setStatus]   = useState<Status>('loading');
   const [reports, setReports] = useState<Report[]>([]);
+  const [vue, setVue]         = useState<Vue>('circuit');
 
   useEffect(() => {
     let annule = false;
@@ -108,6 +111,10 @@ export function CopiloteTab() {
       b.reports[0].created_at.localeCompare(a.reports[0].created_at));
   }, [reports]);
 
+  // Synthèse « par voiture » : mêmes diagnostics, regroupés tous circuits
+  // confondus — un souci multi-circuits est un défaut du réglage de la voiture.
+  const syntheses = useMemo<SyntheseVoiture[]>(() => syntheseParVoiture(reports), [reports]);
+
   if (status === 'loading') return <p className="text-neutral-500 animate-pulse px-1">Chargement de tes diagnostics…</p>;
   if (status === 'error')   return <p className="text-red-400 px-1">Impossible de charger tes diagnostics. Réessaie plus tard.</p>;
   if (status === 'empty') {
@@ -119,13 +126,45 @@ export function CopiloteTab() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-neutral-500 px-1">
-        Les soucis de <strong>réglage</strong> relevés en jeu par le copilote, regroupés par config.
+        Les soucis de <strong>réglage</strong> relevés en jeu par le copilote.
         Un diagnostic <strong>récurrent</strong> (vu plusieurs fois) est un vrai axe d&apos;amélioration,
-        pas un tour isolé. Supprime ceux que tu as traités. Le copilote n&apos;analyse que
+        pas un tour isolé. Le copilote n&apos;analyse que
         l&apos;<strong>asphalte</strong> (route, rue, touge) — hors de là, la physique tout-terrain
         fausserait le diagnostic.
       </p>
-      {groups.map(g => (
+
+      {/* Sélecteur de vue : par config (boîte de réception) ou synthèse par voiture. */}
+      <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-1 w-fit">
+        {([
+          { id: 'circuit', label: '📍 Par circuit' },
+          { id: 'voiture', label: '🚗 Par voiture' },
+        ] as { id: Vue; label: string }[]).map(v => (
+          <button
+            key={v.id}
+            onClick={() => setVue(v.id)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              vue === v.id
+                ? 'bg-gradient-to-r from-pink-500 to-violet-600 text-white'
+                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800'
+            }`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+
+      {vue === 'voiture' && (
+        <>
+          <p className="text-sm text-neutral-500 px-1">
+            Tous circuits confondus : un souci vu sur <strong>plusieurs circuits</strong> vient
+            du <strong>réglage de la voiture</strong> — corrige-le en priorité. Un souci vu sur
+            un seul circuit est plutôt lié à la piste (ou au pilotage ce jour-là).
+          </p>
+          {syntheses.map(s => <SyntheseCard key={s.key} s={s} />)}
+        </>
+      )}
+
+      {vue === 'circuit' && groups.map(g => (
         <div key={g.key} className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 p-4">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
             <span className="font-bold text-neutral-900 dark:text-white">{g.label}</span>
@@ -150,6 +189,90 @@ export function CopiloteTab() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function SyntheseCard({ s }: { s: SyntheseVoiture }) {
+  const voitureEntiere = s.soucis.filter(x => x.nbCircuits >= 2);
+  const locaux         = s.soucis.filter(x => x.nbCircuits < 2);
+  return (
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 p-4">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
+        <span className="font-bold text-neutral-900 dark:text-white">
+          {s.carLabel} · {s.carClass}/{s.drivetrain}
+        </span>
+        <span className="text-xs text-neutral-500">
+          {s.nbDiagnostics} diagnostic{s.nbDiagnostics > 1 ? 's' : ''} sur {s.nbCircuits} circuit{s.nbCircuits > 1 ? 's' : ''}
+          {' · '}dernier {dateRelative(s.dernierAt)}
+        </span>
+      </div>
+
+      {s.soucis.length === 0 ? (
+        <p className="text-sm text-emerald-500 font-semibold">
+          ✅ Rien à signaler sur cette voiture ({s.nbNeutres} tour{s.nbNeutres > 1 ? 's' : ''} analysé{s.nbNeutres > 1 ? 's' : ''} sans souci).
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {voitureEntiere.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5">
+                🚗 Soucis de la voiture (plusieurs circuits)
+              </p>
+              <ul className="flex flex-col gap-1">
+                {voitureEntiere.map(x => (
+                  <li key={x.texte} className="text-sm text-neutral-700 dark:text-neutral-300 flex flex-wrap items-baseline gap-x-2">
+                    <span className="font-semibold text-amber-500">{x.texte}</span>
+                    <span className="text-xs text-neutral-500">
+                      ×{x.count} · {x.nbCircuits} circuits ({x.circuits.slice(0, 3).join(', ')}{x.circuits.length > 3 ? '…' : ''})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {locaux.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5">
+                📍 Vus sur un seul circuit
+              </p>
+              <ul className="flex flex-col gap-1">
+                {locaux.map(x => (
+                  <li key={x.texte} className="text-sm text-neutral-600 dark:text-neutral-400 flex flex-wrap items-baseline gap-x-2">
+                    <span>{x.texte}</span>
+                    <span className="text-xs text-neutral-500">×{x.count} · {x.circuits[0]}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {s.conseils.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5">
+                🔧 Conseils les plus fréquents
+              </p>
+              <ul className="flex flex-col gap-1">
+                {s.conseils.map(c => (
+                  <li key={c.texte} className="text-sm text-neutral-700 dark:text-neutral-300 flex flex-wrap items-baseline gap-x-2">
+                    <span>🔧 {c.texte}</span>
+                    <span className="text-xs text-neutral-500">
+                      ×{c.count}{c.nbCircuits >= 2 ? ` · ${c.nbCircuits} circuits` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {s.nbNeutres > 0 && (
+            <p className="text-xs text-neutral-500">
+              {s.nbNeutres} tour{s.nbNeutres > 1 ? 's' : ''} sans souci par ailleurs.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
