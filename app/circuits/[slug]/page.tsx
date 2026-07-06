@@ -7,6 +7,7 @@ import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { DiscordTag } from '@/components/DiscordTag';
 import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 import { getCarteCircuit } from '@/lib/trackGeometry';
+import { detecterVirages } from '@/lib/circuitGeometry';
 import CircuitMap from '@/components/CircuitMap';
 import type { Drivetrain } from '@/types/supabase';
 import {
@@ -107,6 +108,7 @@ export default async function CircuitPage({ params }: Props) {
           <CircuitMap
             trackId={track.id}
             carte={carte}
+            virages={detecterVirages(carte)}
             configs={configs.map(c => ({
               key:        c.key,
               carClass:   c.carClass,

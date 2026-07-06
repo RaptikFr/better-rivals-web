@@ -15,8 +15,10 @@ import { usePreferences } from '@/hooks/usePreferences';
 import {
   decouperSecteurs,
   pointADistance,
+  typeVirage,
   type CarteCircuit,
   type PointCarte,
+  type Virage,
 } from '@/lib/circuitGeometry';
 
 export interface ConfigCarte {
@@ -73,10 +75,12 @@ export default function CircuitMap({
   trackId,
   carte,
   configs,
+  virages = [],
 }: {
-  trackId: number;
-  carte:   CarteCircuit;
-  configs: ConfigCarte[];
+  trackId:   number;
+  carte:     CarteCircuit;
+  configs:   ConfigCarte[];
+  virages?:  Virage[];
 }) {
   const { player } = usePlayer();
   const { formatTime, prefs } = usePreferences();
@@ -207,6 +211,22 @@ export default function CircuitMap({
     setSurvol({ idx, x: e.clientX - rect.left, y: e.clientY - rect.top });
   }, []);
 
+  /** Virages dont l'apex tombe dans le secteur i, ou [] (ligne droite). */
+  const viragesDuSecteur = useCallback((i: number): Virage[] => {
+    if (secteurs.length === 0) return [];
+    const d0 = (i * carte.longueurM) / secteurs.length;
+    const d1 = ((i + 1) * carte.longueurM) / secteurs.length;
+    return virages.filter(v => v.distApexM >= d0 && v.distApexM < d1);
+  }, [virages, secteurs.length, carte.longueurM]);
+
+  /** « virage 3 » / « virages 3–5 » / « ligne droite ». */
+  const libelleVirages = useCallback((i: number): string => {
+    const vs = viragesDuSecteur(i);
+    if (vs.length === 0) return 'ligne droite';
+    if (vs.length === 1) return `virage ${vs[0].numero}`;
+    return `virages ${vs[0].numero}–${vs[vs.length - 1].numero}`;
+  }, [viragesDuSecteur]);
+
   const depart = carte.points[0];
   const pire = pires[0];
   const pireMilieu = pire !== undefined && secteurs.length > 0
@@ -290,6 +310,22 @@ export default function CircuitMap({
           })}
         </svg>
 
+        {/* Pastilles numérotées à l'apex de chaque virage, décalées vers
+            l'extérieur du virage pour ne pas couvrir le tracé. */}
+        {virages.map(v => (
+          <span
+            key={v.numero}
+            title={`Virage ${v.numero} — ${v.direction} (${typeVirage(v)}), ≈${Math.round(v.angleDeg)}°, r ≈ ${Math.round(v.rayonMinM)} m`}
+            className="absolute w-[18px] h-[18px] rounded-full bg-white dark:bg-neutral-800 border border-neutral-400 dark:border-neutral-500 text-[10px] font-bold text-neutral-700 dark:text-neutral-200 flex items-center justify-center shadow-sm select-none cursor-help"
+            style={{
+              ...enPourcent(v.apex),
+              transform: `translate(calc(-50% + ${(v.normale.x * 16).toFixed(1)}px), calc(-50% + ${(v.normale.z * 16).toFixed(1)}px))`,
+            }}
+          >
+            {v.numero}
+          </span>
+        ))}
+
         {/* Drapeau départ/arrivée. */}
         <span
           className="absolute -translate-x-1/2 -translate-y-1/2 text-base select-none pointer-events-none"
@@ -315,7 +351,12 @@ export default function CircuitMap({
             className="absolute z-10 -translate-x-1/2 -translate-y-[115%] px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 shadow-lg text-xs pointer-events-none whitespace-nowrap"
             style={{ left: survol.x, top: survol.y }}
           >
-            <p className="font-bold text-neutral-900 dark:text-white mb-0.5">Secteur {survol.idx + 1}</p>
+            <p className="font-bold text-neutral-900 dark:text-white mb-0.5">
+              Secteur {survol.idx + 1}
+              {virages.length > 0 && (
+                <span className="font-normal text-neutral-500"> · {libelleVirages(survol.idx)}</span>
+              )}
+            </p>
             {secteurs[survol.idx].bestMs !== null && (
               <p className="text-neutral-600 dark:text-neutral-400">
                 Meilleur : <span className="font-mono font-bold text-neutral-900 dark:text-white">{formatTime(secteurs[survol.idx].bestMs!)}</span>
@@ -354,7 +395,10 @@ export default function CircuitMap({
                   {pires.slice(0, 3).map((p, j) => (
                     <span key={p.i}>
                       {j > 0 && (j === Math.min(pires.length, 3) - 1 ? ' puis au ' : ', ')}
-                      <strong>secteur {p.i + 1}</strong> ({fmtDelta(p.delta)})
+                      <strong>secteur {p.i + 1}</strong>
+                      {' ('}
+                      {virages.length > 0 && <>{libelleVirages(p.i)} · </>}
+                      {fmtDelta(p.delta)})
                     </span>
                   ))}
                   .
@@ -406,6 +450,7 @@ export default function CircuitMap({
                 <thead>
                   <tr className="text-left text-[10px] uppercase tracking-wider text-neutral-500 border-b border-neutral-200 dark:border-neutral-800">
                     <th className="px-2 py-1.5 font-bold">Secteur</th>
+                    {virages.length > 0 && <th className="px-2 py-1.5 font-bold">Virages</th>}
                     <th className="px-2 py-1.5 font-bold">Meilleur</th>
                     <th className="px-2 py-1.5 font-bold">Détenteur</th>
                     {aMesDonnees && <th className="px-2 py-1.5 font-bold">Toi</th>}
@@ -416,6 +461,13 @@ export default function CircuitMap({
                   {secteurs.map((s, i) => (
                     <tr key={i} className="border-b border-neutral-200/60 dark:border-neutral-800/60 last:border-0">
                       <td className="px-2 py-1.5 font-bold text-neutral-500">S{i + 1}</td>
+                      {virages.length > 0 && (
+                        <td className="px-2 py-1.5 text-neutral-600 dark:text-neutral-400">
+                          {viragesDuSecteur(i).length > 0
+                            ? viragesDuSecteur(i).map(v => `V${v.numero}`).join(', ')
+                            : '—'}
+                        </td>
+                      )}
                       <td className="px-2 py-1.5 font-mono">{s.bestMs !== null ? formatTime(s.bestMs) : '—'}</td>
                       <td className="px-2 py-1.5">{s.bestPseudo ?? '—'}</td>
                       {aMesDonnees && <td className="px-2 py-1.5 font-mono">{s.mienMs !== null ? formatTime(s.mienMs) : '—'}</td>}

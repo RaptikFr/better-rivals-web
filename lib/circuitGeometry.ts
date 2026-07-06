@@ -123,6 +123,121 @@ export function pointADistance(points: PointCarte[], dist: number): { x: number;
   return { x: a.x + t * (b.x - a.x), z: a.z + t * (b.z - a.z) };
 }
 
+/** Un virage détecté par courbure sur le tracé. */
+export interface Virage {
+  numero:     number;
+  /** Sens du virage TEL QU'AFFICHÉ sur la carte (axe z vers le bas de l'écran).
+   *  Si le monde Forza s'avérait miroir de l'affichage, inverser ce libellé et
+   *  l'affichage ensemble (un seul signe) — la cohérence carte ↔ libellé prime. */
+  direction:  'gauche' | 'droite';
+  distDebutM: number;
+  distFinM:   number;
+  distApexM:  number;
+  /** Angle total tourné (degrés, positif). */
+  angleDeg:   number;
+  rayonMinM:  number;
+  apex:       { x: number; z: number };
+  /** Normale unitaire à l'EXTÉRIEUR du virage (pour décaler une étiquette). */
+  normale:    { x: number; z: number };
+}
+
+/** Qualifie un virage par son rayon minimal et son ampleur. */
+export function typeVirage(v: Pick<Virage, 'rayonMinM' | 'angleDeg'>): string {
+  if (v.angleDeg >= 140 || v.rayonMinM < 30) return 'épingle';
+  if (v.rayonMinM < 70)  return 'serré';
+  if (v.rayonMinM < 150) return 'moyen';
+  return 'rapide';
+}
+
+/** Replie un angle dans (-π, π]. */
+function replierAngle(a: number): number {
+  const x = ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  return x - Math.PI;
+}
+
+/**
+ * Détecte les virages du tracé par courbure : rééchantillonnage à pas constant,
+ * variation de cap lissée par moyenne glissante, puis plages où le rayon de
+ * courbure descend sous le seuil. Les plages de même sens proches sont
+ * fusionnées ; une chicane (changement de sens) fait deux virages. Un virage à
+ * cheval sur la ligne de départ ressort en deux virages (premier et dernier).
+ */
+export function detecterVirages(
+  carte: CarteCircuit,
+  opts: { pasM?: number; lissageM?: number; rayonSeuilM?: number; angleMinDeg?: number; fusionM?: number } = {},
+): Virage[] {
+  const pasM        = opts.pasM        ?? 10;
+  const lissageM    = opts.lissageM    ?? 30;
+  const rayonSeuilM = opts.rayonSeuilM ?? 160;
+  const angleMinDeg = opts.angleMinDeg ?? 20;
+  const fusionM     = opts.fusionM     ?? 40;
+
+  const nb = Math.floor(carte.longueurM / pasM);
+  if (nb < 8) return [];
+  const pts = Array.from({ length: nb + 1 }, (_, i) => pointADistance(carte.points, i * pasM));
+
+  // Caps des segments, puis variations de cap repliées entre segments voisins.
+  const caps = new Array<number>(nb);
+  for (let i = 0; i < nb; i++) caps[i] = Math.atan2(pts[i + 1].z - pts[i].z, pts[i + 1].x - pts[i].x);
+  const brutes = new Array<number>(nb - 1);
+  for (let i = 0; i < nb - 1; i++) brutes[i] = replierAngle(caps[i + 1] - caps[i]);
+
+  // Lissage par moyenne glissante (fenêtre ≈ lissageM), courbure en rad/m.
+  const demi = Math.max(0, Math.floor(Math.round(lissageM / pasM) / 2));
+  const courbures = brutes.map((_, i) => {
+    let somme = 0, n = 0;
+    for (let j = Math.max(0, i - demi); j <= Math.min(brutes.length - 1, i + demi); j++) { somme += brutes[j]; n++; }
+    return somme / n / pasM;
+  });
+
+  // Plages contiguës où |courbure| dépasse le seuil, coupées au changement de sens.
+  const seuil = 1 / rayonSeuilM;
+  interface Plage { debut: number; fin: number; sens: 1 | -1 }
+  const plages: Plage[] = [];
+  for (let i = 0; i < courbures.length; i++) {
+    if (Math.abs(courbures[i]) <= seuil) continue;
+    const sens: 1 | -1 = courbures[i] > 0 ? 1 : -1;
+    const derniere = plages[plages.length - 1];
+    if (derniere && derniere.sens === sens && i - derniere.fin <= Math.round(fusionM / pasM)) {
+      derniere.fin = i;
+    } else {
+      plages.push({ debut: i, fin: i, sens });
+    }
+  }
+
+  const virages: Virage[] = [];
+  for (const p of plages) {
+    let angleRad = 0, maxAbs = 0, apexIdx = p.debut;
+    for (let i = p.debut; i <= p.fin; i++) {
+      angleRad += courbures[i] * pasM;
+      if (Math.abs(courbures[i]) > maxAbs) { maxAbs = Math.abs(courbures[i]); apexIdx = i; }
+    }
+    const angleDeg = Math.abs(angleRad) * 180 / Math.PI;
+    if (angleDeg < angleMinDeg) continue;
+
+    // L'échantillon i mesure la variation de cap autour du point i+1.
+    const apex = pts[apexIdx + 1];
+    const cap  = caps[apexIdx];
+    // Le centre de courbure est du côté vers lequel le cap tourne : la normale
+    // extérieure est à l'opposé — sens × (sin cap, −cos cap).
+    const normale = { x: p.sens * Math.sin(cap), z: p.sens * -Math.cos(cap) };
+
+    virages.push({
+      numero:     virages.length + 1,
+      // cap croissant = rotation vers +z = horaire à l'écran (z vers le bas) = droite.
+      direction:  p.sens > 0 ? 'droite' : 'gauche',
+      distDebutM: (p.debut + 1) * pasM,
+      distFinM:   (p.fin + 1) * pasM,
+      distApexM:  (apexIdx + 1) * pasM,
+      angleDeg,
+      rayonMinM:  1 / maxAbs,
+      apex:       { x: apex.x, z: apex.z },
+      normale,
+    });
+  }
+  return virages;
+}
+
 /**
  * Découpe le tracé en `n` tranches égales en distance (le découpage du relais).
  * Chaque tranche est une sous-polyline dont les extrémités sont interpolées

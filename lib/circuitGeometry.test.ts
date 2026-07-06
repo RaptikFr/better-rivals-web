@@ -5,6 +5,8 @@ import {
   construireCarte,
   pointADistance,
   decouperSecteurs,
+  detecterVirages,
+  typeVirage,
   type PointCarte,
 } from './circuitGeometry';
 
@@ -116,5 +118,89 @@ describe('decouperSecteurs', () => {
     expect(secteurs).toHaveLength(7);
     expect(secteurs[0][0].dist).toBe(0);
     expect(secteurs[6][secteurs[6].length - 1].dist).toBeCloseTo(1600, 6);
+  });
+});
+
+/** Le même carré, mais départ au MILIEU d'un côté : les 4 coins sont visibles
+ *  (un virage pile sur la ligne de départ est invisible — limite documentée). */
+function traceCarreDecale(): { x: number[]; z: number[] } {
+  const x: number[] = [], z: number[] = [];
+  for (let i = 0; i < 20; i++) { x.push(200 + i * 10);  z.push(0); }           // demi-côté est
+  for (let i = 0; i < 40; i++) { x.push(400);           z.push(i * 10); }      // sud
+  for (let i = 0; i < 40; i++) { x.push(400 - i * 10);  z.push(400); }         // ouest
+  for (let i = 0; i < 40; i++) { x.push(0);             z.push(400 - i * 10); }// nord
+  for (let i = 0; i <= 20; i++) { x.push(i * 10);       z.push(0); }           // retour au départ
+  return { x, z };
+}
+
+/** Aller 600 m vers l'est, épingle en demi-cercle (r = 40 m), retour vers l'ouest. */
+function traceEpingle(): { x: number[]; z: number[] } {
+  const x: number[] = [], z: number[] = [];
+  for (let i = 0; i <= 60; i++) { x.push(i * 10); z.push(0); }              // est
+  for (let i = 1; i < 36; i++) {                                            // demi-cercle vers +z
+    const a = -Math.PI / 2 + (i * Math.PI) / 36;
+    x.push(600 + 40 * Math.cos(a)); z.push(40 + 40 * Math.sin(a));
+  }
+  for (let i = 0; i <= 60; i++) { x.push(600 - i * 10); z.push(80); }       // ouest
+  return { x, z };
+}
+
+describe('detecterVirages', () => {
+  it('trouve les 4 coins du carré, tous à droite, ~90° chacun', () => {
+    const carte = construireCarte(traceCarreDecale())!;
+    const virages = detecterVirages(carte);
+    expect(virages).toHaveLength(4);
+    for (const v of virages) {
+      // Est → sud (+z) → ouest → nord : cap croissant = droite à l'écran.
+      expect(v.direction).toBe('droite');
+      expect(v.angleDeg).toBeGreaterThan(60);
+      expect(v.angleDeg).toBeLessThan(120);
+      expect(v.distFinM).toBeGreaterThanOrEqual(v.distDebutM);
+      expect(v.distApexM).toBeGreaterThanOrEqual(v.distDebutM - 15);
+      expect(v.distApexM).toBeLessThanOrEqual(v.distFinM + 15);
+      // Normale unitaire.
+      expect(Math.hypot(v.normale.x, v.normale.z)).toBeCloseTo(1, 6);
+    }
+    expect(virages.map(v => v.numero)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('inverse le sens quand le tracé est parcouru dans l’autre sens', () => {
+    const { x, z } = traceCarreDecale();
+    const carte = construireCarte({ x: [...x].reverse(), z: [...z].reverse() })!;
+    const virages = detecterVirages(carte);
+    expect(virages).toHaveLength(4);
+    for (const v of virages) expect(v.direction).toBe('gauche');
+  });
+
+  it('détecte une épingle (~180°, petit rayon) entre deux lignes droites', () => {
+    const carte = construireCarte(traceEpingle())!;
+    const virages = detecterVirages(carte);
+    expect(virages).toHaveLength(1);
+    const v = virages[0];
+    expect(v.angleDeg).toBeGreaterThan(150);
+    expect(v.rayonMinM).toBeLessThan(70);
+    expect(typeVirage(v)).toBe('épingle');
+    // L'apex est dans la zone du demi-cercle (entre 600 et 600 + π·40 ≈ 726 m).
+    expect(v.distApexM).toBeGreaterThan(580);
+    expect(v.distApexM).toBeLessThan(750);
+    // La normale extérieure pointe à l'opposé du centre (vers +x, loin de x=600).
+    expect(v.normale.x).toBeGreaterThan(0.5);
+  });
+
+  it('ne détecte rien sur une ligne droite', () => {
+    const x = Array.from({ length: 60 }, (_, i) => i * 10);
+    const z = Array.from({ length: 60 }, () => 0);
+    const carte = construireCarte({ x, z })!;
+    expect(detecterVirages(carte)).toHaveLength(0);
+  });
+});
+
+describe('typeVirage', () => {
+  it('classe par rayon et ampleur', () => {
+    expect(typeVirage({ rayonMinM: 20,  angleDeg: 90 })).toBe('épingle');
+    expect(typeVirage({ rayonMinM: 100, angleDeg: 150 })).toBe('épingle');
+    expect(typeVirage({ rayonMinM: 50,  angleDeg: 80 })).toBe('serré');
+    expect(typeVirage({ rayonMinM: 100, angleDeg: 45 })).toBe('moyen');
+    expect(typeVirage({ rayonMinM: 300, angleDeg: 30 })).toBe('rapide');
   });
 });
