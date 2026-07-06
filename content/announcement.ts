@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v310",
+  id: "2026-07-relais-v311",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.1.0) : 🧭 détection automatique du circuit — lance une épreuve, le relais reconnaît le circuit couru et bascule tout seul (pour les circuits dont le tracé est déjà capturé ; la capture est silencieuse, il suffit de rouler).",
+  message: "Nouvelle version du relais (v3.1.1) : 🧭 détection automatique du circuit — lance une épreuve, le relais reconnaît le circuit couru et bascule tout seul (pour les circuits dont le tracé est déjà capturé ; la capture est silencieuse, il suffit de rouler). Corrige aussi la capture des tracés qui s'arrêtait après une heure de session.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
