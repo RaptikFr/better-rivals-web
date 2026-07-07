@@ -68,11 +68,13 @@ Ajouté `OneDrive\Relais\relais_gui_v312.py` (copie de v311 + feature) :
 - `APP_VERSION` passé à **`3.2.0`**, journal en tête de fichier mis à jour (mention générique « compte de test », sans révéler la whitelist).
 - Vérifié uniquement par `python -m py_compile` — **PAS testé en jeu**.
 
-### ⏳ Reste à faire (à faire sur RAPTIK-PC, `gh` dispo)
+### ✅ FAIT le 7 juil 2026 (RAPTIK-PC) — release v3.2.0 publiée
 
-1. **Tester en jeu** (mode circuit + sprint, asphalte) : vérifier que `captures_perso/` se remplit, qu'une pause courte ne coupe pas le fichier, et qu'une pause > 5 min en crée bien un second.
-2. **Build** l'exécutable (`pyinstaller --onefile --noconsole --name BetterRivals relais_gui_v312.py`).
-3. **Release GitHub** (tag `v3.2.0`, exe en asset) sur `RaptikFr/better-rivals-web` — `gh release create` dispo sur le fixe.
-4. **Bumper `/telecharger`** côté site (commit + push classique dans le dépôt git, pas dans le relais).
+2-3-4 faits : exe buildé (`%TEMP%\br_build312`, 19,3 Mo), `gh release create v3.2.0` publié,
+`/telecharger` bumpé + bandeau `content/announcement.ts` (id 2026-07-relais-v320), commit eedfd25.
 
-Rien n'a été buildé, commité ni pushé pour l'instant — uniquement le fichier source édité côté OneDrive.
+### ⏳ Reste à faire
+
+1. **Tester en jeu** (mode circuit + sprint, asphalte, compte de test) : vérifier que
+   `captures_perso/` se remplit, qu'une pause courte ne coupe pas le fichier, et qu'une
+   pause > 5 min en crée bien un second.

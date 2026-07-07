@@ -20,6 +20,7 @@ import {
   type PointCarte,
   type Virage,
 } from '@/lib/circuitGeometry';
+import CircuitReplay from '@/components/CircuitReplay';
 
 export interface ConfigCarte {
   key:        string; // `${car_class}|${drivetrain}|${car_ordinal}` — même clé que la page circuit
@@ -379,6 +380,14 @@ export default function CircuitMap({
             )}
           </div>
         )}
+
+        {/* Replay 2D toi vs leader — remonté à chaque changement de config. */}
+        <CircuitReplay
+          key={configActive?.key ?? 'aucune'}
+          trackId={trackId}
+          carte={carte}
+          config={configActive}
+        />
       </div>
 
       {/* Résumé + légende + repli. */}
