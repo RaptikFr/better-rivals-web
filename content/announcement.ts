@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v311",
+  id: "2026-07-relais-v320",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.1.1) : 🧭 détection automatique du circuit — lance une épreuve, le relais reconnaît le circuit couru et bascule tout seul (pour les circuits dont le tracé est déjà capturé ; la capture est silencieuse, il suffit de rouler). Corrige aussi la capture des tracés qui s'arrêtait après une heure de session.",
+  message: "Nouvelle version du relais (v3.2.0) : version technique qui prépare le futur copilote pneus (collecte locale de données de calibration sur un compte de test). Aucun changement visible pour les autres comptes — elle inclut toutes les nouveautés v3.1.x (🧭 auto-détection du circuit, fix capture des tracés).",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
