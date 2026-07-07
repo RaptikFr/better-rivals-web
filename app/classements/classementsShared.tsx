@@ -41,7 +41,11 @@ export interface SubGroup {
   drivetrain: Drivetrain;
   carLabel: string;
   laps: RankedLap[];
-  optimal?: TheoreticalLap | null;   // tour optimal (best_sectors, tous tours) si dispo
+  optimal?: TheoreticalLap | null;   // tour optimal GLOBAL (best_sectors, tous tours) si dispo
+  // Tour optimal PERSO par pilote (best_sectors filtré par player_id) : meilleurs
+  // secteurs combinés des tours de CE pilote. Clé = player_id. Affiché sous son
+  // temps si l'option « Tour optimal par pilote » est activée.
+  optimalByPlayer?: Map<string, TheoreticalLap | null>;
 }
 
 export interface CircuitGroup {
@@ -255,6 +259,80 @@ export function TheoreticalLapBanner({ laps, optimal }: { laps: LapTime[]; optim
       </div>
       <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1">
         Les secteurs découpent le tour en {n} tronçons égaux en distance (ce ne sont pas les secteurs du jeu). Survole un secteur pour voir sa portion du tour.
+      </p>
+    </div>
+  );
+}
+
+// Tour optimal PERSO d'un pilote, affiché sous son temps (option « Tour optimal
+// par pilote »). `optimal.sectors` = ses meilleurs secteurs combinés de tous ses
+// tours (best_sectors filtré sur son player_id) ; `globalBest` = les meilleurs
+// secteurs de la config (tous pilotes) pour marquer d'un ★ les tronçons où il est
+// en tête. Même esprit que le tour optimal de la config, mais juste pour lui.
+export function PlayerOptimalLine({
+  optimal,
+  globalBest,
+  pseudo,
+  lengthKm,
+  className = '',
+}: {
+  optimal: TheoreticalLap;
+  globalBest?: number[] | null;
+  pseudo?: string | null;
+  lengthKm?: number | null;
+  className?: string;
+}) {
+  const { formatTime, prefs } = usePreferences();
+  const decSep = prefs.decimalSep === 'comma' ? ',' : '.';
+  const n = optimal.sectors.length;
+  // On ne marque le ★ que si le découpage global correspond (même N).
+  const best = globalBest && globalBest.length === n ? globalBest : null;
+  const gain = optimal.realBestMs - optimal.totalMs;
+
+  const portion = (i: number) => {
+    const pct = `${Math.round((i / n) * 100)}–${Math.round(((i + 1) / n) * 100)} % du tour`;
+    if (!lengthKm) return pct;
+    const a = ((i / n) * lengthKm).toFixed(2).replace('.', decSep);
+    const b = (((i + 1) / n) * lengthKm).toFixed(2).replace('.', decSep);
+    return `${pct} · ≈ ${a}–${b} km`;
+  };
+
+  return (
+    <div className={`rounded-lg border border-violet-500/20 bg-violet-500/[0.06] px-3 py-2 ${className}`}>
+      <div className="flex items-center gap-2 text-xs flex-wrap">
+        <span
+          className="font-bold text-violet-600 dark:text-violet-400 whitespace-nowrap"
+          title="Meilleur temps de chaque secteur sur TOUS les tours enregistrés de ce pilote"
+        >
+          🧮 Tour optimal{pseudo ? ` de ${pseudo}` : ''}
+        </span>
+        <span className="font-mono font-bold text-neutral-800 dark:text-neutral-100">{formatTime(optimal.totalMs)}</span>
+        {gain > 0 && (
+          <span className="font-mono text-emerald-500" title="Gain par rapport à son meilleur temps réel">
+            −{(gain / 1000).toFixed(3).replace('.', decSep)}s vs son meilleur réel
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1 mt-1.5">
+        {optimal.sectors.map((s, i) => {
+          const isLeader = best != null && s <= best[i];
+          return (
+            <span
+              key={i}
+              title={`Secteur ${i + 1}/${n} · ${portion(i)}${isLeader ? ' — meilleur de la config' : ''}`}
+              className={`font-mono px-1.5 py-0.5 rounded cursor-help ${
+                isLeader
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-neutral-200/70 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+              }`}
+            >
+              S{i + 1} {formatTime(s)}{isLeader ? ' ★' : ''}
+            </span>
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1">
+        Meilleurs secteurs combinés des tours de ce pilote{best ? ' · ★ = meilleur de la config' : ''}. Tronçons égaux en distance (pas les secteurs du jeu).
       </p>
     </div>
   );

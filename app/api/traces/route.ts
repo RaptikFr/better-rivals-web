@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/rate-limit';
-import { traceValide, nbSecteurs, secteursDepuisTrace, secteursValides } from '@/lib/lap-validation';
+import { traceValide, nbSecteurs, secteursDepuisTrace, secteursValides, secteursPlausibles } from '@/lib/lap-validation';
 import { enregistrerMeilleursSecteurs } from '@/lib/best-sectors';
 import type { Json } from '@/types/database.types';
 
@@ -80,9 +80,11 @@ export async function POST(request: NextRequest) {
         .from('tracks').select('length_km').eq('id', lap.track_id).maybeSingle();
       const n = nbSecteurs(track?.length_km);
       const secteurs = secteursDepuisTrace(trace, n, lap.time_ms);
-      // Garde-fou : la somme doit retomber sur le temps du tour (sinon on n'écrit
-      // pas plutôt que d'afficher un tour théorique incohérent).
-      if (secteurs && secteursValides(secteurs.map(ms => ms / 1000), lap.time_ms)) {
+      // Garde-fous : la somme doit retomber sur le temps du tour, et aucun secteur
+      // ne doit être plus rapide que la physique (sinon on n'écrit rien plutôt que
+      // d'afficher un tour théorique incohérent ou de polluer best_sectors).
+      if (secteurs && secteursValides(secteurs.map(ms => ms / 1000), lap.time_ms)
+          && secteursPlausibles(secteurs, track?.length_km)) {
         await supabaseAdmin.from('lap_times').update({ sectors_ms: secteurs }).eq('id', lap.id);
         // Alimente aussi le tour optimal (meilleur secteur par index, par config).
         await enregistrerMeilleursSecteurs({

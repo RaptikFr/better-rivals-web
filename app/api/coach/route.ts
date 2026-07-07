@@ -81,11 +81,13 @@ export async function GET(request: NextRequest) {
       .eq('car_class',   carClass)
       .eq('drivetrain',  drivetrain);
 
+    // `sector_index` commence à 1 (cf. la RPC enregistrer_meilleurs_secteurs) et
+    // la table est PAR JOUEUR : on prend le MIN entre joueurs pour chaque index.
     const bestMs: (number | null)[] = Array.from({ length: N }, () => null);
     const heldByYou: boolean[] = Array.from({ length: N }, () => false);
     for (const row of best ?? []) {
-      const i = row.sector_index;
-      if (i >= 0 && i < N) {
+      const i = row.sector_index - 1;
+      if (i >= 0 && i < N && (bestMs[i] === null || row.best_ms < bestMs[i]!)) {
         bestMs[i] = row.best_ms;
         heldByYou[i] = row.player_id === player.id;
       }

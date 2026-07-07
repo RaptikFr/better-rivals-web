@@ -13,8 +13,9 @@ export function formatTime(ms: number): string {
 // marge de 20 % pour absorber les imprécisions.
 // Sprints : bornes volontairement très larges (10 à 150 m/s) — length_km est la
 // distance point à point, parcourue parfois très vite (drags) ou très lentement
-// (cross-country) ; ça filtre au moins les temps absurdes en attendant des
-// records de référence OCR.
+// (cross-country) ; ce filtre grossier n'écarte que les temps absurdes. La garde
+// fine vient ensuite du world record (plusRapideQueRecord), désormais renseigné
+// pour toutes les épreuves officielles.
 export function bornesTempsMs(lengthKm: number, isSprint: boolean): { minMs: number; maxMs: number } {
   const [vMax, vMin] = isSprint ? [150, 10] : [100, 20];
   return {
@@ -92,6 +93,27 @@ export function secteursValides(
   if (Math.abs(somme - lapTimeMs) > tolerance) return null;
 
   return ms;
+}
+
+// Vitesse moyenne maximale plausible sur UN secteur : 150 m/s (540 km/h), au-delà
+// du vrai plafond des voitures les plus rapides (~480 km/h), même sur une ligne
+// droite d'autoroute. Un secteur plus rapide que ça est forcément un artefact
+// (ex. tour fantôme du relais : tour interrompu finalisé avec le temps du tour
+// précédent → mini-secteurs qui verrouillent best_sectors via l'upsert MIN).
+const SECTEUR_V_MAX_MS = 150;
+
+/**
+ * Les durées de secteur sont-elles physiquement possibles vu la longueur du
+ * circuit ? Les secteurs sont des tranches ÉGALES en distance : chaque durée
+ * doit être ≥ (longueur/n) / SECTEUR_V_MAX_MS. Longueur inconnue → pas de filtre.
+ */
+export function secteursPlausibles(
+  sectorsMs: number[],
+  lengthKm: number | null | undefined,
+): boolean {
+  if (!lengthKm || lengthKm <= 0) return true;
+  const minMs = (lengthKm * 1000 / sectorsMs.length / SECTEUR_V_MAX_MS) * 1000;
+  return sectorsMs.every(ms => ms >= minMs);
 }
 
 // Bornes sur le nombre de points d'une trace (brique télémétrie, fondation).

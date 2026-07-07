@@ -49,6 +49,10 @@ export interface Preferences {
   /** Coach de pilotage : rapport post-tour (par secteur, depuis ta trace). OPT-IN,
    *  désactivé par défaut — personne ne reçoit de conseils sans l'avoir activé. */
   coachReport: boolean;
+  /** Affiche, sous le temps de chaque pilote dans les classements, son « tour
+   *  optimal » personnel (meilleurs secteurs combinés de tous ses tours). OFF par
+   *  défaut pour ne pas alourdir le tableau. */
+  showPlayerOptimal: boolean;
   /** Colonnes facultatives affichées dans la vue tableau des classements. */
   tableColumns: TableColumns;
 }
@@ -76,6 +80,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   fontSize: 'normal',
   contrast: 'normal',
   coachReport: false,
+  showPlayerOptimal: false,
   tableColumns: DEFAULT_TABLE_COLUMNS,
 };
 
@@ -100,6 +105,7 @@ export function sanitizePreferences(raw: unknown): Preferences {
     fontSize: pick('fontSize', ['normal', 'large']),
     contrast: pick('contrast', ['normal', 'high']),
     coachReport: typeof r.coachReport === 'boolean' ? r.coachReport : DEFAULT_PREFERENCES.coachReport,
+    showPlayerOptimal: typeof r.showPlayerOptimal === 'boolean' ? r.showPlayerOptimal : DEFAULT_PREFERENCES.showPlayerOptimal,
     tableColumns: sanitizeTableColumns(r.tableColumns),
   };
 }

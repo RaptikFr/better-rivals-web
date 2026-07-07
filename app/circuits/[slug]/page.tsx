@@ -6,6 +6,9 @@ import { CLASS_STYLES } from '@/components/ClassStyles';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { DiscordTag } from '@/components/DiscordTag';
 import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
+import { getCarteCircuit } from '@/lib/trackGeometry';
+import { detecterVirages } from '@/lib/circuitGeometry';
+import CircuitMap from '@/components/CircuitMap';
 import type { Drivetrain } from '@/types/supabase';
 import {
   getApprovedCircuits,
@@ -57,7 +60,10 @@ export default async function CircuitPage({ params }: Props) {
   const id = parseCircuitId(slug);
   if (id === null) notFound();
 
-  const { track, configs, totalTimes } = await getCircuitRanking(id);
+  const [{ track, configs, totalTimes }, carte] = await Promise.all([
+    getCircuitRanking(id),
+    getCarteCircuit(id),
+  ]);
   if (!track) notFound();
 
   // Redirige les slugs non canoniques (id seul, ancien nom) vers l'URL propre.
@@ -97,6 +103,21 @@ export default async function CircuitPage({ params }: Props) {
             Filtrer dans l&apos;outil de classement →
           </Link>
         </div>
+
+        {carte && (
+          <CircuitMap
+            trackId={track.id}
+            carte={carte}
+            virages={detecterVirages(carte)}
+            configs={configs.map(c => ({
+              key:        c.key,
+              carClass:   c.carClass,
+              drivetrain: c.drivetrain,
+              carLabel:   c.carLabel,
+              carOrdinal: c.laps[0].car_ordinal,
+            }))}
+          />
+        )}
 
         {configs.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-center">

@@ -11,14 +11,17 @@ import type { Drivetrain, CarClass } from '@/types/supabase';
 import { usePreferences } from '@/hooks/usePreferences';
 import { DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import {
-  type LapTime, type Track, type RankedLap, type SubGroup, type CircuitGroup, type BestSectorRow,
+  type LapTime, type Track, type RankedLap, type SubGroup, type CircuitGroup, type BestSectorRow, type TheoreticalLap,
   CAR_CLASS_ORDER, CIRCUITS_PER_PAGE, STORAGE_KEY, CAR_CLASSES, DRIVETRAIN_OPTIONS,
   ReportModal, theoreticalFromBest,
 } from './classementsShared';
 import { RankingTableView, RankingCardView } from './RankingViews';
 
-// Ligne best_sectors telle que lue (anon) avec le pseudo du détenteur embarqué.
+// Ligne best_sectors telle que lue (anon), désormais PAR JOUEUR (player_id), avec
+// le pseudo embarqué. Plusieurs lignes par index (une par pilote) → on réduit au
+// min pour le tour optimal global et on regroupe par pilote pour le tour perso.
 type BestSectorRaw = {
+  player_id:   string;
   car_ordinal: number;
   car_class:   string;
   drivetrain:  string;
@@ -182,16 +185,19 @@ export default function ClassementsClient({
         .range(from, to);
     });
 
-    // Meilleurs secteurs (tour optimal) du circuit — best-effort, en parallèle.
-    // Si ça échoue, la bannière retombe sur le tour théorique (tours-PB chargés).
-    let bsQuery = supabase
-      .from('best_sectors')
-      .select('car_ordinal, car_class, drivetrain, sector_index, best_ms, players ( pseudo )')
-      .eq('track_id', selectedTrackId);
-    if (selectedClass !== 'Toutes')    bsQuery = bsQuery.eq('car_class', selectedClass);
-    if (selectedDrivetrain !== 'Tous') bsQuery = bsQuery.eq('drivetrain', selectedDrivetrain);
-    const { data: bsData } = await bsQuery;
-    setBestSectors((bsData as BestSectorRaw[] | null) ?? []);
+    // Meilleurs secteurs (tour optimal) du circuit — best-effort. Per-joueur :
+    // potentiellement > 1000 lignes (pilotes × secteurs) → fetchAllRows pour ne
+    // rien tronquer. Si ça échoue, la bannière retombe sur le tour théorique.
+    const { data: bsData } = await fetchAllRows<BestSectorRaw>((from, to) => {
+      let q = supabase
+        .from('best_sectors')
+        .select('player_id, car_ordinal, car_class, drivetrain, sector_index, best_ms, players ( pseudo )')
+        .eq('track_id', selectedTrackId);
+      if (selectedClass !== 'Toutes')    q = q.eq('car_class', selectedClass);
+      if (selectedDrivetrain !== 'Tous') q = q.eq('drivetrain', selectedDrivetrain);
+      return q.order('player_id').order('sector_index').range(from, to);
+    });
+    setBestSectors(bsData);
 
     if (error) {
       setError("Impossible de charger les classements. Vérifie ta connexion ou réessaie dans quelques instants.");
@@ -275,13 +281,24 @@ export default function ClassementsClient({
       byTrack.get(lap.track_id)!.push(lap);
     }
 
-    // best_sectors regroupés par config (même clé que les sous-groupes).
-    const bsByConfig = new Map<string, BestSectorRow[]>();
+    // best_sectors bruts (per-joueur) regroupés par config (même clé que les
+    // sous-groupes). On en tire ensuite le tour optimal GLOBAL (min par index)
+    // et le tour optimal de chaque PILOTE (ses propres lignes).
+    const bsRawByConfig = new Map<string, BestSectorRaw[]>();
     for (const r of bestSectors) {
       const key = `${r.car_class}|${r.drivetrain}|${r.car_ordinal}`;
-      if (!bsByConfig.has(key)) bsByConfig.set(key, []);
-      bsByConfig.get(key)!.push({ sector_index: r.sector_index, best_ms: r.best_ms, pseudo: r.players?.pseudo ?? null });
+      if (!bsRawByConfig.has(key)) bsRawByConfig.set(key, []);
+      bsRawByConfig.get(key)!.push(r);
     }
+    // Tour optimal global = meilleur (min) temps par index, tous pilotes confondus.
+    const globalRows = (rows: BestSectorRaw[]): BestSectorRow[] => {
+      const byIdx = new Map<number, { best_ms: number; pseudo: string | null }>();
+      for (const r of rows) {
+        const cur = byIdx.get(r.sector_index);
+        if (!cur || r.best_ms < cur.best_ms) byIdx.set(r.sector_index, { best_ms: r.best_ms, pseudo: r.players?.pseudo ?? null });
+      }
+      return [...byIdx.entries()].map(([sector_index, v]) => ({ sector_index, best_ms: v.best_ms, pseudo: v.pseudo }));
+    };
 
     const groups: CircuitGroup[] = [];
 
@@ -310,8 +327,21 @@ export default function ClassementsClient({
           const carLabel = `${s.cars?.year ?? ''} ${s.cars?.manufacturer ?? ''} ${s.cars?.name ?? ''}`.trim() || 'Voiture inconnue';
           const sorted = [...subLaps].sort((a, b) => a.time_ms - b.time_ms);
           const rankedLaps = sorted.map((lap, i) => ({ ...lap, rank: i + 1 })) as RankedLap[];
-          const optimal = theoreticalFromBest(bsByConfig.get(key) ?? [], rankedLaps[0].time_ms);
-          return { key, carClass, drivetrain, carLabel, laps: rankedLaps, optimal };
+          const rawRows = bsRawByConfig.get(key) ?? [];
+          const optimal = theoreticalFromBest(globalRows(rawRows), rankedLaps[0].time_ms);
+          // Tour optimal de CHAQUE pilote : ses propres lignes best_sectors, avec
+          // son PB comme référence de gain. Calculé une fois par config ici.
+          const byPlayer = new Map<string, BestSectorRow[]>();
+          for (const r of rawRows) {
+            if (!byPlayer.has(r.player_id)) byPlayer.set(r.player_id, []);
+            byPlayer.get(r.player_id)!.push({ sector_index: r.sector_index, best_ms: r.best_ms, pseudo: r.players?.pseudo ?? null });
+          }
+          const pbByPlayer = new Map(rankedLaps.map(l => [l.player_id, l.time_ms]));
+          const optimalByPlayer = new Map<string, TheoreticalLap | null>();
+          for (const [pid, rows] of byPlayer) {
+            optimalByPlayer.set(pid, theoreticalFromBest(rows, pbByPlayer.get(pid) ?? 0));
+          }
+          return { key, carClass, drivetrain, carLabel, laps: rankedLaps, optimal, optimalByPlayer };
         });
 
       groups.push({
@@ -637,6 +667,7 @@ export default function ClassementsClient({
             onShareRow={handleShareRow}
             onReport={setReportTarget}
             cols={cols}
+            showPlayerOptimal={prefs.showPlayerOptimal}
           />
         ) : (
           <RankingCardView
@@ -651,6 +682,7 @@ export default function ClassementsClient({
             copiedRowId={copiedRowId}
             onShareRow={handleShareRow}
             onReport={setReportTarget}
+            showPlayerOptimal={prefs.showPlayerOptimal}
           />
         )}
 

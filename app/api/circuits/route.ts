@@ -37,7 +37,16 @@ export async function GET() {
       wr_count: compteur.get(t.id) ?? 0,
     }));
 
-    return NextResponse.json({ circuits }, { status: 200 });
+    // Liste quasi statique (l'ajout d'un circuit est rare) : cache CDN 5 min,
+    // resservie jusqu'à 30 min pendant la revalidation. Le relais et l'outil
+    // OCR la re-demandent souvent — inutile de retaper la base à chaque fois.
+    return NextResponse.json(
+      { circuits },
+      {
+        status: 200,
+        headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=1800' },
+      }
+    );
 
   } catch {
     return NextResponse.json(

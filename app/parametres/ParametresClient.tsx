@@ -278,6 +278,16 @@ export default function ParametresClient() {
               { value: 'table', label: 'Tableau' },
             ]}
           />
+          <Segmented
+            label="Tour optimal par pilote"
+            hint="Affiche, sous le temps de chaque pilote, son « tour optimal » personnel (ses meilleurs secteurs combinés de tous ses tours), façon tour optimal de la config mais juste pour lui. N'apparaît que pour les pilotes ayant des données de secteurs."
+            value={prefs.showPlayerOptimal}
+            onChange={v => setPref('showPlayerOptimal', v)}
+            options={[
+              { value: false, label: 'Masqué' },
+              { value: true, label: 'Affiché' },
+            ]}
+          />
         </Section>
 
         <Section title="Colonnes des classements (PC)">

@@ -20,6 +20,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Maquettes statiques du projet design claude.ai (design_handoff_skins) :
+    // pas du code de l'app, jamais buildé — hors périmètre du lint.
+    "Modernisation du site/**",
   ]),
 ]);
 
