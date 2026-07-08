@@ -1,8 +1,8 @@
 # Mémoire — Better Rivals Web
 
 - [Identité des instances Claude](user-identite.md) — Claude Portable = PC-RENAUD, Claude Fixe = RAPTIK-PC. Surnoms à utiliser naturellement.
-- [⚠️ PASSATION POUR CLAUDE FIXE (RAPTIK-PC)](todo-claude-fixe.md) — **Lire en premier sur le fixe** : git pull + reste à faire (track_mapper, calibration sousvireuse) + **NOUVEAU 07/07 : build+release relais v3.2.0 (capture technique brute whitelist)**
-- [track_mapper.py](track-mapper.md) — Script standalone cartographie trajectoire FH6 (commit 0772b74, 23/06). Offsets X/Y/Z 232/236/240 **à valider en jeu** avec DEBUG=True. Export JSON + SVG 800×800.
+- [⚠️ PASSATION POUR CLAUDE FIXE (RAPTIK-PC)](todo-claude-fixe.md) — **Lire en premier sur le fixe** : git pull + reste à faire (calibration sousvireuse, tester capture technique brute v3.2.0 en jeu)
+- [track_mapper.py](track-mapper.md) — ⚠️ OBSOLÈTE (09/07) : le relais capture le tracé automatiquement désormais. Ne plus le proposer.
 - [Copilote de réglage](coach-copilote-reglage.md) — brique télémétrie #5 : `coach_diag.py` (rapport) + `coach_reglage.py` (port compact overlay, intégré au relais v300). Captures de calibration FAITES + analysées 23/06 EN MODE `compare` (pas le rapport simple, trompeur) : amortisseurs ✅ net + survirage ✅ détecté (Δtemp −5 °F) ; seule `sousvireuse` reste FAIBLE (thermiquement plate) → à refaire plus extrême. Journal ressenti encore vide
 - [Accès Supabase via PAT](acces-supabase-pat.md) — PAT gardé dans `.env.local` (SUPABASE_ACCESS_TOKEN) ; SQL/DDL via Management API + PowerShell Invoke-RestMethod (curl casse en TLS). Ref projet hmtgzqbxymspauusziyh
 - [Suppression du classement général](suppression-classement-general.md) — retiré le 22/06 (exploitable : points « gratuits » via voiture peu utilisée). NE PAS le re-proposer ; classements restent par config à armes égales

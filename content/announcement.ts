@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v320",
+  id: "2026-07-relais-v321",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.2.0) : version technique qui prépare le futur copilote pneus (collecte locale de données de calibration sur un compte de test). Aucun changement visible pour les autres comptes — elle inclut toutes les nouveautés v3.1.x (🧭 auto-détection du circuit, fix capture des tracés).",
+  message: "Nouvelle version du relais (v3.2.1) : fix du copilote de réglage — le conseil de balance de frein pouvait recommander le mauvais sens (il ne comparait pas toujours l'essieu qui bloque vraiment le plus). Inclut aussi toutes les nouveautés v3.2.0/v3.1.x (🧭 auto-détection du circuit, fix capture des tracés).",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",

@@ -31,11 +31,11 @@ Le portable a poussé plusieurs commits depuis la dernière sync. Le repo web es
 
 ## 3. Ce qu'il reste à faire (par priorité)
 
-### ✅ FAIT (23/06) — `track_mapper.py` validé en jeu
+### ✅ FAIT (23/06) — `track_mapper.py` validé en jeu, puis rendu OBSOLÈTE (09/07)
 
 - Offsets Position **validés** après correction (232/236/240 → **244/248/252**, +12 FH6 ; cf. [[track-mapper]]). Test Irokawa : |ΔXZ| = vitesse × dt. `DEBUG` repassé à False.
 - **Sélection circuit par menu API** ajoutée (track_id dans le JSON) + port corrigé **5300**. Commit `7c04b50`, poussé.
-- ⏳ Reste (quand tu veux) : enregistrer de **vrais laps complets** par circuit (lap propre, checkpoints [Espace] aux repères) pour bâtir la bibliothèque de tracés. ⚠️ **Fermer le relais** avant (même port UDP 5300).
+- ⚠️ **Confirmé obsolète le 09/07** : le relais capture désormais le tracé automatiquement (`track_geometries`, auto-détection v3.1.0) — plus besoin de bibliothèque manuelle via ce script. Voir [[track-mapper]].
 
 ### 🟡 À tester en jeu — relais v3.0.0
 
@@ -73,8 +73,10 @@ Ajouté `OneDrive\Relais\relais_gui_v312.py` (copie de v311 + feature) :
 2-3-4 faits : exe buildé (`%TEMP%\br_build312`, 19,3 Mo), `gh release create v3.2.0` publié,
 `/telecharger` bumpé + bandeau `content/announcement.ts` (id 2026-07-relais-v320), commit eedfd25.
 
-### ⏳ Reste à faire
+### ✅ FAIT le 09/07 — capture technique brute testée en jeu
 
-1. **Tester en jeu** (mode circuit + sprint, asphalte, compte de test) : vérifier que
-   `captures_perso/` se remplit, qu'une pause courte ne coupe pas le fichier, et qu'une
-   pause > 5 min en crée bien un second.
+`captures_perso/` se remplit bien en conditions réelles (5 fichiers, 3 voitures, session du
+07/07), lisibles de bout en bout par `coach_diag.py`. Bonus : la calibration « sous-virage »
+(voir [[coach-copilote-reglage]]) a une confirmation en conditions réelles (Δtemp AV−AR +31°F,
+signal net) — le résultat plat du 23/06 tenait probablement au réglage ARB pas assez extrême,
+pas à un défaut de la logique de détection.
