@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v330",
+  id: "2026-07-relais-v340",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.3.0) : le copilote de réglage signale maintenant un essieu de pneus en surchauffe ou trop froid, et un nouveau panneau « Régularité » affiche l'écart-type de vos temps au tour (100 % local). Inclut aussi les nouveautés v3.2.4/v3.2.5 (renouvellement de token centralisé, le relais suit votre skin du site) et v3.2.0/v3.1.x (🧭 auto-détection du circuit, fix capture des tracés).",
+  message: "Nouvelle version du relais (v3.4.0) : les sprints (épreuves point à point) ont maintenant droit aux mêmes outils que les circuits — carte du tracé, meilleurs secteurs (tour optimal), delta live vs votre record, coach de pilotage post-course et copilote de réglage sur asphalte. Inclut aussi le v3.3.0 (copilote pneus, panneau « Régularité »).",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
