@@ -117,6 +117,9 @@ export default function CircuitMap({
   const [loading, setLoading]     = useState(true);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [survol, setSurvol]       = useState<{ idx: number; x: number; y: number } | null>(null);
+  // Slot DOM sous la carte où le replay téléporte sa barre de contrôle
+  // (en state : le portal doit se re-rendre quand le nœud est monté).
+  const [replaySlot, setReplaySlot] = useState<HTMLDivElement | null>(null);
   const conteneurRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -476,8 +479,13 @@ export default function CircuitMap({
           trackId={trackId}
           carte={carte}
           config={configActive}
+          barreSlot={replaySlot}
         />
       </div>
+
+      {/* Slot de la barre de contrôle du replay : sous la carte, dans le flux,
+          pour ne jamais chevaucher le tracé. Vide (masqué) hors lecture. */}
+      <div ref={setReplaySlot} className="mt-3 flex justify-center empty:hidden" />
 
       {/* Résumé + légende + repli. */}
       {loading ? (

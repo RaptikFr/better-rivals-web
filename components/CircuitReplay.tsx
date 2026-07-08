@@ -15,6 +15,7 @@
 // de config remet tout à zéro par remontage.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { usePlayer } from '@/hooks/usePlayer';
 import { usePreferences } from '@/hooks/usePreferences';
@@ -73,10 +74,14 @@ export default function CircuitReplay({
   trackId,
   carte,
   config,
+  barreSlot,
 }: {
   trackId: number;
   carte:   CarteCircuit;
   config:  ConfigCarte | null;
+  /** Nœud DOM sous la carte où téléporter la barre de contrôle (sinon elle
+      reste superposée en bas de carte — et peut chevaucher le tracé). */
+  barreSlot?: HTMLElement | null;
 }) {
   const { player } = usePlayer();
   const { formatTime, prefs } = usePreferences();
@@ -277,6 +282,47 @@ export default function CircuitReplay({
   }
 
   // ── Replay actif : points + barre de contrôle ──────────────────────────────
+  // La barre vit sous la carte (portal vers barreSlot) pour ne jamais
+  // chevaucher le tracé ; sans slot, fallback superposé en bas de carte.
+  const barre = (
+    <div
+      className={`${barreSlot ? '' : 'absolute bottom-2 left-1/2 -translate-x-1/2 z-20 '}flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-neutral-300 dark:border-neutral-700 shadow-lg text-xs`}
+    >
+      <button
+        onClick={enLecture ? mettreEnPause : jouer}
+        aria-label={enLecture ? 'Pause' : 'Lecture'}
+        className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+      >
+        {enLecture ? '⏸' : '▶'}
+      </button>
+      <button
+        onClick={redemarrer}
+        aria-label="Recommencer"
+        className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+      >
+        ↺
+      </button>
+      <button
+        onClick={changerVitesse}
+        aria-label={`Vitesse de lecture ×${vitesse}`}
+        className="px-1.5 h-7 rounded-full font-mono font-bold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+      >
+        ×{vitesse}
+      </button>
+      <span ref={chronoRef} className="font-mono font-bold text-neutral-900 dark:text-white min-w-[64px] text-center" />
+      {donnees?.moi && donnees?.rival && (
+        <span ref={ecartRef} className="font-mono font-bold min-w-[52px] text-center" />
+      )}
+      <button
+        onClick={fermer}
+        aria-label="Fermer le replay"
+        className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+      >
+        ✕
+      </button>
+    </div>
+  );
+
   return (
     <>
       {donnees?.moi && (
@@ -308,40 +354,7 @@ export default function CircuitReplay({
         </div>
       )}
 
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-neutral-300 dark:border-neutral-700 shadow-lg text-xs">
-        <button
-          onClick={enLecture ? mettreEnPause : jouer}
-          aria-label={enLecture ? 'Pause' : 'Lecture'}
-          className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-        >
-          {enLecture ? '⏸' : '▶'}
-        </button>
-        <button
-          onClick={redemarrer}
-          aria-label="Recommencer"
-          className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-        >
-          ↺
-        </button>
-        <button
-          onClick={changerVitesse}
-          aria-label={`Vitesse de lecture ×${vitesse}`}
-          className="px-1.5 h-7 rounded-full font-mono font-bold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-        >
-          ×{vitesse}
-        </button>
-        <span ref={chronoRef} className="font-mono font-bold text-neutral-900 dark:text-white min-w-[64px] text-center" />
-        {donnees?.moi && donnees?.rival && (
-          <span ref={ecartRef} className="font-mono font-bold min-w-[52px] text-center" />
-        )}
-        <button
-          onClick={fermer}
-          aria-label="Fermer le replay"
-          className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-        >
-          ✕
-        </button>
-      </div>
+      {barreSlot ? createPortal(barre, barreSlot) : barre}
     </>
   );
 }
