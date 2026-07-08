@@ -10,6 +10,8 @@ import { usePlayer } from '@/hooks/usePlayer';
 import type { Drivetrain, CarClass } from '@/types/supabase';
 import { usePreferences } from '@/hooks/usePreferences';
 import { DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
+import { detecterVirages, type CarteCircuit } from '@/lib/circuitGeometry';
+import CircuitMap, { type ConfigCarte } from '@/components/CircuitMap';
 import {
   type LapTime, type Track, type RankedLap, type SubGroup, type CircuitGroup, type BestSectorRow, type TheoreticalLap,
   CAR_CLASS_ORDER, CIRCUITS_PER_PAGE, STORAGE_KEY, CAR_CLASSES, DRIVETRAIN_OPTIONS,
@@ -55,6 +57,8 @@ export default function ClassementsClient({
   const currentPlayerPseudo = player?.pseudo ?? null;
 
   const [lapTimes,   setLapTimes]   = useState<LapTime[]>([]);
+  // Carte du circuit sélectionné (track_geometries) — null si non capturée.
+  const [carte, setCarte] = useState<CarteCircuit | null>(null);
   // Meilleurs secteurs par config (best_sectors) du circuit affiché → tour optimal.
   const [bestSectors, setBestSectors] = useState<BestSectorRaw[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
@@ -209,6 +213,26 @@ export default function ClassementsClient({
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- (re)chargement des temps quand les filtres changent
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Carte du circuit sélectionné — best-effort, indépendante des filtres classe/transmission.
+  useEffect(() => {
+    if (selectedTrackId === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset synchrone au changement/effacement du filtre circuit
+      setCarte(null);
+      return;
+    }
+    let annule = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/track-carte?track_id=${selectedTrackId}`);
+        const { carte: c } = await res.json();
+        if (!annule) setCarte(c ?? null);
+      } catch {
+        if (!annule) setCarte(null);
+      }
+    })();
+    return () => { annule = true; };
+  }, [selectedTrackId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- retour à la page 1 quand les filtres secondaires changent
   useEffect(() => { setCurrentPage(1); }, [selectedCar, pseudoSearch, myTimesOnly]);
@@ -392,6 +416,22 @@ export default function ClassementsClient({
   );
 
   const hasFilters = selectedTrackId !== null || selectedClass !== 'Toutes' || selectedDrivetrain !== 'Tous' || selectedCar !== 'Toutes' || pseudoSearch !== '' || myTimesOnly;
+
+  const virages = useMemo(() => carte ? detecterVirages(carte) : [], [carte]);
+
+  // Configs disponibles pour la carte : celles du circuit sélectionné, indépendamment
+  // des filtres classe/transmission/voiture (la carte a son propre sélecteur de config).
+  const carteConfigs = useMemo((): ConfigCarte[] => {
+    const group = circuitGroups.find(g => g.trackId === selectedTrackId);
+    if (!group) return [];
+    return group.subGroups.map(sg => ({
+      key:        sg.key,
+      carClass:   sg.carClass,
+      drivetrain: sg.drivetrain,
+      carLabel:   sg.carLabel,
+      carOrdinal: sg.laps[0].car_ordinal,
+    }));
+  }, [circuitGroups, selectedTrackId]);
 
   async function handleShareRow(lapId: string) {
     const params = new URLSearchParams();
@@ -617,6 +657,16 @@ export default function ClassementsClient({
               📄 Voir la page dédiée de {selectedTrackName} →
             </Link>
           </p>
+        )}
+
+        {/* Carte du circuit sélectionné — best-effort (rien si le tracé n'a pas encore été capturé). */}
+        {selectedTrackId !== null && carte && carteConfigs.length > 0 && (
+          <CircuitMap
+            trackId={selectedTrackId}
+            carte={carte}
+            virages={virages}
+            configs={carteConfigs}
+          />
         )}
 
         {/* --- CONTENU --- */}
