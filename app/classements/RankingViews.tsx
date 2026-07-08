@@ -229,6 +229,7 @@ export function RankingTableView({
                                       globalBest={group.optimal?.sectors}
                                       pseudo={lap.players?.pseudo}
                                       lengthKm={circuit.trackLengthKm}
+                                      pbSectors={lap.sectors_ms}
                                     />
                                   </td>
                                 </tr>
@@ -414,6 +415,7 @@ export function RankingCardView({
                         globalBest={group.optimal?.sectors}
                         pseudo={lap.players?.pseudo}
                         lengthKm={circuit.trackLengthKm}
+                        pbSectors={lap.sectors_ms}
                       />
                     )}
                     </Fragment>

@@ -60,6 +60,14 @@ type ReplayLap = {
   v: number[];
 };
 
+// Candidat au rôle de rival (autre pilote tracé de la config) — pour peupler
+// le sélecteur. Renvoyé par /api/replay à chaque appel.
+type RivalDisponible = {
+  player_id: string;
+  pseudo:    string | null;
+  time_ms:   number;
+};
+
 interface PerteVirage {
   virage:      Virage;
   moiS:        number;
@@ -172,9 +180,18 @@ export default function CircuitMap({
 
   // Traces (moi + rival) de la config affichée, pour chronométrer les virages —
   // best-effort : réservé aux connectés (lap_traces fermée par RLS), silencieux sinon.
-  const [traces, setTraces]               = useState<{ moi: ReplayLap | null; rival: ReplayLap | null } | null>(null);
+  const [traces, setTraces]               = useState<{ moi: ReplayLap | null; rival: ReplayLap | null; rivalsDisponibles?: RivalDisponible[] } | null>(null);
   const [tracesLoading, setTracesLoading] = useState(false);
   const [tracesAuth, setTracesAuth]       = useState(true);
+  // Rival choisi explicitement dans le sélecteur (sinon : meilleur autre, comportement
+  // par défaut de l'API). Remis à zéro à chaque changement de config — la liste de
+  // candidats tracés change avec la config.
+  const [selectedRivalId, setSelectedRivalId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset synchrone du rival choisi quand la config change (ses candidats ne valent plus)
+    setSelectedRivalId(null);
+  }, [configActive?.key]);
 
   useEffect(() => {
     if (!configActive) {
@@ -199,6 +216,7 @@ export default function CircuitMap({
           car_class:   configActive.carClass,
           drivetrain:  configActive.drivetrain,
         });
+        if (selectedRivalId) qs.set('rival_player_id', selectedRivalId);
         const res = await fetch(`/api/replay?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
         if (res.status === 204 || !res.ok) { if (!annule) setTraces(null); return; }
         const json = await res.json();
@@ -210,7 +228,9 @@ export default function CircuitMap({
       }
     })();
     return () => { annule = true; };
-  }, [configActive, trackId]);
+  }, [configActive, trackId, selectedRivalId]);
+
+  const rivalsDisponibles = traces?.rivalsDisponibles ?? [];
 
   // Durée dans chaque virage (fenêtre distDebutM→distFinM interpolée sur la
   // trace, indépendante du découpage en secteurs) — nécessite les deux traces.
@@ -350,6 +370,22 @@ export default function CircuitMap({
             ))}
           </select>
         )}
+        {rivalsDisponibles.length > 1 && (
+          <select
+            value={selectedRivalId ?? ''}
+            onChange={e => setSelectedRivalId(e.target.value || null)}
+            aria-label="Rival affiché sur le replay et les écarts par virage"
+            title="Choisis quel pilote tracé comparer (par défaut : le meilleur autre)"
+            className="px-3 py-1.5 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white max-w-full"
+          >
+            <option value="">🏆 Meilleur autre (auto)</option>
+            {rivalsDisponibles.map(r => (
+              <option key={r.player_id} value={r.player_id}>
+                {r.pseudo ?? 'Inconnu'} · {formatTime(r.time_ms)}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div
@@ -473,13 +509,16 @@ export default function CircuitMap({
           </div>
         )}
 
-        {/* Replay 2D toi vs leader — remonté à chaque changement de config. */}
+        {/* Replay 2D toi vs rival — remonté à chaque changement de config ou de
+            rival choisi (repart proprement de « ▶ Replay », comme un changement
+            de config : évite de threader un refetch dans un composant déjà en lecture). */}
         <CircuitReplay
-          key={configActive?.key ?? 'aucune'}
+          key={`${configActive?.key ?? 'aucune'}|${selectedRivalId ?? 'auto'}`}
           trackId={trackId}
           carte={carte}
           config={configActive}
           barreSlot={replaySlot}
+          rivalPlayerId={selectedRivalId}
         />
       </div>
 
@@ -559,14 +598,14 @@ export default function CircuitMap({
               <div className="mt-2">
                 {!tracesAuth ? (
                   <p className="text-xs text-neutral-500">
-                    Connecte-toi pour comparer virage par virage avec le tour tracé le plus rapide de cette config.
+                    Connecte-toi pour comparer virage par virage avec un tour tracé de cette config.
                   </p>
                 ) : tracesLoading ? (
                   <p className="text-xs text-neutral-500 animate-pulse">Chargement des tracés…</p>
                 ) : !perVirage ? (
                   <p className="text-xs text-neutral-500">
                     {traces?.moi || traces?.rival
-                      ? "Il manque l'une des deux traces (toi ou le leader) pour calculer la perte par virage."
+                      ? "Il manque l'une des deux traces (toi ou le rival) pour calculer la perte par virage."
                       : 'Pas encore de tour tracé sur cette config — pose un temps avec le relais pour débloquer ce calcul.'}
                   </p>
                 ) : (
@@ -589,7 +628,7 @@ export default function CircuitMap({
                             <th className="px-2 py-1.5 font-bold">Virage</th>
                             <th className="px-2 py-1.5 font-bold">Type</th>
                             <th className="px-2 py-1.5 font-bold">Toi</th>
-                            <th className="px-2 py-1.5 font-bold">{perVirage[0]?.rivalPseudo ?? 'Leader'}</th>
+                            <th className="px-2 py-1.5 font-bold">{perVirage[0]?.rivalPseudo ?? 'Rival'}</th>
                             <th className="px-2 py-1.5 font-bold">Écart</th>
                           </tr>
                         </thead>

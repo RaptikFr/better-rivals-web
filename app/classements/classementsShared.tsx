@@ -269,17 +269,22 @@ export function TheoreticalLapBanner({ laps, optimal }: { laps: LapTime[]; optim
 // tours (best_sectors filtré sur son player_id) ; `globalBest` = les meilleurs
 // secteurs de la config (tous pilotes) pour marquer d'un ★ les tronçons où il est
 // en tête. Même esprit que le tour optimal de la config, mais juste pour lui.
+// `pbSectors` (optionnel) = sectors_ms du tour qui EST son meilleur temps réel
+// (pas un agrégat) : permet de voir, secteur par secteur, où CE tour précis a
+// perdu du temps par rapport à ses propres meilleurs secteurs de tous ses tours.
 export function PlayerOptimalLine({
   optimal,
   globalBest,
   pseudo,
   lengthKm,
+  pbSectors,
   className = '',
 }: {
   optimal: TheoreticalLap;
   globalBest?: number[] | null;
   pseudo?: string | null;
   lengthKm?: number | null;
+  pbSectors?: number[] | null;
   className?: string;
 }) {
   const { formatTime, prefs } = usePreferences();
@@ -288,6 +293,13 @@ export function PlayerOptimalLine({
   // On ne marque le ★ que si le découpage global correspond (même N).
   const best = globalBest && globalBest.length === n ? globalBest : null;
   const gain = optimal.realBestMs - optimal.totalMs;
+  // Secteurs du tour record réel, alignés sur le même découpage (sinon absent :
+  // vieux tour sans sectors_ms, ou config dont le nombre de secteurs a changé).
+  const pb = gain > 0 && pbSectors && pbSectors.length === n ? pbSectors : null;
+  const pbDeltas = pb ? pb.map((s, i) => s - optimal.sectors[i]) : null;
+  const worstIdx = pbDeltas
+    ? pbDeltas.reduce((acc, d, i) => (d > pbDeltas[acc] ? i : acc), 0)
+    : null;
 
   const portion = (i: number) => {
     const pct = `${Math.round((i / n) * 100)}–${Math.round(((i + 1) / n) * 100)} % du tour`;
@@ -296,6 +308,7 @@ export function PlayerOptimalLine({
     const b = (((i + 1) / n) * lengthKm).toFixed(2).replace('.', decSep);
     return `${pct} · ≈ ${a}–${b} km`;
   };
+  const fmtDeltaS = (ms: number) => `+${(ms / 1000).toFixed(3).replace('.', decSep)}s`;
 
   return (
     <div className={`rounded-lg border border-violet-500/20 bg-violet-500/[0.06] px-3 py-2 ${className}`}>
@@ -334,6 +347,49 @@ export function PlayerOptimalLine({
       <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1">
         Meilleurs secteurs combinés des tours de ce pilote{best ? ' · ★ = meilleur de la config' : ''}. Tronçons égaux en distance (pas les secteurs du jeu).
       </p>
+
+      {/* Détail du tour record RÉEL (pas un agrégat) : montre secteur par secteur
+          où CE tour précis a cédé du temps face à ses propres meilleurs secteurs. */}
+      {pb && pbDeltas && (
+        <div className="mt-2 pt-2 border-t border-violet-500/10">
+          <span
+            className="font-bold text-neutral-600 dark:text-neutral-400 text-xs whitespace-nowrap"
+            title="Secteurs du tour qui EST son meilleur temps réel (pas un agrégat de plusieurs tours)"
+          >
+            📍 Sur son tour record
+          </span>
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {pb.map((s, i) => {
+              const delta = pbDeltas[i];
+              const isWorst = i === worstIdx && delta > 0;
+              return (
+                <span
+                  key={i}
+                  title={`Secteur ${i + 1}/${n} · ${portion(i)}${
+                    delta > 0
+                      ? ` — ${fmtDeltaS(delta)} vs son meilleur secteur ${i + 1} (toutes tentatives)`
+                      : ' — déjà son meilleur à cet endroit'
+                  }`}
+                  className={`font-mono px-1.5 py-0.5 rounded cursor-help ${
+                    isWorst
+                      ? 'bg-pink-500/15 text-pink-600 dark:text-pink-400'
+                      : delta > 0
+                      ? 'bg-neutral-200/70 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+                      : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  }`}
+                >
+                  S{i + 1} {formatTime(s)}{delta > 0 ? ` ${fmtDeltaS(delta)}` : ''}
+                </span>
+              );
+            })}
+          </div>
+          {worstIdx !== null && pbDeltas[worstIdx] > 0 && (
+            <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1">
+              Le secteur {worstIdx + 1} est celui qui a le plus coûté sur ce tour précis ({fmtDeltaS(pbDeltas[worstIdx])}) — la marge à gratter en priorité.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

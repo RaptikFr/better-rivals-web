@@ -1,18 +1,19 @@
 "use client";
 
-// Replay 2D sur la carte du circuit : deux points (moi + le meilleur autre
-// pilote tracé de la config) rejouent leur tour en simultané, façon ghost.
-// Données : GET /api/replay (traces réduites à d/t/v). La position sur la carte
-// est obtenue par FRACTION de distance (d/dTotal → fraction × longueur
-// géométrique) : le sous-comptage ~15 % du compteur Forza est un biais
-// d'échelle, il s'annule dans la fraction.
+// Replay 2D sur la carte du circuit : deux points (moi + un rival) rejouent
+// leur tour en simultané, façon ghost. Rival = celui choisi dans le sélecteur
+// de CircuitMap (rivalPlayerId), sinon le meilleur autre pilote tracé de la
+// config (comportement par défaut de l'API). Données : GET /api/replay (traces
+// réduites à d/t/v). La position sur la carte est obtenue par FRACTION de
+// distance (d/dTotal → fraction × longueur géométrique) : le sous-comptage
+// ~15 % du compteur Forza est un biais d'échelle, il s'annule dans la fraction.
 //
 // Perf : l'animation met à jour positions et compteurs par refs DOM directes
 // (requestAnimationFrame), sans re-render React à chaque frame. Les données du
 // replay vivent dans une ref (l'état React ne sert qu'au montage du JSX), ce
 // qui permet de lancer la lecture depuis le gestionnaire de clic sans setState
-// dans un effet. ⚠️ Monter ce composant avec key={config.key} : le changement
-// de config remet tout à zéro par remontage.
+// dans un effet. ⚠️ Monter ce composant avec key={config.key + rivalPlayerId} :
+// un changement de config OU de rival remet tout à zéro par remontage.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
@@ -75,6 +76,7 @@ export default function CircuitReplay({
   carte,
   config,
   barreSlot,
+  rivalPlayerId,
 }: {
   trackId: number;
   carte:   CarteCircuit;
@@ -82,6 +84,9 @@ export default function CircuitReplay({
   /** Nœud DOM sous la carte où téléporter la barre de contrôle (sinon elle
       reste superposée en bas de carte — et peut chevaucher le tracé). */
   barreSlot?: HTMLElement | null;
+  /** Rival explicitement choisi (sélecteur de la carte) ; sinon le meilleur
+      autre pilote tracé de la config (comportement par défaut de l'API). */
+  rivalPlayerId?: string | null;
 }) {
   const { player } = usePlayer();
   const { formatTime, prefs } = usePreferences();
@@ -223,6 +228,7 @@ export default function CircuitReplay({
         car_class:   config.carClass,
         drivetrain:  config.drivetrain,
       });
+      if (rivalPlayerId) qs.set('rival_player_id', rivalPlayerId);
       const res = await fetch(`/api/replay?${qs}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -243,7 +249,7 @@ export default function CircuitReplay({
     } catch {
       setPhase('erreur');
     }
-  }, [config, trackId, jouer]);
+  }, [config, trackId, rivalPlayerId, jouer]);
 
   const changerVitesse = useCallback(() => {
     setVitesse(v => {

@@ -7,11 +7,14 @@ import type { TraceSamples } from '@/lib/lap-validation';
 export const dynamic = 'force-dynamic';
 
 // GET /api/replay — données du replay 2D d'une config (carte du circuit) :
-// MA trace + celle du meilleur AUTRE pilote tracé (le « rival », en général le
-// leader de la config). lap_traces est fermée par RLS : on ne relaie ici que le
-// strict nécessaire au replay (d/t/v) — jamais thr/brk/str, qui révéleraient le
-// pilotage fin d'un autre joueur. Réservé aux connectés (même politique que
-// /api/coach) ; un joueur sans trace peut regarder le fantôme du leader seul.
+// MA trace + celle d'un AUTRE pilote tracé (le « rival »). Par défaut le
+// meilleur autre (leader), mais `rival_player_id` permet de choisir précisément
+// qui affiche — la liste des candidats (rivalsDisponibles) est renvoyée à
+// chaque appel pour peupler un sélecteur côté client. lap_traces est fermée par
+// RLS : on ne relaie ici que le strict nécessaire au replay (d/t/v) — jamais
+// thr/brk/str, qui révéleraient le pilotage fin d'un autre joueur. Réservé aux
+// connectés (même politique que /api/coach) ; un joueur sans trace peut
+// regarder le fantôme du leader seul.
 
 type ReplayLap = {
   time_ms: number;
@@ -22,10 +25,17 @@ type ReplayLap = {
 };
 
 type LapAvecTrace = {
-  id:      string;
-  time_ms: number;
-  players: { pseudo: string | null } | null;
+  id:        string;
+  time_ms:   number;
+  player_id: string;
+  players:      { pseudo: string | null } | null;
   lap_traces: { samples: unknown } | { samples: unknown }[] | null;
+};
+
+type RivalDisponible = {
+  player_id: string;
+  pseudo:    string | null;
+  time_ms:   number;
 };
 
 /** Réduit une ligne lap_times+trace au strict nécessaire du replay, ou null. */
@@ -70,31 +80,42 @@ export async function GET(request: NextRequest) {
       .from('players').select('id').eq('user_id', user.id).single();
     if (!player) return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
 
-    // Mon meilleur tour tracé + le meilleur tour tracé d'un autre joueur, sur la
-    // config exacte. La jointure interne écarte les tours sans trace (même
+    const rivalPlayerId = params.get('rival_player_id');
+
+    // Mon meilleur tour tracé + tous les AUTRES tours tracés de la config (pour
+    // choisir le rival). La jointure interne écarte les tours sans trace (même
     // pattern que GET /api/traces).
     const selectAvecTrace = () => supabaseAdmin
       .from('lap_times')
-      .select('id, time_ms, players ( pseudo ), lap_traces!inner(samples)');
+      .select('id, time_ms, player_id, players ( pseudo ), lap_traces!inner(samples)');
     const configEq = (q: ReturnType<typeof selectAvecTrace>) => q
       .eq('track_id',    trackId)
       .eq('car_ordinal', carOrdinal)
       .eq('car_class',   carClass)
       .eq('drivetrain',  drivetrain)
-      .order('time_ms', { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .order('time_ms', { ascending: true });
 
-    const [moiRes, rivalRes] = await Promise.all([
-      configEq(selectAvecTrace().eq('player_id', player.id)),
-      configEq(selectAvecTrace().neq('player_id', player.id)),
+    const [moiRes, autresRes] = await Promise.all([
+      configEq(selectAvecTrace().eq('player_id', player.id)).limit(1).maybeSingle(),
+      configEq(selectAvecTrace().neq('player_id', player.id)).limit(50),
     ]);
 
+    const autres = (autresRes.data ?? []) as LapAvecTrace[];
+    // Choix explicite s'il figure parmi les candidats tracés, sinon le meilleur
+    // autre par défaut (déjà trié par time_ms croissant).
+    const choisi = (rivalPlayerId && autres.find(l => l.player_id === rivalPlayerId)) || autres[0] || null;
+
+    const rivalsDisponibles: RivalDisponible[] = autres.map(l => ({
+      player_id: l.player_id,
+      pseudo:    l.players?.pseudo ?? null,
+      time_ms:   l.time_ms,
+    }));
+
     const moi   = versReplayLap(moiRes.data as LapAvecTrace | null);
-    const rival = versReplayLap(rivalRes.data as LapAvecTrace | null);
+    const rival = versReplayLap(choisi);
     if (!moi && !rival) return new NextResponse(null, { status: 204 });
 
-    return NextResponse.json({ moi, rival }, { status: 200 });
+    return NextResponse.json({ moi, rival, rivalsDisponibles }, { status: 200 });
   } catch {
     return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
   }
