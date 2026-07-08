@@ -183,9 +183,10 @@ export default function CircuitMap({
   const [traces, setTraces]               = useState<{ moi: ReplayLap | null; rival: ReplayLap | null; rivalsDisponibles?: RivalDisponible[] } | null>(null);
   const [tracesLoading, setTracesLoading] = useState(false);
   const [tracesAuth, setTracesAuth]       = useState(true);
-  // Rival choisi explicitement dans le sélecteur (sinon : meilleur autre, comportement
-  // par défaut de l'API). Remis à zéro à chaque changement de config — la liste de
-  // candidats tracés change avec la config.
+  // Rival choisi explicitement dans le sélecteur : soit l'id d'un joueur, soit
+  // un fantôme virtuel encodé `ghost:<clé>` (ex. `ghost:optimal_config`). Sinon
+  // (null) : meilleur autre, comportement par défaut de l'API. Remis à zéro à
+  // chaque changement de config — la liste de candidats tracés change avec elle.
   const [selectedRivalId, setSelectedRivalId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -216,7 +217,8 @@ export default function CircuitMap({
           car_class:   configActive.carClass,
           drivetrain:  configActive.drivetrain,
         });
-        if (selectedRivalId) qs.set('rival_player_id', selectedRivalId);
+        if (selectedRivalId?.startsWith('ghost:')) qs.set('ghost', selectedRivalId.slice('ghost:'.length));
+        else if (selectedRivalId) qs.set('rival_player_id', selectedRivalId);
         const res = await fetch(`/api/replay?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
         if (res.status === 204 || !res.ok) { if (!annule) setTraces(null); return; }
         const json = await res.json();
@@ -370,20 +372,25 @@ export default function CircuitMap({
             ))}
           </select>
         )}
-        {rivalsDisponibles.length > 1 && (
+        {rivalsDisponibles.length >= 1 && (
           <select
             value={selectedRivalId ?? ''}
             onChange={e => setSelectedRivalId(e.target.value || null)}
             aria-label="Rival affiché sur le replay et les écarts par virage"
-            title="Choisis quel pilote tracé comparer (par défaut : le meilleur autre)"
+            title="Choisis qui comparer : un pilote tracé, ou un fantôme recollé (meilleurs secteurs enchaînés)"
             className="px-3 py-1.5 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white max-w-full"
           >
             <option value="">🏆 Meilleur autre (auto)</option>
-            {rivalsDisponibles.map(r => (
-              <option key={r.player_id} value={r.player_id}>
-                {r.pseudo ?? 'Inconnu'} · {formatTime(r.time_ms)}
-              </option>
-            ))}
+            <option value="ghost:optimal_config">
+              🧮 Fantôme optimal — tous pilotes
+            </option>
+            <optgroup label="Pilotes tracés">
+              {rivalsDisponibles.map(r => (
+                <option key={r.player_id} value={r.player_id}>
+                  {r.pseudo ?? 'Inconnu'} · {formatTime(r.time_ms)}
+                </option>
+              ))}
+            </optgroup>
           </select>
         )}
       </div>

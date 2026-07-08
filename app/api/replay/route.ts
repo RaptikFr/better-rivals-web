@@ -3,18 +3,28 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import type { TraceSamples } from '@/lib/lap-validation';
+import { nbSecteurs } from '@/lib/lap-validation';
+import { construireFantomeOptimal, type CandidatFantome } from '@/lib/optimalGhost';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/replay — données du replay 2D d'une config (carte du circuit) :
-// MA trace + celle d'un AUTRE pilote tracé (le « rival »). Par défaut le
-// meilleur autre (leader), mais `rival_player_id` permet de choisir précisément
-// qui affiche — la liste des candidats (rivalsDisponibles) est renvoyée à
-// chaque appel pour peupler un sélecteur côté client. lap_traces est fermée par
-// RLS : on ne relaie ici que le strict nécessaire au replay (d/t/v) — jamais
-// thr/brk/str, qui révéleraient le pilotage fin d'un autre joueur. Réservé aux
-// connectés (même politique que /api/coach) ; un joueur sans trace peut
-// regarder le fantôme du leader seul.
+// MA trace + celle d'un AUTRE pilote tracé (le « rival »), OU un fantôme
+// « optimal recollé » (?ghost=optimal_config) qui garde, secteur par secteur,
+// le tour tracé le plus rapide PARMI TOUS LES JOUEURS de la config et les
+// recolle bout à bout (cf. lib/optimalGhost.ts). ⚠️ lap_traces ne garde qu'UNE
+// trace par joueur et par config (écrasée à chaque record) : ce fantôme ne
+// recolle donc que des tours ENCORE TRACÉS aujourd'hui, et peut être un peu
+// plus lent que le « tour optimal » chiffré (theoreticalFromBest) si le
+// meilleur secteur absolu appartient à un tour depuis remplacé.
+//
+// Par défaut (sans ghost) : le meilleur autre (leader), mais `rival_player_id`
+// permet de choisir précisément qui affiche — la liste des candidats
+// (rivalsDisponibles) est renvoyée à chaque appel pour peupler un sélecteur
+// côté client. lap_traces est fermée par RLS : on ne relaie ici que le strict
+// nécessaire au replay (d/t/v) — jamais thr/brk/str, qui révéleraient le
+// pilotage fin d'un autre joueur. Réservé aux connectés (même politique que
+// /api/coach) ; un joueur sans trace peut regarder le fantôme du leader seul.
 
 type ReplayLap = {
   time_ms: number;
@@ -81,6 +91,7 @@ export async function GET(request: NextRequest) {
     if (!player) return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
 
     const rivalPlayerId = params.get('rival_player_id');
+    const ghost          = params.get('ghost'); // 'optimal_config' pour l'instant
 
     // Mon meilleur tour tracé + tous les AUTRES tours tracés de la config (pour
     // choisir le rival). La jointure interne écarte les tours sans trace (même
@@ -111,8 +122,24 @@ export async function GET(request: NextRequest) {
       time_ms:   l.time_ms,
     }));
 
-    const moi   = versReplayLap(moiRes.data as LapAvecTrace | null);
-    const rival = versReplayLap(choisi);
+    const moi = versReplayLap(moiRes.data as LapAvecTrace | null);
+
+    let rival: ReplayLap | null;
+    if (ghost === 'optimal_config') {
+      const { data: track } = await supabaseAdmin.from('tracks').select('length_km').eq('id', trackId).single();
+      const n = nbSecteurs(track?.length_km);
+      const candidats: CandidatFantome[] = [moiRes.data as LapAvecTrace | null, ...autres]
+        .map(l => versReplayLap(l as LapAvecTrace | null))
+        .filter((l): l is ReplayLap => l !== null)
+        .map(l => ({ pseudo: l.pseudo, timeMs: l.time_ms, d: l.d, t: l.t, v: l.v }));
+      const fantome = n >= 2 ? construireFantomeOptimal(candidats, n) : null;
+      rival = fantome
+        ? { time_ms: fantome.timeMs, pseudo: 'Optimal (config)', d: fantome.d, t: fantome.t, v: fantome.v }
+        : null;
+    } else {
+      rival = versReplayLap(choisi);
+    }
+
     if (!moi && !rival) return new NextResponse(null, { status: 204 });
 
     return NextResponse.json({ moi, rival, rivalsDisponibles }, { status: 200 });

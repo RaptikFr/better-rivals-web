@@ -84,8 +84,9 @@ export default function CircuitReplay({
   /** Nœud DOM sous la carte où téléporter la barre de contrôle (sinon elle
       reste superposée en bas de carte — et peut chevaucher le tracé). */
   barreSlot?: HTMLElement | null;
-  /** Rival explicitement choisi (sélecteur de la carte) ; sinon le meilleur
-      autre pilote tracé de la config (comportement par défaut de l'API). */
+  /** Rival explicitement choisi (sélecteur de la carte) : id d'un joueur, ou un
+      fantôme virtuel encodé `ghost:<clé>` (ex. `ghost:optimal_config`). Sinon
+      (null) : meilleur autre pilote tracé de la config (défaut de l'API). */
   rivalPlayerId?: string | null;
 }) {
   const { player } = usePlayer();
@@ -228,7 +229,8 @@ export default function CircuitReplay({
         car_class:   config.carClass,
         drivetrain:  config.drivetrain,
       });
-      if (rivalPlayerId) qs.set('rival_player_id', rivalPlayerId);
+      if (rivalPlayerId?.startsWith('ghost:')) qs.set('ghost', rivalPlayerId.slice('ghost:'.length));
+      else if (rivalPlayerId) qs.set('rival_player_id', rivalPlayerId);
       const res = await fetch(`/api/replay?${qs}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
