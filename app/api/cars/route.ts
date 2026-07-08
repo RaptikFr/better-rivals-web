@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,9 +41,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Token manquant.' }, { status: 401 });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) {
+    const user = await utilisateurDepuisAuthHeader(authHeader);
+    if (!user) {
       return NextResponse.json({ error: 'Token invalide ou expiré. Reconnecte-toi.' }, { status: 401 });
     }
 

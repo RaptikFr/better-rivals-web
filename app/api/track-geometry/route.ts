@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import type { Json } from '@/types/database.types';
 
@@ -22,9 +23,8 @@ async function authUser(request: NextRequest) {
   if (!authHeader?.startsWith('Bearer ')) {
     return { error: NextResponse.json({ error: 'Token manquant.' }, { status: 401 }) };
   }
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) {
+  const user = await utilisateurDepuisAuthHeader(authHeader);
+  if (!user) {
     return { error: NextResponse.json({ error: 'Token invalide ou expiré.' }, { status: 401 }) };
   }
   return { user };

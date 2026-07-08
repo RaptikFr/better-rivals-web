@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { objectifConfigKey, type ObjectifView } from '@/lib/objectifs';
 
@@ -14,9 +15,8 @@ async function resoudreJoueur(
   if (!authHeader?.startsWith('Bearer ')) {
     return { error: NextResponse.json({ error: 'Non autorisé.' }, { status: 401 }) };
   }
-  const token = authHeader.slice(7);
-  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (authError || !user) {
+  const user = await utilisateurDepuisAuthHeader(authHeader);
+  if (!user) {
     return { error: NextResponse.json({ error: 'Session invalide.' }, { status: 401 }) };
   }
   const { data: player } = await supabaseAdmin

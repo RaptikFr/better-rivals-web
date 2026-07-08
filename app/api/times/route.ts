@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { siteUrl } from '@/lib/site';
 import { annoncerNouveauLeaderDiscord } from '@/lib/discord';
@@ -460,9 +461,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token manquant.' }, { status: 401 });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) {
+    const user = await utilisateurDepuisAuthHeader(authHeader);
+    if (!user) {
       return NextResponse.json({ error: 'Token invalide ou expiré. Reconnecte-toi.' }, { status: 401 });
     }
 

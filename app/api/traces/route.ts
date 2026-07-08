@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { traceValide, nbSecteurs, secteursDepuisTrace, secteursValides, secteursPlausibles } from '@/lib/lap-validation';
 import { enregistrerMeilleursSecteurs } from '@/lib/best-sectors';
@@ -21,9 +22,8 @@ export async function POST(request: NextRequest) {
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Token manquant.' }, { status: 401 });
     }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) {
+    const user = await utilisateurDepuisAuthHeader(authHeader);
+    if (!user) {
       return NextResponse.json({ error: 'Token invalide ou expiré.' }, { status: 401 });
     }
 
@@ -75,24 +75,28 @@ export async function POST(request: NextRequest) {
     // quel que soit le tracé), donc les secteurs envoyés par le relais sont
     // faussés. La trace, elle, donne la distance réelle du tour → découpe juste.
     // Best-effort : un échec ici ne remet pas en cause la trace déjà stockée.
-    try {
-      const { data: track } = await supabaseAdmin
-        .from('tracks').select('length_km').eq('id', lap.track_id).maybeSingle();
-      const n = nbSecteurs(track?.length_km);
-      const secteurs = secteursDepuisTrace(trace, n, lap.time_ms);
-      // Garde-fous : la somme doit retomber sur le temps du tour, et aucun secteur
-      // ne doit être plus rapide que la physique (sinon on n'écrit rien plutôt que
-      // d'afficher un tour théorique incohérent ou de polluer best_sectors).
-      if (secteurs && secteursValides(secteurs.map(ms => ms / 1000), lap.time_ms)
-          && secteursPlausibles(secteurs, track?.length_km)) {
-        await supabaseAdmin.from('lap_times').update({ sectors_ms: secteurs }).eq('id', lap.id);
-        // Alimente aussi le tour optimal (meilleur secteur par index, par config).
-        await enregistrerMeilleursSecteurs({
-          trackId: lap.track_id, carOrdinal: lap.car_ordinal, carClass: lap.car_class,
-          drivetrain: lap.drivetrain, playerId: player.id, sectorsMs: secteurs,
-        });
-      }
-    } catch { /* secteurs = bonus, jamais bloquant */ }
+    // Différé APRÈS la réponse (after) : le relais n'attend pas ces 3 requêtes,
+    // il récupère son 201 dès que la trace est en base.
+    after(async () => {
+      try {
+        const { data: track } = await supabaseAdmin
+          .from('tracks').select('length_km').eq('id', lap.track_id).maybeSingle();
+        const n = nbSecteurs(track?.length_km);
+        const secteurs = secteursDepuisTrace(trace, n, lap.time_ms);
+        // Garde-fous : la somme doit retomber sur le temps du tour, et aucun secteur
+        // ne doit être plus rapide que la physique (sinon on n'écrit rien plutôt que
+        // d'afficher un tour théorique incohérent ou de polluer best_sectors).
+        if (secteurs && secteursValides(secteurs.map(ms => ms / 1000), lap.time_ms)
+            && secteursPlausibles(secteurs, track?.length_km)) {
+          await supabaseAdmin.from('lap_times').update({ sectors_ms: secteurs }).eq('id', lap.id);
+          // Alimente aussi le tour optimal (meilleur secteur par index, par config).
+          await enregistrerMeilleursSecteurs({
+            trackId: lap.track_id, carOrdinal: lap.car_ordinal, carClass: lap.car_class,
+            drivetrain: lap.drivetrain, playerId: player.id, sectorsMs: secteurs,
+          });
+        }
+      } catch { /* secteurs = bonus, jamais bloquant */ }
+    });
 
     return NextResponse.json({ success: true, point_count: trace.d.length }, { status: 201 });
   } catch {
@@ -116,9 +120,8 @@ export async function GET(request: NextRequest) {
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Token manquant.' }, { status: 401 });
     }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) {
+    const user = await utilisateurDepuisAuthHeader(authHeader);
+    if (!user) {
       return NextResponse.json({ error: 'Token invalide ou expiré.' }, { status: 401 });
     }
 

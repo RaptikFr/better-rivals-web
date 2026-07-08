@@ -171,36 +171,39 @@ export default function ClassementsClient({
     setCarSearch('');
     setCurrentPage(1);
 
-    const { data, error } = await fetchAllRows<LapTime>((from, to) => {
-      let query = supabase
-        .from('lap_times')
-        .select(`
-          id, time_ms, previous_time_ms, sectors_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id, share_code, setup_author,
-          players ( pseudo, discord_tag:discord_tag_public ),
-          cars ( manufacturer, name, year ),
-          tracks ( name, length_km, type, is_sprint )
-        `)
-        .eq('track_id', selectedTrackId);
-      if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
-      if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
-      return query
-        .order('time_ms', { ascending: true })
-        .order('id')
-        .range(from, to);
-    });
-
+    // Temps + meilleurs secteurs chargés EN PARALLÈLE : requêtes indépendantes,
+    // les enchaîner doublait l'attente à chaque changement de filtre.
     // Meilleurs secteurs (tour optimal) du circuit — best-effort. Per-joueur :
     // potentiellement > 1000 lignes (pilotes × secteurs) → fetchAllRows pour ne
     // rien tronquer. Si ça échoue, la bannière retombe sur le tour théorique.
-    const { data: bsData } = await fetchAllRows<BestSectorRaw>((from, to) => {
-      let q = supabase
-        .from('best_sectors')
-        .select('player_id, car_ordinal, car_class, drivetrain, sector_index, best_ms, players ( pseudo )')
-        .eq('track_id', selectedTrackId);
-      if (selectedClass !== 'Toutes')    q = q.eq('car_class', selectedClass);
-      if (selectedDrivetrain !== 'Tous') q = q.eq('drivetrain', selectedDrivetrain);
-      return q.order('player_id').order('sector_index').range(from, to);
-    });
+    const [{ data, error }, { data: bsData }] = await Promise.all([
+      fetchAllRows<LapTime>((from, to) => {
+        let query = supabase
+          .from('lap_times')
+          .select(`
+            id, time_ms, previous_time_ms, sectors_ms, car_class, car_pi, drivetrain, car_ordinal, player_id, track_id, share_code, setup_author,
+            players ( pseudo, discord_tag:discord_tag_public ),
+            cars ( manufacturer, name, year ),
+            tracks ( name, length_km, type, is_sprint )
+          `)
+          .eq('track_id', selectedTrackId);
+        if (selectedClass !== 'Toutes')    query = query.eq('car_class', selectedClass);
+        if (selectedDrivetrain !== 'Tous') query = query.eq('drivetrain', selectedDrivetrain);
+        return query
+          .order('time_ms', { ascending: true })
+          .order('id')
+          .range(from, to);
+      }),
+      fetchAllRows<BestSectorRaw>((from, to) => {
+        let q = supabase
+          .from('best_sectors')
+          .select('player_id, car_ordinal, car_class, drivetrain, sector_index, best_ms, players ( pseudo )')
+          .eq('track_id', selectedTrackId);
+        if (selectedClass !== 'Toutes')    q = q.eq('car_class', selectedClass);
+        if (selectedDrivetrain !== 'Tous') q = q.eq('drivetrain', selectedDrivetrain);
+        return q.order('player_id').order('sector_index').range(from, to);
+      }),
+    ]);
     setBestSectors(bsData);
 
     if (error) {
