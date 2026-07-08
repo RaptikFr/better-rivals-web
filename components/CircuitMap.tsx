@@ -16,6 +16,7 @@ import {
   decouperSecteurs,
   pointADistance,
   typeVirage,
+  interpoler,
   type CarteCircuit,
   type PointCarte,
   type Virage,
@@ -46,6 +47,26 @@ interface SecteurInfo {
   mienMs:     number | null;
   /** mien − meilleur (ms), null sans donnée personnelle ou de référence. */
   deltaMs:    number | null;
+}
+
+// Trace réduite (GET /api/replay) — mêmes données que le replay 2D, réutilisées
+// ici pour chronométrer chaque VIRAGE (fenêtre exacte distDebutM→distFinM), au
+// lieu des tranches égales des secteurs qui peuvent chevaucher plusieurs virages.
+type ReplayLap = {
+  time_ms: number;
+  pseudo:  string | null;
+  d: number[];
+  t: number[];
+  v: number[];
+};
+
+interface PerteVirage {
+  virage:      Virage;
+  moiS:        number;
+  rivalS:      number;
+  rivalPseudo: string | null;
+  /** moi − rival (s), positif = je perds du temps dans ce virage. */
+  deltaS:      number;
 }
 
 // Rampe séquentielle « temps perdu » (famille rose), 4 pas, une teinte par mode,
@@ -145,6 +166,74 @@ export default function CircuitMap({
     }
     return configsDispo[0] ?? null;
   }, [selectedKey, configsDispo, player, rowsParConfig]);
+
+  // Traces (moi + rival) de la config affichée, pour chronométrer les virages —
+  // best-effort : réservé aux connectés (lap_traces fermée par RLS), silencieux sinon.
+  const [traces, setTraces]               = useState<{ moi: ReplayLap | null; rival: ReplayLap | null } | null>(null);
+  const [tracesLoading, setTracesLoading] = useState(false);
+  const [tracesAuth, setTracesAuth]       = useState(true);
+
+  useEffect(() => {
+    if (!configActive) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset synchrone quand aucune config n'est active (pas de fetch à lancer)
+      setTraces(null);
+      return;
+    }
+    let annule = false;
+    (async () => {
+      setTracesLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          if (!annule) { setTraces(null); setTracesAuth(false); setTracesLoading(false); }
+          return;
+        }
+        if (!annule) setTracesAuth(true);
+        const qs = new URLSearchParams({
+          track_id:    String(trackId),
+          car_ordinal: String(configActive.carOrdinal),
+          car_class:   configActive.carClass,
+          drivetrain:  configActive.drivetrain,
+        });
+        const res = await fetch(`/api/replay?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.status === 204 || !res.ok) { if (!annule) setTraces(null); return; }
+        const json = await res.json();
+        if (!annule) setTraces(json);
+      } catch {
+        if (!annule) setTraces(null);
+      } finally {
+        if (!annule) setTracesLoading(false);
+      }
+    })();
+    return () => { annule = true; };
+  }, [configActive, trackId]);
+
+  // Durée dans chaque virage (fenêtre distDebutM→distFinM interpolée sur la
+  // trace, indépendante du découpage en secteurs) — nécessite les deux traces.
+  const perVirage = useMemo((): PerteVirage[] | null => {
+    if (!traces?.moi || !traces?.rival || virages.length === 0 || !(carte.longueurM > 0)) return null;
+    const prep = (lap: ReplayLap) => {
+      if (lap.d.length < 2 || lap.t.length !== lap.d.length) return null;
+      const dTotal = lap.d[lap.d.length - 1];
+      if (!(dTotal > 0)) return null;
+      return { dNorm: lap.d.map(x => x / dTotal), t: lap.t };
+    };
+    const moi = prep(traces.moi), rival = prep(traces.rival);
+    if (!moi || !rival) return null;
+    return virages.map(v => {
+      const f0 = v.distDebutM / carte.longueurM;
+      const f1 = v.distFinM   / carte.longueurM;
+      const moiS   = interpoler(moi.dNorm,   moi.t,   f1) - interpoler(moi.dNorm,   moi.t,   f0);
+      const rivalS = interpoler(rival.dNorm, rival.t, f1) - interpoler(rival.dNorm, rival.t, f0);
+      return { virage: v, moiS, rivalS, rivalPseudo: traces.rival!.pseudo, deltaS: moiS - rivalS };
+    });
+  }, [traces, virages, carte.longueurM]);
+
+  const piresVirages = useMemo(
+    () => (perVirage ?? []).filter(p => p.deltaS > 0).sort((a, b) => b.deltaS - a.deltaS),
+    [perVirage],
+  );
 
   // Un SecteurInfo par secteur : meilleur de la config (+ détenteur) et mon
   // temps. ⚠️ `sector_index` est 1-BASED en base (RPC enregistrer_meilleurs_
@@ -450,6 +539,77 @@ export default function CircuitMap({
                 Sans donnée
               </span>
             </div>
+          )}
+
+          {/* Perte par virage : fenêtre exacte du virage (trace), pas la tranche du
+              secteur qui peut en chevaucher plusieurs (ex. « virages 5–6 »). */}
+          {virages.length > 0 && (
+            <details open className="text-sm">
+              <summary className="cursor-pointer text-neutral-500 hover:text-pink-400 transition-colors text-xs font-semibold">
+                🌀 Perte par virage
+              </summary>
+              <div className="mt-2">
+                {!tracesAuth ? (
+                  <p className="text-xs text-neutral-500">
+                    Connecte-toi pour comparer virage par virage avec le tour tracé le plus rapide de cette config.
+                  </p>
+                ) : tracesLoading ? (
+                  <p className="text-xs text-neutral-500 animate-pulse">Chargement des tracés…</p>
+                ) : !perVirage ? (
+                  <p className="text-xs text-neutral-500">
+                    {traces?.moi || traces?.rival
+                      ? "Il manque l'une des deux traces (toi ou le leader) pour calculer la perte par virage."
+                      : 'Pas encore de tour tracé sur cette config — pose un temps avec le relais pour débloquer ce calcul.'}
+                  </p>
+                ) : (
+                  <>
+                    {piresVirages.length > 0 && (
+                      <p className="text-neutral-700 dark:text-neutral-300 mb-2">
+                        🔻 Le plus gros écart :{' '}
+                        {piresVirages.slice(0, 3).map((p, j) => (
+                          <span key={p.virage.numero}>
+                            {j > 0 && (j === Math.min(piresVirages.length, 3) - 1 ? ' puis ' : ', ')}
+                            <strong>virage {p.virage.numero}</strong> ({fmtDelta(Math.round(p.deltaS * 1000))})
+                          </span>
+                        ))}.
+                      </p>
+                    )}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr className="text-left text-[10px] uppercase tracking-wider text-neutral-500 border-b border-neutral-200 dark:border-neutral-800">
+                            <th className="px-2 py-1.5 font-bold">Virage</th>
+                            <th className="px-2 py-1.5 font-bold">Type</th>
+                            <th className="px-2 py-1.5 font-bold">Toi</th>
+                            <th className="px-2 py-1.5 font-bold">{perVirage[0]?.rivalPseudo ?? 'Leader'}</th>
+                            <th className="px-2 py-1.5 font-bold">Écart</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {perVirage.map(p => (
+                            <tr key={p.virage.numero} className="border-b border-neutral-200/60 dark:border-neutral-800/60 last:border-0">
+                              <td className="px-2 py-1.5 font-bold text-neutral-500">V{p.virage.numero}</td>
+                              <td className="px-2 py-1.5 text-neutral-600 dark:text-neutral-400">
+                                {p.virage.direction} · {typeVirage(p.virage)}
+                              </td>
+                              <td className="px-2 py-1.5 font-mono">{p.moiS.toFixed(2).replace('.', decSep)} s</td>
+                              <td className="px-2 py-1.5 font-mono">{p.rivalS.toFixed(2).replace('.', decSep)} s</td>
+                              <td className={`px-2 py-1.5 font-mono font-bold ${
+                                p.deltaS > 0 ? 'text-pink-500' : p.deltaS < 0 ? 'text-violet-500' : ''
+                              }`}>
+                                {p.deltaS === 0
+                                  ? `±0${decSep}00 s`
+                                  : `${p.deltaS > 0 ? '+' : '−'}${Math.abs(p.deltaS).toFixed(2).replace('.', decSep)} s`}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            </details>
           )}
 
           {/* Détail par secteur en tableau (lisible sans les couleurs). */}

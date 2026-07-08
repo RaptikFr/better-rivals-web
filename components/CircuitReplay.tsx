@@ -18,7 +18,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { usePlayer } from '@/hooks/usePlayer';
 import { usePreferences } from '@/hooks/usePreferences';
-import { pointADistance, type CarteCircuit } from '@/lib/circuitGeometry';
+import { pointADistance, interpoler, type CarteCircuit } from '@/lib/circuitGeometry';
 import type { ConfigCarte } from '@/components/CircuitMap';
 
 interface ReplayLap {
@@ -50,22 +50,6 @@ const DOT_RIVAL = '#f59e0b';
 const ECART_RETARD = '#e11d48';
 const ECART_AVANCE = '#8b5cf6';
 
-/** Interpolation linéaire de ys en x sur la grille croissante xs (bornée). */
-function interp(xs: number[], ys: number[], x: number): number {
-  const n = xs.length;
-  if (n === 0) return 0;
-  if (x <= xs[0]) return ys[0];
-  if (x >= xs[n - 1]) return ys[n - 1];
-  let lo = 0, hi = n - 1;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (xs[mid] < x) lo = mid + 1; else hi = mid;
-  }
-  const a = xs[lo - 1], b = xs[lo];
-  const t = b === a ? 0 : (x - a) / (b - a);
-  return ys[lo - 1] + t * (ys[lo] - ys[lo - 1]);
-}
-
 function preparer(lap: ReplayLap | null): TracePrete | null {
   if (!lap || lap.d.length < 2 || lap.t.length !== lap.d.length) return null;
   const dTotal = lap.d[lap.d.length - 1];
@@ -82,7 +66,7 @@ function preparer(lap: ReplayLap | null): TracePrete | null {
 
 /** Fraction du tour accomplie (0..1) à l'instant tau (s). */
 function fractionA(trace: TracePrete, tau: number): number {
-  return Math.max(0, Math.min(1, interp(trace.t, trace.dNorm, tau)));
+  return Math.max(0, Math.min(1, interpoler(trace.t, trace.dNorm, tau)));
 }
 
 export default function CircuitReplay({
@@ -143,7 +127,7 @@ export default function CircuitReplay({
       if (vitRef.current) {
         vitRef.current.textContent = tau >= trace.tLast
           ? '· 🏁'
-          : trace.v.length > 0 ? `· ${Math.round(interp(trace.t, trace.v, tau))} km/h` : '';
+          : trace.v.length > 0 ? `· ${Math.round(interpoler(trace.t, trace.v, tau))} km/h` : '';
       }
     }
 
@@ -158,9 +142,9 @@ export default function CircuitReplay({
       if (fMoi >= 1 && fRival >= 1) {
         ecartS = (d.moi.time_ms - d.rival.time_ms) / 1000; // les deux ont fini : écart final
       } else if (fMoi >= fRival) {
-        ecartS = -Math.max(0, interp(d.rival.dNorm, d.rival.t, fMoi) - tau);
+        ecartS = -Math.max(0, interpoler(d.rival.dNorm, d.rival.t, fMoi) - tau);
       } else {
-        ecartS = Math.max(0, interp(d.moi.dNorm, d.moi.t, fRival) - tau);
+        ecartS = Math.max(0, interpoler(d.moi.dNorm, d.moi.t, fRival) - tau);
       }
       const signe = ecartS > 0 ? '+' : ecartS < 0 ? '−' : '±';
       ecartRef.current.textContent = `${signe}${Math.abs(ecartS).toFixed(1).replace('.', decSep)} s`;

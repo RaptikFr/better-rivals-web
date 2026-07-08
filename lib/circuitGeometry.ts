@@ -108,6 +108,22 @@ export function construireCarte(
   };
 }
 
+/** Interpolation linéaire de `ys` en `x` sur la grille croissante `xs` (bornée aux extrémités). */
+export function interpoler(xs: number[], ys: number[], x: number): number {
+  const n = xs.length;
+  if (n === 0) return 0;
+  if (x <= xs[0]) return ys[0];
+  if (x >= xs[n - 1]) return ys[n - 1];
+  let lo = 0, hi = n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (xs[mid] < x) lo = mid + 1; else hi = mid;
+  }
+  const a = xs[lo - 1], b = xs[lo];
+  const t = b === a ? 0 : (x - a) / (b - a);
+  return ys[lo - 1] + t * (ys[lo] - ys[lo - 1]);
+}
+
 /** Position (x, z) interpolée à `dist` mètres du départ (bornée au tracé). */
 export function pointADistance(points: PointCarte[], dist: number): { x: number; z: number } {
   const d = Math.max(0, Math.min(dist, points[points.length - 1].dist));
