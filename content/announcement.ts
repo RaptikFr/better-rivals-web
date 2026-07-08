@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v321",
+  id: "2026-07-relais-v330",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.2.3) : fix du copilote de réglage — le conseil de balance de frein pouvait recommander le mauvais sens (il ne comparait pas toujours l'essieu qui bloque vraiment le plus). Inclut aussi toutes les nouveautés v3.2.0/v3.1.x (🧭 auto-détection du circuit, fix capture des tracés).",
+  message: "Nouvelle version du relais (v3.3.0) : le copilote de réglage signale maintenant un essieu de pneus en surchauffe ou trop froid, et un nouveau panneau « Régularité » affiche l'écart-type de vos temps au tour (100 % local). Inclut aussi les nouveautés v3.2.4/v3.2.5 (renouvellement de token centralisé, le relais suit votre skin du site) et v3.2.0/v3.1.x (🧭 auto-détection du circuit, fix capture des tracés).",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
