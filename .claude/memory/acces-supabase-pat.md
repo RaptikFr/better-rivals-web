@@ -11,6 +11,6 @@ Le proprio **garde** un PAT Supabase (token compte, créé 22/06, nommé `claude
 
 **⚠️ curl (Git Bash) échoue en TLS (exit 35)** → utiliser **PowerShell `Invoke-RestMethod`** (pile TLS Windows). Pattern : lire le token depuis `.env.local`, définir une fonction `q($sql)` qui POST `@{query=$sql}|ConvertTo-Json`. Dans un here-string PowerShell `@' '@` les apostrophes SQL sont littérales — NE PAS les doubler.
 
-**⚠️ 08/07 : le PAT renvoie 401 (expiré/révoqué)** — demander au proprio d'en régénérer un (Dashboard > Account > Access Tokens) avant toute opération DDL. Migration en attente d'application : `supabase/migrations/index_recorded_at.sql` (index `lap_times(recorded_at DESC)` pour le flux « Derniers chronos »).
+**08/07 : PAT renouvelé par le proprio** (l'ancien du 22/06 avait expiré → 401 ; en cas de 401 futur, lui demander d'en régénérer un : Dashboard > Account > Access Tokens). Migration `index_recorded_at.sql` appliquée et vérifiée le 08/07 avec le nouveau PAT.
 
 PAT = compte entier (pas scopé projet) → sensible. `VACUUM` peut échouer (transaction) ; `ANALYZE` OK. Migrations : créer aussi le fichier `.sql` dans `supabase/migrations/` (journal versionné) en plus d'appliquer. Cf. [[verif-migrations-sans-pat]] (méthode sans PAT, toujours valable pour de simples sondages).
