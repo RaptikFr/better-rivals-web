@@ -17,7 +17,7 @@ const announcement = {
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.2.1) : fix du copilote de réglage — le conseil de balance de frein pouvait recommander le mauvais sens (il ne comparait pas toujours l'essieu qui bloque vraiment le plus). Inclut aussi toutes les nouveautés v3.2.0/v3.1.x (🧭 auto-détection du circuit, fix capture des tracés).",
+  message: "Nouvelle version du relais (v3.2.2) : fix du copilote de réglage — le conseil de balance de frein pouvait recommander le mauvais sens (il ne comparait pas toujours l'essieu qui bloque vraiment le plus). Inclut aussi toutes les nouveautés v3.2.0/v3.1.x (🧭 auto-détection du circuit, fix capture des tracés).",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
