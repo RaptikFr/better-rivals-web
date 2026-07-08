@@ -10,13 +10,18 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/replay — données du replay 2D d'une config (carte du circuit) :
 // MA trace + celle d'un AUTRE pilote tracé (le « rival »), OU un fantôme
-// « optimal recollé » (?ghost=optimal_config) qui garde, secteur par secteur,
-// le tour tracé le plus rapide PARMI TOUS LES JOUEURS de la config et les
-// recolle bout à bout (cf. lib/optimalGhost.ts). ⚠️ lap_traces ne garde qu'UNE
-// trace par joueur et par config (écrasée à chaque record) : ce fantôme ne
-// recolle donc que des tours ENCORE TRACÉS aujourd'hui, et peut être un peu
-// plus lent que le « tour optimal » chiffré (theoreticalFromBest) si le
-// meilleur secteur absolu appartient à un tour depuis remplacé.
+// « optimal recollé » qui garde, secteur par secteur, le tour tracé le plus
+// rapide et les recolle bout à bout (cf. lib/optimalGhost.ts) :
+//   ?ghost=optimal_config — parmi TOUS LES JOUEURS de la config (lap_traces,
+//     une trace courante par joueur).
+//   ?ghost=optimal_player — parmi les PB SUCCESSIFS du joueur connecté sur
+//     cette config (pb_trace_history, archive append-only — cf. ce fichier de
+//     migration : lap_traces écrase l'ancienne trace à chaque record, donc un
+//     seul PB courant ne suffit pas à « recoller » quoi que ce soit).
+// ⚠️ Dans les deux cas, ne recolle que des tours DONT LA TRACE EXISTE ENCORE :
+// peut être un peu plus lent que le « tour optimal » chiffré
+// (theoreticalFromBest) si le meilleur secteur absolu appartient à un tour
+// dont la trace a été perdue (jamais archivée, ou d'avant cette fonctionnalité).
 //
 // Par défaut (sans ghost) : le meilleur autre (leader), mais `rival_player_id`
 // permet de choisir précisément qui affiche — la liste des candidats
@@ -91,7 +96,7 @@ export async function GET(request: NextRequest) {
     if (!player) return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
 
     const rivalPlayerId = params.get('rival_player_id');
-    const ghost          = params.get('ghost'); // 'optimal_config' pour l'instant
+    const ghost          = params.get('ghost'); // 'optimal_config' | 'optimal_player'
 
     // Mon meilleur tour tracé + tous les AUTRES tours tracés de la config (pour
     // choisir le rival). La jointure interne écarte les tours sans trace (même
@@ -125,16 +130,41 @@ export async function GET(request: NextRequest) {
     const moi = versReplayLap(moiRes.data as LapAvecTrace | null);
 
     let rival: ReplayLap | null;
-    if (ghost === 'optimal_config') {
+    if (ghost === 'optimal_config' || ghost === 'optimal_player') {
       const { data: track } = await supabaseAdmin.from('tracks').select('length_km').eq('id', trackId).single();
       const n = nbSecteurs(track?.length_km);
-      const candidats: CandidatFantome[] = [moiRes.data as LapAvecTrace | null, ...autres]
-        .map(l => versReplayLap(l as LapAvecTrace | null))
-        .filter((l): l is ReplayLap => l !== null)
-        .map(l => ({ pseudo: l.pseudo, timeMs: l.time_ms, d: l.d, t: l.t, v: l.v }));
-      const fantome = n >= 2 ? construireFantomeOptimal(candidats, n) : null;
+
+      let candidats: CandidatFantome[] = [];
+      let label = 'Optimal';
+      if (n >= 2 && ghost === 'optimal_config') {
+        label = 'Optimal (config)';
+        candidats = [moiRes.data as LapAvecTrace | null, ...autres]
+          .map(l => versReplayLap(l as LapAvecTrace | null))
+          .filter((l): l is ReplayLap => l !== null)
+          .map(l => ({ pseudo: l.pseudo, timeMs: l.time_ms, d: l.d, t: l.t, v: l.v }));
+      } else if (n >= 2 && ghost === 'optimal_player') {
+        label = 'Optimal (toi)';
+        const { data: historique } = await supabaseAdmin
+          .from('pb_trace_history')
+          .select('time_ms, samples')
+          .eq('player_id',   player.id)
+          .eq('track_id',    trackId)
+          .eq('car_ordinal', carOrdinal)
+          .eq('car_class',   carClass)
+          .eq('drivetrain',  drivetrain)
+          .limit(200);
+        candidats = (historique ?? [])
+          .map((h): CandidatFantome | null => {
+            const s = h.samples as unknown as TraceSamples;
+            if (!s || !Array.isArray(s.d) || !Array.isArray(s.t) || s.d.length < 2) return null;
+            return { pseudo: 'toi', timeMs: h.time_ms, d: s.d, t: s.t, v: Array.isArray(s.v) ? s.v : [] };
+          })
+          .filter((c): c is CandidatFantome => c !== null);
+      }
+
+      const fantome = candidats.length > 0 ? construireFantomeOptimal(candidats, n) : null;
       rival = fantome
-        ? { time_ms: fantome.timeMs, pseudo: 'Optimal (config)', d: fantome.d, t: fantome.t, v: fantome.v }
+        ? { time_ms: fantome.timeMs, pseudo: label, d: fantome.d, t: fantome.t, v: fantome.v }
         : null;
     } else {
       rival = versReplayLap(choisi);

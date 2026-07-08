@@ -69,6 +69,25 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    // Archive (append-only, jamais écrasée) : le relais n'envoie une trace QUE
+    // quand ce tour vient de battre le record de la config (cf. commentaire en
+    // tête de fichier) — chaque POST est donc déjà un évènement « nouveau PB ».
+    // Alimente le fantôme « optimal du joueur » (lib/optimalGhost.ts), qui a
+    // besoin de PLUSIEURS anciens PB tracés pour avoir quelque chose à recoller
+    // — contrairement à lap_traces (une seule ligne, écrasée à chaque record).
+    // Best-effort : jamais bloquant pour la trace elle-même, déjà enregistrée.
+    try {
+      await supabaseAdmin.from('pb_trace_history').insert({
+        player_id:   player.id,
+        track_id:    lap.track_id,
+        car_ordinal: lap.car_ordinal,
+        car_class:   lap.car_class,
+        drivetrain:  lap.drivetrain,
+        time_ms:     lap.time_ms,
+        samples:     trace as unknown as Json,
+      });
+    } catch { /* archive = bonus, jamais bloquant */ }
+
     // Secteurs ÉGAUX EN DISTANCE recalculés depuis la trace (source faisant
     // autorité). On le fait ici plutôt qu'au POST /api/times : la distance de la
     // télémétrie Forza ne correspond pas aux mètres réels (elle plafonne ~5950 m

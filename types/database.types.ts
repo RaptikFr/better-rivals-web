@@ -217,6 +217,57 @@ export type Database = {
           },
         ]
       }
+      pb_trace_history: {
+        Row: {
+          car_class: string
+          car_ordinal: number
+          created_at: string
+          drivetrain: string
+          id: string
+          player_id: string
+          samples: Json
+          time_ms: number
+          track_id: number
+        }
+        Insert: {
+          car_class: string
+          car_ordinal: number
+          created_at?: string
+          drivetrain: string
+          id?: string
+          player_id: string
+          samples: Json
+          time_ms: number
+          track_id: number
+        }
+        Update: {
+          car_class?: string
+          car_ordinal?: number
+          created_at?: string
+          drivetrain?: string
+          id?: string
+          player_id?: string
+          samples?: Json
+          time_ms?: number
+          track_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pb_trace_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pb_trace_history_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_reglage_reports: {
         Row: {
           car_class: string

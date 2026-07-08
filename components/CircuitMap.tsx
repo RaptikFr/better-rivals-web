@@ -372,7 +372,7 @@ export default function CircuitMap({
             ))}
           </select>
         )}
-        {rivalsDisponibles.length >= 1 && (
+        {(rivalsDisponibles.length >= 1 || traces?.moi) && (
           <select
             value={selectedRivalId ?? ''}
             onChange={e => setSelectedRivalId(e.target.value || null)}
@@ -381,16 +381,23 @@ export default function CircuitMap({
             className="px-3 py-1.5 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white max-w-full"
           >
             <option value="">🏆 Meilleur autre (auto)</option>
-            <option value="ghost:optimal_config">
-              🧮 Fantôme optimal — tous pilotes
-            </option>
-            <optgroup label="Pilotes tracés">
-              {rivalsDisponibles.map(r => (
-                <option key={r.player_id} value={r.player_id}>
-                  {r.pseudo ?? 'Inconnu'} · {formatTime(r.time_ms)}
-                </option>
-              ))}
-            </optgroup>
+            {rivalsDisponibles.length >= 1 && (
+              <option value="ghost:optimal_config">🧮 Fantôme optimal — tous pilotes</option>
+            )}
+            {traces?.moi && (
+              <option value="ghost:optimal_player" title="Recolle tes PB successifs sur cette config — s'enrichit à chaque nouveau record">
+                🧮 Fantôme optimal — mes tours
+              </option>
+            )}
+            {rivalsDisponibles.length >= 1 && (
+              <optgroup label="Pilotes tracés">
+                {rivalsDisponibles.map(r => (
+                  <option key={r.player_id} value={r.player_id}>
+                    {r.pseudo ?? 'Inconnu'} · {formatTime(r.time_ms)}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         )}
       </div>
