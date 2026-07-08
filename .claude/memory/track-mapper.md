@@ -11,7 +11,7 @@ metadata:
 
 **Why:** le proprio l'a signalé explicitement — ne pas le remettre dans un futur backlog ni proposer de « finir » sa validation en jeu.
 
-**How to apply:** ignorer ce script pour toute future feature de cartographie de circuit ; la carte affichée sur `/circuits/[slug]` et `/classements` (composant `CircuitMap`) vient exclusivement de la capture automatique du relais. Le fichier `track_mapper.py` peut être supprimé du repo si l'occasion se présente (pas fait à ce stade, aucune urgence).
+**How to apply:** ignorer ce script pour toute future feature de cartographie de circuit ; la carte affichée sur `/circuits/[slug]` et `/classements` (composant `CircuitMap`) vient exclusivement de la capture automatique du relais. **Le fichier a été SUPPRIMÉ du repo le 08/07/2026 (commit 3544593)** lors du ménage général (avec les vieux `relais_gui_v2x.py` de la racine et les anciennes versions v22→v310 dans OneDrive\Relais — seuls v311 et v323 conservés).
 
 ---
 
