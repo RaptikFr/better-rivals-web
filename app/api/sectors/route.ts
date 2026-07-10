@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { track_id, car_ordinal, car_class, drivetrain, sectors, lap_time } = body;
+    const { track_id, car_ordinal, car_class, drivetrain, sectors, lap_time, lap_number } = body;
 
     const trackId    = parseInt(track_id, 10);
     const carOrdinal = parseInt(car_ordinal, 10);
@@ -72,11 +72,16 @@ export async function POST(request: NextRequest) {
 
     // Score de régularité : on garde aussi le temps du tour (léger, fenêtre
     // glissante de 90 jours) — différé après la réponse, jamais bloquant.
+    // Numéro du tour (relais ≥ v3.4.1, optionnel) : le tour n°1 part de
+    // l'arrêt en course circuit, la régularité l'écarte du calcul.
+    const lapNumber = Number.isInteger(Number(lap_number)) && Number(lap_number) > 0
+      ? Number(lap_number) : null;
+
     after(async () => {
       try {
         await supabaseAdmin.from('session_laps').insert({
           player_id: player.id, track_id: trackId, car_ordinal: carOrdinal,
-          car_class, drivetrain, lap_ms: lapTimeMs,
+          car_class, drivetrain, lap_ms: lapTimeMs, lap_number: lapNumber,
         });
         await supabaseAdmin.from('session_laps').delete()
           .eq('player_id', player.id)

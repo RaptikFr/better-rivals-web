@@ -86,6 +86,38 @@ describe('scoreSession', () => {
     expect(scoreSession(session([60_000, 60_100, 90_000, 95_000]))).toBeNull();
   });
 
+  it('écarte le tour n°1 (départ arrêté) même s\'il passe le filtre médiane', () => {
+    // Tour 1 à +3 s (départ arrêté, < 110 % de la médiane) + 3 tours lancés serrés.
+    const tours: TourSession[] = [
+      { lapMs: 63_000, at: 0,       lapNumber: 1 },
+      { lapMs: 60_000, at: MIN,     lapNumber: 2 },
+      { lapMs: 60_100, at: 2 * MIN, lapNumber: 3 },
+      { lapMs: 59_950, at: 3 * MIN, lapNumber: 4 },
+    ];
+    const s = scoreSession(tours)!;
+    expect(s.nbTours).toBe(3);
+    expect(s.niveau).toBe('metronome');
+  });
+
+  it('null si, une fois les tours n°1 écartés, il reste < 3 tours', () => {
+    const tours: TourSession[] = [
+      { lapMs: 63_000, at: 0,       lapNumber: 1 },
+      { lapMs: 60_000, at: MIN,     lapNumber: 2 },
+      { lapMs: 60_100, at: 2 * MIN, lapNumber: 3 },
+    ];
+    expect(scoreSession(tours)).toBeNull();
+  });
+
+  it('lapNumber absent ou null (ancien relais) : tour compté comme avant', () => {
+    const tours: TourSession[] = [
+      { lapMs: 60_000, at: 0, lapNumber: null },
+      { lapMs: 60_100, at: MIN },
+      { lapMs: 60_050, at: 2 * MIN },
+    ];
+    const s = scoreSession(tours)!;
+    expect(s.nbTours).toBe(3);
+  });
+
   it('finSession = horodatage du dernier tour', () => {
     const s = scoreSession(session([60_000, 60_100, 60_050], 1_000_000))!;
     expect(s.finSession).toBe(1_000_000 + 2 * MIN);

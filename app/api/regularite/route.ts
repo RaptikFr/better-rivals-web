@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     const { data: laps, error } = await supabaseAdmin
       .from('session_laps')
-      .select('track_id, car_ordinal, car_class, drivetrain, lap_ms, created_at')
+      .select('track_id, car_ordinal, car_class, drivetrain, lap_ms, lap_number, created_at')
       .eq('player_id', player.id)
       .order('created_at', { ascending: false })
       .limit(5000);
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     for (const r of rows) {
       const key = `${r.track_id}|${r.car_ordinal}|${r.car_class}|${r.drivetrain}`;
       if (!parConfig.has(key)) parConfig.set(key, { meta: r, tours: [] });
-      parConfig.get(key)!.tours.push({ lapMs: r.lap_ms, at: Date.parse(r.created_at) });
+      parConfig.get(key)!.tours.push({ lapMs: r.lap_ms, at: Date.parse(r.created_at), lapNumber: r.lap_number });
     }
 
     const scores = [...parConfig.values()]

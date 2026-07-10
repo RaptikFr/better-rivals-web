@@ -326,6 +326,7 @@ export type Database = {
           drivetrain: string
           id: string
           lap_ms: number
+          lap_number: number | null
           player_id: string
           track_id: number
         }
@@ -336,6 +337,7 @@ export type Database = {
           drivetrain: string
           id?: string
           lap_ms: number
+          lap_number?: number | null
           player_id: string
           track_id: number
         }
@@ -346,6 +348,7 @@ export type Database = {
           drivetrain?: string
           id?: string
           lap_ms?: number
+          lap_number?: number | null
           player_id?: string
           track_id?: number
         }

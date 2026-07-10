@@ -14,6 +14,9 @@ export interface TourSession {
   lapMs: number;
   /** Epoch ms (Date.parse de created_at). */
   at: number;
+  /** Numéro du tour dans la course (relais ≥ v3.4.1). Le tour n°1 part de
+   *  l'arrêt en circuit : il est écarté du calcul. Null/absent = compté. */
+  lapNumber?: number | null;
 }
 
 export type NiveauRegularite = 'metronome' | 'regulier' | 'variable' | 'irregulier';
@@ -79,9 +82,12 @@ export function decouperSessions(tours: TourSession[], gapMs: number = SESSION_G
 
 /** Score d'une session, ou null si elle n'a pas assez de tours propres. */
 export function scoreSession(tours: TourSession[]): ScoreRegularite | null {
-  if (tours.length < MIN_TOURS_PROPRES) return null;
-  const med = mediane(tours.map(t => t.lapMs));
-  const propres = tours.filter(t => t.lapMs <= med * SEUIL_TOUR_RATE);
+  // Tours n°1 écartés d'office : départ arrêté = structurellement plus lent,
+  // il gonflerait l'écart-type sans refléter la constance du pilote.
+  const lances = tours.filter(t => t.lapNumber !== 1);
+  if (lances.length < MIN_TOURS_PROPRES) return null;
+  const med = mediane(lances.map(t => t.lapMs));
+  const propres = lances.filter(t => t.lapMs <= med * SEUIL_TOUR_RATE);
   if (propres.length < MIN_TOURS_PROPRES) return null;
 
   const temps = propres.map(t => t.lapMs);
