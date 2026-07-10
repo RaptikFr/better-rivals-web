@@ -1,7 +1,7 @@
 # Mémoire — Better Rivals Web
 
 - [Bannière d'annonce à chaque nouveauté](bannière-annonce-nouveautes.md) — RÈGLE : toute feature site visible ⇒ bump `content/announcement.ts` (id + message + lien)
-- [Feature score de régularité](feature-regularite.md) — LIVRÉ 10/07 : session_laps (via /api/sectors, 90 j) + lib/regularite + GET /api/regularite + section 🎯 onglet Stats. Zéro modif relais. À vérifier en conditions réelles au premier retour
+- [Feature score de régularité](feature-regularite.md) — LIVRÉ 10/07 : session_laps (via /api/sectors, 90 j) + lib/regularite + GET /api/regularite + section 🎯 onglet Stats (1 ligne par config, dernière session + record). Tour n°1 écarté (relais v3.4.1 releasée : lap_number). À vérifier en conditions réelles au premier retour
 
 - [Identité des instances Claude](user-identite.md) — Claude Portable = PC-RENAUD, Claude Fixe = RAPTIK-PC. Surnoms à utiliser naturellement.
 - [⚠️ PASSATION POUR CLAUDE FIXE (RAPTIK-PC)](todo-claude-fixe.md) — **Lire en premier sur le fixe** : git pull + reste à faire (calibration sousvireuse, tester capture technique brute v3.2.0 en jeu)
