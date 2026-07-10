@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
@@ -6,6 +6,9 @@ import { nbSecteurs, secteursValides, secteursPlausibles } from '@/lib/lap-valid
 import { enregistrerMeilleursSecteurs } from '@/lib/best-sectors';
 
 export const dynamic = 'force-dynamic';
+
+// Fenêtre glissante des tours conservés pour la régularité (session_laps).
+const RETENTION_JOURS = 90;
 
 // POST /api/sectors — le relais (≥ v1.15) envoie les secteurs de CHAQUE tour
 // complet (pas seulement les PB), pour que le « tour optimal » capte aussi le
@@ -65,6 +68,20 @@ export async function POST(request: NextRequest) {
     await enregistrerMeilleursSecteurs({
       trackId, carOrdinal, carClass: car_class, drivetrain,
       playerId: player.id, sectorsMs: secteursMs,
+    });
+
+    // Score de régularité : on garde aussi le temps du tour (léger, fenêtre
+    // glissante de 90 jours) — différé après la réponse, jamais bloquant.
+    after(async () => {
+      try {
+        await supabaseAdmin.from('session_laps').insert({
+          player_id: player.id, track_id: trackId, car_ordinal: carOrdinal,
+          car_class, drivetrain, lap_ms: lapTimeMs,
+        });
+        await supabaseAdmin.from('session_laps').delete()
+          .eq('player_id', player.id)
+          .lt('created_at', new Date(Date.now() - RETENTION_JOURS * 86_400_000).toISOString());
+      } catch { /* bonus : un échec n'affecte ni best_sectors ni le relais */ }
     });
 
     return NextResponse.json({ success: true }, { status: 201 });

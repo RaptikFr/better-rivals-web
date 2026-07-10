@@ -318,6 +318,47 @@ export type Database = {
           },
         ]
       }
+      session_laps: {
+        Row: {
+          car_class: string
+          car_ordinal: number
+          created_at: string
+          drivetrain: string
+          id: string
+          lap_ms: number
+          player_id: string
+          track_id: number
+        }
+        Insert: {
+          car_class: string
+          car_ordinal: number
+          created_at?: string
+          drivetrain: string
+          id?: string
+          lap_ms: number
+          player_id: string
+          track_id: number
+        }
+        Update: {
+          car_class?: string
+          car_ordinal?: number
+          created_at?: string
+          drivetrain?: string
+          id?: string
+          lap_ms?: number
+          player_id?: string
+          track_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_laps_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       track_geometries: {
         Row: {
           bounds: Json | null

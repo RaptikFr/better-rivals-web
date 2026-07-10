@@ -9,6 +9,7 @@ import { RivalsCell } from '@/components/RivalsCell';
 import type { ConfigRivals } from '@/lib/rivals';
 import { rivalsFor } from '@/lib/playerRankings';
 import { EmptyState, type ProfileLap, type Stats, type FollowedPlayer } from './profilShared';
+import { RegulariteSection } from './RegulariteSection';
 
 export function ClassementsTab({ laps, rivalsByConfig }: { laps: ProfileLap[]; rivalsByConfig: Map<string, ConfigRivals> }) {
   const { formatTime } = usePreferences();
@@ -213,6 +214,8 @@ export function StatsTab({ stats, laps }: { stats: Stats; laps: ProfileLap[] }) 
           }
         </div>
       </div>
+
+      <RegulariteSection />
     </div>
   );
 }
