@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v340",
+  id: "2026-07-score-regularite",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouvelle version du relais (v3.4.0) : les sprints (épreuves point à point) ont maintenant droit aux mêmes outils que les circuits — carte du tracé, meilleurs secteurs (tour optimal), delta live vs votre record, coach de pilotage post-course et copilote de réglage sur asphalte. Inclut aussi le v3.3.0 (copilote pneus, panneau « Régularité »).",
+  message: "Nouveau : le score de régularité 🎯 ! Enchaînez au moins 3 tours propres sur une même config (relais lancé) et retrouvez votre niveau — Métronome, Régulier, Variable… — par circuit et voiture dans l'onglet Statistiques de votre profil. Et si vous avez raté la v3.4.0 du relais : les sprints ont désormais tous les outils des circuits (tracé, secteurs, delta live, coach, copilote).",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
-  link: "/telecharger",
-  linkLabel: "Télécharger",
+  link: "/profil",
+  linkLabel: "Voir mon profil",
 
   /**
    * Style de la bannière.
