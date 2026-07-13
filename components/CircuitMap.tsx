@@ -22,6 +22,7 @@ import {
   type Virage,
 } from '@/lib/circuitGeometry';
 import CircuitReplay from '@/components/CircuitReplay';
+import { comparerTraces, binDivergent, type SegmentComparaison } from '@/lib/traceComparison';
 
 export interface ConfigCarte {
   key:        string; // `${car_class}|${drivetrain}|${car_ordinal}` — même clé que la page circuit
@@ -96,6 +97,33 @@ const BIN_FONDS = [
 const VIOLET_STROKE  = '[stroke:#7c3aed] dark:[stroke:#a78bfa]';
 const VIOLET_FOND    = '[background:#7c3aed] dark:[background:#a78bfa]';
 const NEUTRE_STROKE  = 'stroke-neutral-300 dark:stroke-neutral-700';
+
+// Rampe DIVERGENTE du mode « trace vs trace » : rose = je perds, violet = je
+// gagne (mêmes familles de données que le reste de la carte), 3 pas par côté
+// d'intensité croissante, inversée en sombre comme BIN_STROKES. Validée
+// (validateur dataviz) : luminosité monotone par rampe, contraste ≥ 3:1 sur la
+// surface sombre ; en clair les pas faibles s'appuient sur le relief existant
+// (infobulle + tableaux + légende étiquetée).
+const CMP_PERTE_STROKES = [
+  '[stroke:#fb7185] dark:[stroke:#e11d48]',
+  '[stroke:#e11d48] dark:[stroke:#fb7185]',
+  '[stroke:#9f1239] dark:[stroke:#fda4af]',
+];
+const CMP_GAIN_STROKES = [
+  '[stroke:#a78bfa] dark:[stroke:#7c3aed]',
+  '[stroke:#7c3aed] dark:[stroke:#a78bfa]',
+  '[stroke:#5b21b6] dark:[stroke:#c4b5fd]',
+];
+const CMP_PERTE_FONDS = [
+  '[background:#fb7185] dark:[background:#e11d48]',
+  '[background:#e11d48] dark:[background:#fb7185]',
+  '[background:#9f1239] dark:[background:#fda4af]',
+];
+const CMP_GAIN_FONDS = [
+  '[background:#a78bfa] dark:[background:#7c3aed]',
+  '[background:#7c3aed] dark:[background:#a78bfa]',
+  '[background:#5b21b6] dark:[background:#c4b5fd]',
+];
 
 function cheminSvg(pts: PointCarte[]): string {
   return pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.z.toFixed(1)}`).join(' ');
@@ -234,6 +262,45 @@ export default function CircuitMap({
 
   const rivalsDisponibles = traces?.rivalsDisponibles ?? [];
 
+  // ── Mode « trace vs trace » : coloration CONTINUE du tracé par le temps
+  // réellement perdu/gagné tranche par tranche entre MON tour et celui du
+  // rival choisi (traces déjà chargées) — au grain fin (~60 m), contrairement
+  // aux secteurs qui agrègent des records de tours différents.
+  const [modeCmp, setModeCmp] = useState(false);
+  const cmpDisponible = Boolean(traces?.moi && traces?.rival);
+
+  const segmentsCmp = useMemo((): SegmentComparaison[] | null => {
+    if (!modeCmp || !traces?.moi || !traces?.rival) return null;
+    const nbPas = Math.max(30, Math.min(100, Math.round(carte.longueurM / 60)));
+    return comparerTraces(traces.moi, traces.rival, nbPas);
+  }, [modeCmp, traces, carte.longueurM]);
+
+  const segmentsCmpGeo = useMemo(
+    () => (segmentsCmp ? decouperSecteurs(carte, segmentsCmp.length) : []),
+    [carte, segmentsCmp],
+  );
+
+  const maxAbsCmp = useMemo(
+    () => (segmentsCmp ?? []).reduce((m, s) => Math.max(m, Math.abs(s.deltaS)), 0),
+    [segmentsCmp],
+  );
+
+  /** Classe de trait d'une tranche comparée : rampe rose (perte) / violette (gain) / neutre. */
+  const classeCmp = useCallback((s: SegmentComparaison): string => {
+    const bin = binDivergent(s.deltaS, maxAbsCmp, 3);
+    if (bin === 0) return NEUTRE_STROKE;
+    return bin > 0 ? CMP_PERTE_STROKES[bin - 1] : CMP_GAIN_STROKES[-bin - 1];
+  }, [maxAbsCmp]);
+
+  // Tranches où je perds le plus (pour le résumé sous la carte).
+  const piresTranchesCmp = useMemo(
+    () => (segmentsCmp ?? [])
+      .map((s, i) => ({ i, s }))
+      .filter(p => p.s.deltaS > 0)
+      .sort((a, b) => b.s.deltaS - a.s.deltaS),
+    [segmentsCmp],
+  );
+
   // Durée dans chaque virage (fenêtre distDebutM→distFinM interpolée sur la
   // trace, indépendante du découpage en secteurs) — nécessite les deux traces.
   const perVirage = useMemo((): PerteVirage[] | null => {
@@ -345,6 +412,18 @@ export default function CircuitMap({
     return `virages ${vs[0].numero}–${vs[vs.length - 1].numero}`;
   }, [viragesDuSecteur]);
 
+  /** Même libellé pour une plage de distances [d0, d1) en mètres (mode trace vs trace). */
+  const libelleViragesEntre = useCallback((d0: number, d1: number): string => {
+    const vs = virages.filter(v => v.distApexM >= d0 && v.distApexM < d1);
+    if (vs.length === 0) return 'ligne droite';
+    if (vs.length === 1) return `virage ${vs[0].numero}`;
+    return `virages ${vs[0].numero}–${vs[vs.length - 1].numero}`;
+  }, [virages]);
+
+  /** Écart signé en secondes : « +0,42 s » / « −0,08 s » / « ±0,00 s ». */
+  const fmtSigne = useCallback((s: number) =>
+    `${s > 0 ? '+' : s < 0 ? '−' : '±'}${Math.abs(s).toFixed(2).replace('.', decSep)} s`, [decSep]);
+
   const depart = carte.points[0];
   const pire = pires[0];
   const pireMilieu = pire !== undefined && secteurs.length > 0
@@ -400,6 +479,20 @@ export default function CircuitMap({
             )}
           </select>
         )}
+        {cmpDisponible && (
+          <button
+            onClick={() => { setModeCmp(m => !m); setSurvol(null); }}
+            title="Colore le tracé par le temps que TON tour tracé perd ou gagne réellement, mètre par mètre, face au tour du rival choisi"
+            aria-pressed={modeCmp}
+            className={`px-3 py-1.5 rounded-lg border text-sm font-bold transition-colors whitespace-nowrap ${
+              modeCmp
+                ? 'bg-pink-500/10 border-pink-400 text-pink-500'
+                : 'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white hover:border-pink-400 hover:text-pink-500'
+            }`}
+          >
+            {modeCmp ? '🗺️ Secteurs' : '🆚 Trace vs trace'}
+          </button>
+        )}
       </div>
 
       <div
@@ -424,7 +517,35 @@ export default function CircuitMap({
             strokeLinejoin="round"
             className={NEUTRE_STROKE}
           />
-          {segments.map((seg, i) => {
+          {modeCmp && segmentsCmp ? segmentsCmpGeo.map((seg, i) => {
+            // Mode trace vs trace : chaque tranche fine porte le delta RÉEL
+            // (mon tour vs celui du rival) — rose je perds, violet je gagne.
+            const s = segmentsCmp[i];
+            const surligne = survol?.idx === i;
+            return (
+              <g key={i}>
+                <path
+                  d={cheminSvg(seg)}
+                  fill="none"
+                  strokeWidth={surligne ? 9 : 5}
+                  vectorEffect="non-scaling-stroke"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={classeCmp(s)}
+                />
+                <path
+                  d={cheminSvg(seg)}
+                  fill="none"
+                  strokeWidth={18}
+                  vectorEffect="non-scaling-stroke"
+                  stroke="transparent"
+                  strokeLinecap="round"
+                  className="cursor-pointer"
+                  onMouseMove={e => surSurvol(i, e)}
+                />
+              </g>
+            );
+          }) : segments.map((seg, i) => {
             const s = secteurs[i];
             const surligne = survol?.idx === i;
             return (
@@ -481,8 +602,21 @@ export default function CircuitMap({
           🏁
         </span>
 
+        {/* Étiquette de la pire tranche comparée (label direct sélectif). */}
+        {modeCmp && segmentsCmp && piresTranchesCmp.length > 0 && !survol && (
+          <span
+            className="absolute -translate-x-1/2 -translate-y-[130%] px-1.5 py-0.5 rounded-md text-[11px] font-bold bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white border border-neutral-300 dark:border-neutral-600 shadow pointer-events-none whitespace-nowrap"
+            style={enPourcent(pointADistance(
+              carte.points,
+              ((piresTranchesCmp[0].s.f0 + piresTranchesCmp[0].s.f1) / 2) * carte.longueurM,
+            ))}
+          >
+            {fmtSigne(piresTranchesCmp[0].s.deltaS)}
+          </span>
+        )}
+
         {/* Étiquette du pire secteur (label direct sélectif : uniquement le max). */}
-        {pire !== undefined && pireMilieu && !survol && (
+        {!modeCmp && pire !== undefined && pireMilieu && !survol && (
           <span
             className="absolute -translate-x-1/2 -translate-y-[130%] px-1.5 py-0.5 rounded-md text-[11px] font-bold bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white border border-neutral-300 dark:border-neutral-600 shadow pointer-events-none whitespace-nowrap"
             style={enPourcent(pireMilieu)}
@@ -491,8 +625,45 @@ export default function CircuitMap({
           </span>
         )}
 
+        {/* Infobulle du mode trace vs trace : delta local, cumul, vitesses. */}
+        {modeCmp && survol && segmentsCmp?.[survol.idx] && (() => {
+          const s = segmentsCmp[survol.idx];
+          const d0 = Math.round(s.f0 * carte.longueurM);
+          const d1 = Math.round(s.f1 * carte.longueurM);
+          return (
+            <div
+              className="absolute z-10 -translate-x-1/2 -translate-y-[115%] px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 shadow-lg text-xs pointer-events-none whitespace-nowrap"
+              style={{ left: survol.x, top: survol.y }}
+            >
+              <p className="font-bold text-neutral-900 dark:text-white mb-0.5">
+                {d0}–{d1} m
+                {virages.length > 0 && (
+                  <span className="font-normal text-neutral-500"> · {libelleViragesEntre(d0, d1)}</span>
+                )}
+              </p>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                Ici :{' '}
+                <span className={`font-mono font-bold ${s.deltaS > 0 ? 'text-pink-500' : s.deltaS < 0 ? 'text-violet-500' : ''}`}>
+                  {fmtSigne(s.deltaS)}
+                </span>
+                <span className="text-neutral-500"> · cumul </span>
+                <span className={`font-mono font-bold ${s.cumulS > 0 ? 'text-pink-500' : s.cumulS < 0 ? 'text-violet-500' : ''}`}>
+                  {fmtSigne(s.cumulS)}
+                </span>
+              </p>
+              {s.vMoi !== null && s.vRival !== null && (
+                <p className="text-neutral-600 dark:text-neutral-400">
+                  Vitesse : toi <span className="font-mono font-bold text-neutral-900 dark:text-white">{Math.round(s.vMoi)}</span>
+                  {' '}· {traces?.rival?.pseudo ?? 'rival'}{' '}
+                  <span className="font-mono font-bold text-neutral-900 dark:text-white">{Math.round(s.vRival)}</span> km/h
+                </p>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Infobulle secteur. */}
-        {survol && secteurs[survol.idx] && (
+        {!modeCmp && survol && secteurs[survol.idx] && (
           <div
             className="absolute z-10 -translate-x-1/2 -translate-y-[115%] px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 shadow-lg text-xs pointer-events-none whitespace-nowrap"
             style={{ left: survol.x, top: survol.y }}
@@ -549,7 +720,54 @@ export default function CircuitMap({
         </p>
       ) : (
         <div className="mt-4 space-y-3">
-          {aMesDonnees ? (
+          {/* Résumé + légende du mode trace vs trace (remplace ceux des secteurs). */}
+          {modeCmp && segmentsCmp && traces?.moi && traces?.rival && (
+            <>
+              <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                🆚 Ton tour (<span className="font-mono">{formatTime(traces.moi.time_ms)}</span>) face à{' '}
+                <strong>{traces.rival.pseudo ?? 'Rival'}</strong>{' '}
+                (<span className="font-mono">{formatTime(traces.rival.time_ms)}</span>) — écart final{' '}
+                <span className={`font-mono font-bold ${traces.moi.time_ms > traces.rival.time_ms ? 'text-pink-500' : 'text-violet-500'}`}>
+                  {fmtSigne((traces.moi.time_ms - traces.rival.time_ms) / 1000)}
+                </span>.
+                {piresTranchesCmp.length > 0 && (
+                  <>
+                    {' '}🔻 Tu perds surtout au{' '}
+                    {piresTranchesCmp.slice(0, 3).map((p, j) => (
+                      <span key={p.i}>
+                        {j > 0 && (j === Math.min(piresTranchesCmp.length, 3) - 1 ? ' puis au ' : ', ')}
+                        <strong>{libelleViragesEntre(p.s.f0 * carte.longueurM, p.s.f1 * carte.longueurM)}</strong>
+                        {' ('}{fmtSigne(p.s.deltaS)})
+                      </span>
+                    ))}
+                    .
+                  </>
+                )}
+              </p>
+              {maxAbsCmp > 0 && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                  {[...CMP_GAIN_FONDS].reverse().map((f, b) => (
+                    <span key={`g${b}`} className="flex items-center gap-1.5">
+                      <span className={`inline-block w-3 h-3 rounded-sm ${f}`} />
+                      {b === 0 ? 'Tu gagnes beaucoup' : b === 2 ? 'Tu gagnes un peu' : 'Tu gagnes'}
+                    </span>
+                  ))}
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block w-3 h-3 rounded-sm bg-neutral-300 dark:bg-neutral-700" />
+                    Égalité
+                  </span>
+                  {CMP_PERTE_FONDS.map((f, b) => (
+                    <span key={`p${b}`} className="flex items-center gap-1.5">
+                      <span className={`inline-block w-3 h-3 rounded-sm ${f}`} />
+                      {b === 0 ? 'Tu perds un peu' : b === 2 ? 'Tu perds beaucoup' : 'Tu perds'}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {!modeCmp && (aMesDonnees ? (
             <p className="text-sm text-neutral-700 dark:text-neutral-300">
               {pires.length > 0 ? (
                 <>
@@ -579,9 +797,9 @@ export default function CircuitMap({
                 : 'Connecte-toi et pose un temps avec le relais pour voir où tu perds du temps.'}
               {' '}Survole les secteurs pour découvrir les temps de référence.
             </p>
-          )}
+          ))}
 
-          {aMesDonnees && maxDelta > 0 && (
+          {!modeCmp && aMesDonnees && maxDelta > 0 && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
               <span className="flex items-center gap-1.5">
                 <span className={`inline-block w-3 h-3 rounded-sm ${VIOLET_FOND}`} />

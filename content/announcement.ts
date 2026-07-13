@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-350-chronos-jamais-perdus",
+  id: "2026-07-trace-vs-trace-et-relais-360-voix",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.5.0 : plus jamais un chrono perdu 💾 ! Si le site est injoignable au moment de l'envoi (wifi coupé, serveur indisponible), votre temps est sauvegardé localement et renvoyé automatiquement dès que la connexion revient. Mettez à jour votre relais pour en profiter.",
+  message: "Double nouveauté ! 🆚 Mode « Trace vs trace » sur la carte des circuits : le tracé se colore mètre par mètre selon le temps que TON tour perd ou gagne réellement face au rival de ton choix (vitesses comparées au survol). Et 🔊 relais v3.6.0 : les annonces vocales — ton delta annoncé à la voix à chaque secteur, « moins deux dixièmes », sans quitter la route des yeux (inclut la v3.5.0 : plus jamais un chrono perdu si le site est injoignable).",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
-  linkLabel: "Télécharger la v3.5.0",
+  linkLabel: "Télécharger la v3.6.0",
 
   /**
    * Style de la bannière.
