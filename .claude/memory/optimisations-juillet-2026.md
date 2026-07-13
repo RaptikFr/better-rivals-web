@@ -1,6 +1,6 @@
 ---
 name: optimisations-juillet-2026
-description: Optimisations perf 08/07 — JWT local livré, index recorded_at appliqué, relais v3.2.4 (refresh token centralisé) releasé ; restent leadersFeed RPC + counts GROUP BY (futur)
+description: Optimisations perf juillet — JWT local, index recorded_at, refresh token centralisé, et 13/07 leadersFeed RPC + counts GROUP BY livrés — PLUS RIEN en attente
 metadata:
   type: project
 ---
@@ -12,9 +12,10 @@ metadata:
 
 - **Relais v3.2.5 releasée** (même jour, remplace la v3.2.4 comme release courante) : skins du site suivis automatiquement ([[feature-skins-relais]]). Le test en jeu du soir du 08/07 couvre les DEUX versions (skin visible au login + refresh token sur session > 1 h).
 
-**Reste à faire (futur, seulement si le site grossit)** :
-- `lib/leadersFeed.ts` télécharge TOUT lap_times + lap_times_history à chaque recalcul (60 s) → migrer en RPC Postgres.
-- `fetchCarsWithTimes` (carRankings) et `fetchIndexableCircuits` (circuitRankings) téléchargent toutes les lignes juste pour compter → RPC `GROUP BY`.
+**Livré le 13/07/2026** (commit 000088d, migration `nouveaux_leaders_et_counts_rpc.sql` appliquée en prod via Management API) :
+- RPC `nouveaux_leaders_feed(p_limit)` : rejeu chronologique des records en SQL (window functions min/lag, même algo que `computeLeaderChanges`), résultat vérifié IDENTIQUE à la prod avant bascule. `lib/leadersFeed.ts` = simple mapper.
+- RPC `car_time_counts()` / `track_time_counts()` : compteurs GROUP BY (listes voitures/circuits, sitemap).
+- ⚠️ `computeLeaderChanges` reste utilisé par `weeklyRecap` et `leaderStats` (téléchargement complet, mais rarement sollicités) — candidats si on veut finir le chantier un jour.
 
-**Why:** éviter de re-analyser ; le gros du code était déjà optimisé (ne pas re-proposer ce qui est fait).
-**How to apply:** si la base grossit ou que le proprio parle de lenteur → attaquer leadersFeed en premier.
+**Why:** éviter de re-analyser ; le gros du code était déjà optimisé (ne pas re-proposer ce qui est fait). Le chantier « télécharger tout puis agréger en Node » est CLOS pour les chemins chauds.
+**How to apply:** ne plus proposer d'optimisation DB sauf plainte de lenteur ; les 3 RPC sont typées dans `types/database.types.ts` (section Functions).
