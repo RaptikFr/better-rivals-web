@@ -960,6 +960,41 @@ export type Database = {
           year: number | null
         }[]
       }
+      nouveaux_leaders_feed: {
+        Args: { p_limit: number }
+        Returns: {
+          new_leader_id: string
+          new_pseudo: string
+          new_discord: string | null
+          old_leader_id: string
+          old_pseudo: string
+          old_discord: string | null
+          new_time_ms: number
+          old_time_ms: number
+          car: string
+          track: string
+          track_id: number
+          car_ordinal: number
+          car_class: string
+          drivetrain: string
+          lap_id: string | null
+          recorded_at: string
+        }[]
+      }
+      car_time_counts: {
+        Args: Record<string, never>
+        Returns: {
+          car_ordinal: number
+          times: number
+        }[]
+      }
+      track_time_counts: {
+        Args: Record<string, never>
+        Returns: {
+          track_id: number
+          times: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

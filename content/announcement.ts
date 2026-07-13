@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-score-regularite",
+  id: "2026-07-relais-350-chronos-jamais-perdus",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Nouveau : le score de régularité 🎯 ! Enchaînez au moins 3 tours propres sur une même config (relais lancé) et retrouvez votre niveau — Métronome, Régulier, Variable… — par circuit et voiture dans l'onglet Statistiques de votre profil. Et si vous avez raté la v3.4.0 du relais : les sprints ont désormais tous les outils des circuits (tracé, secteurs, delta live, coach, copilote).",
+  message: "Relais v3.5.0 : plus jamais un chrono perdu 💾 ! Si le site est injoignable au moment de l'envoi (wifi coupé, serveur indisponible), votre temps est sauvegardé localement et renvoyé automatiquement dès que la connexion revient. Mettez à jour votre relais pour en profiter.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
-  link: "/profil",
-  linkLabel: "Voir mon profil",
+  link: "/telecharger",
+  linkLabel: "Télécharger la v3.5.0",
 
   /**
    * Style de la bannière.

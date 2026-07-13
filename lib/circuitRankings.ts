@@ -125,11 +125,15 @@ export const getCircuitRanking = unstable_cache(
 
 async function fetchIndexableCircuits(): Promise<CircuitMeta[]> {
   const circuits = await fetchApprovedCircuits();
-  const { data } = await fetchAllRows<{ track_id: number }>((from, to) =>
-    supabase.from('lap_times').select('track_id').order('id').range(from, to)
-  );
+  // Comptage par circuit côté Postgres (RPC GROUP BY, cf. la migration
+  // nouveaux_leaders_et_counts_rpc.sql) : ~1 ligne par circuit au lieu de
+  // télécharger la colonne track_id de toute la table lap_times.
+  const { data, error } = await supabase.rpc('track_time_counts');
+  if (error) throw new Error(error.message);
   const counts = new Map<number, number>();
-  for (const r of data) counts.set(r.track_id, (counts.get(r.track_id) ?? 0) + 1);
+  for (const r of (data ?? []) as { track_id: number; times: number }[]) {
+    counts.set(r.track_id, Number(r.times));
+  }
   return circuits.filter(c => (counts.get(c.id) ?? 0) >= MIN_TIMES_INDEXABLE);
 }
 

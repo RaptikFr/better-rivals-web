@@ -132,12 +132,14 @@ export const getCarRanking = unstable_cache(
 );
 
 async function fetchCarsWithTimes(): Promise<CarWithTimes[]> {
-  const { data } = await fetchAllRows<{ car_ordinal: number | null }>((from, to) =>
-    supabase.from('lap_times').select('car_ordinal').order('id').range(from, to)
-  );
+  // Comptage par voiture côté Postgres (RPC GROUP BY, cf. la migration
+  // nouveaux_leaders_et_counts_rpc.sql) : ~1 ligne par voiture au lieu de
+  // télécharger la colonne car_ordinal de toute la table lap_times.
+  const { data, error } = await supabase.rpc('car_time_counts');
+  if (error) throw new Error(error.message);
   const counts = new Map<number, number>();
-  for (const r of data) {
-    if (r.car_ordinal != null) counts.set(r.car_ordinal, (counts.get(r.car_ordinal) ?? 0) + 1);
+  for (const r of (data ?? []) as { car_ordinal: number; times: number }[]) {
+    counts.set(r.car_ordinal, Number(r.times));
   }
   const ordinals = [...counts.keys()];
   if (ordinals.length === 0) return [];
