@@ -8,6 +8,9 @@ import { DiscordTag } from '@/components/DiscordTag';
 import { getTypeIcon, getSprintIcon } from '@/lib/trackIcons';
 import { getCarteCircuit } from '@/lib/trackGeometry';
 import { detecterVirages } from '@/lib/circuitGeometry';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { fetchAllRows } from '@/lib/fetchAllRows';
+import { ecartsParSecteur, secteursDisputes, type EcartSecteur } from '@/lib/secteursDisputes';
 import CircuitMap from '@/components/CircuitMap';
 import type { Drivetrain } from '@/types/supabase';
 import {
@@ -21,6 +24,69 @@ import {
 export const revalidate = 300;
 
 type Props = { params: Promise<{ slug: string }> };
+
+type LigneSecteurTrack = {
+  player_id:    string;
+  car_ordinal:  number;
+  car_class:    string;
+  drivetrain:   string;
+  sector_index: number;
+  best_ms:      number;
+  players:      { pseudo: string | null } | null;
+};
+
+interface BlocDisputes {
+  /** Clé de config `${car_class}|${drivetrain}|${car_ordinal}` (celle des pages circuit). */
+  configKey:   string;
+  nbPilotes:   number;
+  top:         EcartSecteur[];
+  /** Pseudo du détenteur du meilleur temps sur le secteur le plus disputé. */
+  bestPseudo:  string | null;
+}
+
+/**
+ * Bloc « secteurs disputés » (rendu serveur, indexable) : sur la config du
+ * circuit qui compte le plus de pilotes chronométrés par secteur, les secteurs
+ * où l'écart entre le meilleur et le plus lent est le plus grand. Miroir texte
+ * du mode 🔥 de la carte (même lib). Null s'il n'y a pas 2 pilotes comparables.
+ */
+async function getSecteursDisputes(trackId: number): Promise<BlocDisputes | null> {
+  const { data: lignes } = await fetchAllRows<LigneSecteurTrack>((from, to) =>
+    supabaseAdmin
+      .from('best_sectors')
+      .select('player_id, car_ordinal, car_class, drivetrain, sector_index, best_ms, players ( pseudo )')
+      .eq('track_id', trackId)
+      // Tri composite unique (pas d'id sur best_sectors) : pages sans chevauchement.
+      .order('car_ordinal').order('car_class').order('drivetrain')
+      .order('player_id').order('sector_index')
+      .range(from, to)
+  );
+  if (lignes.length === 0) return null;
+
+  const parConfig = new Map<string, LigneSecteurTrack[]>();
+  for (const l of lignes) {
+    if (!l.player_id) continue; // lignes historiques sans pilote : incomparables
+    const key = `${l.car_class}|${l.drivetrain}|${l.car_ordinal}`;
+    if (!parConfig.has(key)) parConfig.set(key, []);
+    parConfig.get(key)!.push(l);
+  }
+
+  let meilleure: BlocDisputes | null = null;
+  for (const [configKey, rows] of parConfig) {
+    const nbPilotes = new Set(rows.map(r => r.player_id)).size;
+    if (nbPilotes < 2) continue;
+    const top = secteursDisputes(ecartsParSecteur(rows)).slice(0, 3);
+    if (top.length === 0) continue;
+    if (!meilleure || nbPilotes > meilleure.nbPilotes) {
+      const bestRow = rows.find(r =>
+        r.sector_index === top[0].index + 1 && r.best_ms === top[0].bestMs);
+      meilleure = { configKey, nbPilotes, top, bestPseudo: bestRow?.players?.pseudo ?? null };
+    }
+  }
+  return meilleure;
+}
+
+const fmtEcart = (ms: number) => `${(ms / 1000).toFixed(2).replace('.', ',')} s`;
 
 export async function generateStaticParams() {
   const circuits = await getApprovedCircuits().catch(() => []);
@@ -60,11 +126,15 @@ export default async function CircuitPage({ params }: Props) {
   const id = parseCircuitId(slug);
   if (id === null) notFound();
 
-  const [{ track, configs, totalTimes }, carte] = await Promise.all([
+  const [{ track, configs, totalTimes }, carte, disputes] = await Promise.all([
     getCircuitRanking(id),
     getCarteCircuit(id),
+    getSecteursDisputes(id),
   ]);
   if (!track) notFound();
+
+  // Libellé de la config du bloc « secteurs disputés » (si elle est classée).
+  const configDisputee = disputes ? configs.find(c => c.key === disputes.configKey) ?? null : null;
 
   // Redirige les slugs non canoniques (id seul, ancien nom) vers l'URL propre.
   const canonical = circuitSlug(track.id, track.name);
@@ -117,6 +187,31 @@ export default async function CircuitPage({ params }: Props) {
               carOrdinal: c.laps[0].car_ordinal,
             }))}
           />
+        )}
+
+        {/* Secteurs disputés : miroir texte (indexable) du mode 🔥 de la carte. */}
+        {disputes && configDisputee && (
+          <section className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 sm:p-6 mb-8">
+            <h2 className="text-lg font-bold text-neutral-900 dark:text-white mb-2">
+              🔥 Les secteurs les plus disputés
+            </h2>
+            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+              Sur <strong>{configDisputee.carLabel}</strong> ({configDisputee.carClass}/{configDisputee.drivetrain}),{' '}
+              {disputes.nbPilotes} pilotes se mesurent secteur par secteur sur {track.name}. C&apos;est au{' '}
+              <strong>secteur {disputes.top[0].index + 1}</strong> que tout se joue :{' '}
+              <strong>{fmtEcart(disputes.top[0].ecartMs)}</strong>{' '}d&apos;écart entre le meilleur passage
+              {disputes.bestPseudo ? ` (${disputes.bestPseudo})` : ''} et le plus lent.
+              {disputes.top.length > 1 && (
+                <>
+                  {' '}Viennent ensuite le secteur {disputes.top[1].index + 1} ({fmtEcart(disputes.top[1].ecartMs)})
+                  {disputes.top.length > 2 && (
+                    <> puis le secteur {disputes.top[2].index + 1} ({fmtEcart(disputes.top[2].ecartMs)})</>
+                  )}.
+                </>
+              )}
+              {' '}Le détail se visualise sur la carte ci-dessus, bouton «&nbsp;🔥 Secteurs disputés&nbsp;».
+            </p>
+          </section>
         )}
 
         {configs.length === 0 ? (

@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v361-mono-instance",
+  id: "2026-07-defis-coach-et-secteurs-disputes",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.6.1 : fini le piège du double lancement ! Si le relais tourne déjà, un deuxième clic sur l'exe affiche simplement « Le relais est déjà lancé » au lieu de créer une instance fantôme qui volait les données de Forza (symptôme : « En attente de Forza » à l'infini et un overlay illisible). Inclut la v3.6.0 : annonces vocales 🔊 du delta à chaque secteur.",
+  message: "Double nouveauté ! 🎯 Défis coach : depuis l'onglet Coach de ton profil, transforme un conseil en défi chiffré (« passe le secteur 4 sous 25,5 s ») — validé automatiquement dès qu'un de tes tours y arrive, notification à la clé. Et 🔥 secteurs disputés : sur la carte de chaque circuit, une heatmap montre où les pilotes de la config se départagent le plus — c'est là que ça se joue.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
-  link: "/telecharger",
-  linkLabel: "Télécharger la v3.6.1",
+  link: "/circuits",
+  linkLabel: "Voir les circuits",
 
   /**
    * Style de la bannière.

@@ -1,6 +1,6 @@
 # Mémoire — Better Rivals Web
 
-- [Roadmap idées juillet 2026](roadmap-idees-juillet-2026.md) — 13/07 : optimisations + features A (🆚 trace vs trace sur la carte) et E (annonces vocales, relais v3.6.0) LIVRÉES ; à faire vérifier en réel au proprio ; restent B/C/D/F non tranchées
+- [Roadmap idées juillet 2026](roadmap-idees-juillet-2026.md) — 14/07 : A (🆚) et E (voix) ✅ VALIDÉES en réel ; hors-ligne v3.5.0 intestable (pas de wifi sur le PC, ne plus redemander) ; C (Web Push) et F (auto-update) ❌ REJETÉES par le proprio — ne plus proposer ; B (défis coach) et D (heatmap secteurs) ✅ APPROUVÉES → chantier en cours
 
 - [Bannière d'annonce à chaque nouveauté](bannière-annonce-nouveautes.md) — RÈGLE : toute feature site visible ⇒ bump `content/announcement.ts` (id + message + lien)
 - [Feature score de régularité](feature-regularite.md) — LIVRÉ 10/07 : session_laps (via /api/sectors, 90 j) + lib/regularite + GET /api/regularite + section 🎯 onglet Stats (1 ligne par config, dernière session + record). Tour n°1 écarté (relais v3.4.1 releasée : lap_number). À vérifier en conditions réelles au premier retour

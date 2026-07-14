@@ -4,6 +4,7 @@ import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { nbSecteurs, secteursValides, secteursPlausibles } from '@/lib/lap-validation';
 import { enregistrerMeilleursSecteurs } from '@/lib/best-sectors';
+import { formatTime } from '@/components/formatTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Le nombre de secteurs doit correspondre à celui déduit de la longueur du
     // circuit (indices alignés entre tours d'une même config).
     const { data: track } = await supabaseAdmin
-      .from('tracks').select('length_km').eq('id', trackId).maybeSingle();
+      .from('tracks').select('length_km, name').eq('id', trackId).maybeSingle();
     const n = nbSecteurs(track?.length_km);
     if (!Array.isArray(sectors) || sectors.length !== n) {
       return NextResponse.json({ error: 'Nombre de secteurs inattendu.' }, { status: 400 });
@@ -87,6 +88,41 @@ export async function POST(request: NextRequest) {
           .eq('player_id', player.id)
           .lt('created_at', new Date(Date.now() - RETENTION_JOURS * 86_400_000).toISOString());
       } catch { /* bonus : un échec n'affecte ni best_sectors ni le relais */ }
+
+      // Défis coach : un secteur de CE tour passe-t-il sous la cible d'un défi
+      // actif de la config ? (sector_index 1-based en base, comme best_sectors.)
+      try {
+        const { data: defis } = await supabaseAdmin
+          .from('coach_defis')
+          .select('id, sector_index, target_ms')
+          .eq('player_id',   player.id)
+          .eq('track_id',    trackId)
+          .eq('car_ordinal', carOrdinal)
+          .eq('car_class',   car_class)
+          .eq('drivetrain',  drivetrain)
+          .is('achieved_at', null);
+        for (const d of defis ?? []) {
+          const ms = secteursMs[d.sector_index - 1];
+          if (ms === undefined || ms > d.target_ms) continue;
+          // Garde .is('achieved_at', null) : deux tours quasi simultanés ne
+          // valident (et ne notifient) qu'une seule fois.
+          const { data: valide } = await supabaseAdmin
+            .from('coach_defis')
+            .update({ achieved_ms: ms, achieved_at: new Date().toISOString() })
+            .eq('id', d.id)
+            .is('achieved_at', null)
+            .select('id')
+            .maybeSingle();
+          if (!valide) continue;
+          await supabaseAdmin.from('notifications').insert([{
+            player_id: player.id,
+            message:   `🎯 Défi coach réussi ! Secteur ${d.sector_index} en ${formatTime(ms)} sur ${track?.name ?? 'ce circuit'} (objectif : passer sous ${formatTime(d.target_ms)}).`,
+            type:      'defi',
+            link:      '/profil',
+            read:      false,
+          }]);
+        }
+      } catch { /* best-effort : jamais bloquant pour le relais */ }
     });
 
     return NextResponse.json({ success: true }, { status: 201 });

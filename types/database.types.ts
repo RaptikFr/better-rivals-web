@@ -457,6 +457,59 @@ export type Database = {
           },
         ]
       }
+      coach_defis: {
+        Row: {
+          achieved_at: string | null
+          achieved_ms: number | null
+          baseline_ms: number
+          car_class: string
+          car_ordinal: number
+          created_at: string
+          drivetrain: string
+          id: string
+          player_id: string
+          sector_index: number
+          target_ms: number
+          track_id: number
+        }
+        Insert: {
+          achieved_at?: string | null
+          achieved_ms?: number | null
+          baseline_ms: number
+          car_class: string
+          car_ordinal: number
+          created_at?: string
+          drivetrain: string
+          id?: string
+          player_id: string
+          sector_index: number
+          target_ms: number
+          track_id: number
+        }
+        Update: {
+          achieved_at?: string | null
+          achieved_ms?: number | null
+          baseline_ms?: number
+          car_class?: string
+          car_ordinal?: number
+          created_at?: string
+          drivetrain?: string
+          id?: string
+          player_id?: string
+          sector_index?: number
+          target_ms?: number
+          track_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_defis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lap_times: {
         Row: {
           car_class: string

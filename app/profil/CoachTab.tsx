@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { PilotageReport, SectorCoaching, ThermalReport } from '@/lib/coachPilotage';
 import { NOMS_ROUE } from '@/lib/coachPilotage';
+import { cibleDefi, type DefiView } from '@/lib/defisCoach';
 import { EmptyState, type ProfileLap } from './profilShared';
 
 interface Config {
@@ -56,6 +57,63 @@ export function CoachTab({ laps }: { laps: ProfileLap[] }) {
   const [data, setData] = useState<CoachResponse | null>(null);
   const [search, setSearch] = useState('');
   const [showList, setShowList] = useState(false);
+
+  // ── Défis coach : « passe le secteur 4 sous 25,5 s », validés automatiquement
+  // par le serveur à chaque tour posté par le relais. Liste de TOUS mes défis
+  // (toutes configs) ; la création se fait depuis la carte d'un secteur.
+  const [defis, setDefis] = useState<DefiView[]>([]);
+  const [defiBusy, setDefiBusy] = useState(false);
+
+  const chargerDefis = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    try {
+      const res = await fetch('/api/defis', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) setDefis((await res.json()).defis ?? []);
+    } catch { /* best-effort : le coach reste utilisable sans les défis */ }
+  }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial : les setState n'arrivent qu'après le fetch asynchrone
+  useEffect(() => { chargerDefis(); }, [chargerDefis]);
+
+  const creerDefi = useCallback(async (cfg: Config, sectorIndex1: number) => {
+    setDefiBusy(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      await fetch('/api/defis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          track_id:     cfg.trackId,
+          car_ordinal:  cfg.carOrdinal,
+          car_class:    cfg.carClass,
+          drivetrain:   cfg.drivetrain,
+          sector_index: sectorIndex1,
+        }),
+      });
+      await chargerDefis();
+    } catch { /* silencieux */ } finally {
+      setDefiBusy(false);
+    }
+  }, [chargerDefis]);
+
+  const supprimerDefi = useCallback(async (id: string) => {
+    setDefiBusy(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      await fetch(`/api/defis?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      await chargerDefis();
+    } catch { /* silencieux */ } finally {
+      setDefiBusy(false);
+    }
+  }, [chargerDefis]);
 
   // Sélection par défaut : la première config disponible.
   useEffect(() => {
@@ -149,20 +207,112 @@ export function CoachTab({ laps }: { laps: ProfileLap[] }) {
         </p>
       </div>
 
+      {defis.length > 0 && (
+        <DefisBlock defis={defis} busy={defiBusy} onSupprimer={supprimerDefi} />
+      )}
+
       {status === 'loading' && <p className="text-neutral-500 animate-pulse px-1">Analyse de ta trace…</p>}
       {status === 'error'   && <p className="text-red-400 px-1">Impossible de charger l&apos;analyse. Réessaie plus tard.</p>}
       {status === 'empty'   && (
         <EmptyState message="Pas encore de trace sur cette config. Bats ton temps avec le relais à jour (≥ v1.13) pour enregistrer une trace et débloquer l'analyse." />
       )}
-      {status === 'ready' && data && <CoachReport data={data} />}
+      {status === 'ready' && data && selected && (
+        <CoachReport data={data} config={selected} defis={defis} busy={defiBusy} onCreerDefi={creerDefi} />
+      )}
     </div>
   );
 }
 
-function CoachReport({ data }: { data: CoachResponse }) {
+/** Bloc « Mes défis » : suivi de tous les défis coach (actifs puis réussis). */
+function DefisBlock({ defis, busy, onSupprimer }: {
+  defis: DefiView[];
+  busy: boolean;
+  onSupprimer: (id: string) => void;
+}) {
+  const actifs  = defis.filter(d => !d.achieved_at);
+  const reussis = defis.filter(d => d.achieved_at).slice(0, 5);
+  return (
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 p-4">
+      <p className="text-sm font-bold text-neutral-900 dark:text-white mb-2">🎯 Mes défis coach</p>
+      {actifs.length === 0 && (
+        <p className="text-xs text-neutral-500 mb-1">
+          Aucun défi en cours — lance-t&apos;en un depuis un secteur de l&apos;analyse ci-dessous.
+        </p>
+      )}
+      <ul className="flex flex-col gap-2">
+        {actifs.map(d => {
+          const reste = d.current_ms !== null ? d.current_ms - d.target_ms : null;
+          return (
+            <li key={d.id} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
+              <span className="text-neutral-700 dark:text-neutral-300">
+                <strong>Secteur {d.sector_index}</strong>{' '}sous{' '}<span className="font-mono font-bold">{fmtSec(d.target_ms)}</span>
+              </span>
+              <span className="text-xs text-neutral-500 truncate">
+                {d.track_name} · {d.car_label} · {d.car_class}/{d.drivetrain}
+              </span>
+              {reste !== null && reste > 0 && (
+                <span className="text-xs font-bold text-amber-500">reste {fmtDelta(reste).slice(1)}</span>
+              )}
+              <button
+                onClick={() => onSupprimer(d.id)}
+                disabled={busy}
+                title="Abandonner ce défi"
+                className="text-xs text-neutral-400 hover:text-red-400 transition-colors disabled:opacity-50"
+              >
+                ✕ abandonner
+              </button>
+            </li>
+          );
+        })}
+        {reussis.map(d => (
+          <li key={d.id} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm opacity-80">
+            <span className="text-emerald-500 font-bold">✅</span>
+            <span className="text-neutral-700 dark:text-neutral-300">
+              Secteur {d.sector_index} en <span className="font-mono font-bold">{d.achieved_ms !== null ? fmtSec(d.achieved_ms) : '—'}</span>
+              {' '}<span className="text-neutral-500">(objectif {fmtSec(d.target_ms)})</span>
+            </span>
+            <span className="text-xs text-neutral-500 truncate">
+              {d.track_name} · {d.car_label} · {d.car_class}/{d.drivetrain}
+            </span>
+            <button
+              onClick={() => onSupprimer(d.id)}
+              disabled={busy}
+              title="Retirer de l'historique"
+              className="text-xs text-neutral-400 hover:text-red-400 transition-colors disabled:opacity-50"
+            >
+              ✕
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[11px] text-neutral-400 leading-snug">
+        Validation automatique : chaque tour complet posté par le relais est comparé à la cible — réussite notifiée 🔔.
+      </p>
+    </div>
+  );
+}
+
+function CoachReport({ data, config, defis, busy, onCreerDefi }: {
+  data: CoachResponse;
+  config: Config;
+  defis: DefiView[];
+  busy: boolean;
+  onCreerDefi: (cfg: Config, sectorIndex1: number) => void;
+}) {
   const { report, heldByYou } = data;
   const gain = report.totalLossMs;
   const worst = report.worstIndex;
+
+  /** Défi actif de la config affichée pour un secteur (index 0-based). */
+  const defiDuSecteur = (index0: number): DefiView | null =>
+    defis.find(d =>
+      !d.achieved_at &&
+      d.track_id     === config.trackId &&
+      d.car_ordinal  === config.carOrdinal &&
+      d.car_class    === config.carClass &&
+      d.drivetrain   === config.drivetrain &&
+      d.sector_index === index0 + 1
+    ) ?? null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -194,7 +344,16 @@ function CoachReport({ data }: { data: CoachResponse }) {
       {/* Secteurs */}
       <div className="flex flex-col gap-2">
         {report.sectors.map(s => (
-          <SectorCard key={s.index} s={s} held={heldByYou[s.index]} isWorst={s.index === worst} total={report.sectors.length} />
+          <SectorCard
+            key={s.index}
+            s={s}
+            held={heldByYou[s.index]}
+            isWorst={s.index === worst}
+            total={report.sectors.length}
+            defi={defiDuSecteur(s.index)}
+            busy={busy}
+            onCreerDefi={() => onCreerDefi(config, s.index + 1)}
+          />
         ))}
       </div>
     </div>
@@ -230,8 +389,20 @@ function ThermalCard({ t }: { t: ThermalReport }) {
   );
 }
 
-function SectorCard({ s, held, isWorst, total }: { s: SectorCoaching; held: boolean; isWorst: boolean; total: number }) {
+function SectorCard({ s, held, isWorst, total, defi, busy, onCreerDefi }: {
+  s: SectorCoaching;
+  held: boolean;
+  isWorst: boolean;
+  total: number;
+  defi: DefiView | null;
+  busy: boolean;
+  onCreerDefi: () => void;
+}) {
   const losing = s.deltaMs !== null && s.deltaMs > 0;
+  // Proposition de défi : uniquement si je perds sur ce secteur et qu'aucun
+  // défi n'y est déjà actif. La cible affichée est indicative — le serveur
+  // recalcule la sienne depuis best_sectors à la création.
+  const proposition = !defi && losing ? cibleDefi(s.yourMs, s.yourMs - s.deltaMs!) : null;
   return (
     <div className={`rounded-xl border p-4 ${
       isWorst
@@ -274,6 +445,22 @@ function SectorCard({ s, held, isWorst, total }: { s: SectorCoaching; held: bool
             </li>
           ))}
         </ul>
+      )}
+
+      {defi && (
+        <p className="mt-3 text-sm font-bold text-pink-400">
+          🎯 Défi en cours : passer sous <span className="font-mono">{fmtSec(defi.target_ms)}</span>
+        </p>
+      )}
+      {proposition && (
+        <button
+          onClick={onCreerDefi}
+          disabled={busy}
+          title="Le coach te lance un défi sur ce secteur — validé automatiquement dès qu'un de tes tours passe sous la cible"
+          className="mt-3 px-3 py-1.5 rounded-lg border border-pink-400/60 text-pink-500 text-sm font-bold hover:bg-pink-500/10 transition-colors disabled:opacity-50"
+        >
+          🎯 Défi : gagne {fmtDelta(proposition.gainMs).slice(1)} (passe sous {fmtSec(proposition.targetMs)})
+        </button>
       )}
     </div>
   );

@@ -23,6 +23,7 @@ import {
 } from '@/lib/circuitGeometry';
 import CircuitReplay from '@/components/CircuitReplay';
 import { comparerTraces, binDivergent, type SegmentComparaison } from '@/lib/traceComparison';
+import { ecartsParSecteur, secteursDisputes, type EcartSecteur } from '@/lib/secteursDisputes';
 
 export interface ConfigCarte {
   key:        string; // `${car_class}|${drivetrain}|${car_ordinal}` — même clé que la page circuit
@@ -269,6 +270,28 @@ export default function CircuitMap({
   const [modeCmp, setModeCmp] = useState(false);
   const cmpDisponible = Boolean(traces?.moi && traces?.rival);
 
+  // ── Mode « secteurs disputés » : heatmap COMMUNAUTAIRE — chaque secteur est
+  // coloré par l'écart entre les pilotes de la config (best_sectors : plus
+  // l'écart entre le meilleur et le plus lent est grand, plus il y a à gagner
+  // là). Aucune donnée personnelle requise : visible même déconnecté.
+  const [modeHeat, setModeHeat] = useState(false);
+
+  const ecarts = useMemo<EcartSecteur[]>(() => {
+    if (!configActive) return [];
+    return ecartsParSecteur(rowsParConfig.get(configActive.key)!);
+  }, [configActive, rowsParConfig]);
+
+  const heatDisponible = useMemo(() => ecarts.some(e => e.nbPilotes >= 2), [ecarts]);
+  const piresEcarts    = useMemo(() => secteursDisputes(ecarts), [ecarts]);
+  const maxEcart       = piresEcarts[0]?.ecartMs ?? 0;
+
+  /** Classe de trait d'un secteur en mode heatmap : rampe rose par écart, neutre sinon. */
+  const classeHeat = useCallback((e: EcartSecteur | undefined): string => {
+    if (!e || e.nbPilotes < 2 || e.ecartMs <= 0 || maxEcart <= 0) return NEUTRE_STROKE;
+    const bin = Math.min(3, Math.floor((e.ecartMs / maxEcart) * 4));
+    return BIN_STROKES[bin];
+  }, [maxEcart]);
+
   const segmentsCmp = useMemo((): SegmentComparaison[] | null => {
     if (!modeCmp || !traces?.moi || !traces?.rival) return null;
     const nbPas = Math.max(30, Math.min(100, Math.round(carte.longueurM / 60)));
@@ -481,7 +504,7 @@ export default function CircuitMap({
         )}
         {cmpDisponible && (
           <button
-            onClick={() => { setModeCmp(m => !m); setSurvol(null); }}
+            onClick={() => { setModeCmp(m => !m); setModeHeat(false); setSurvol(null); }}
             title="Colore le tracé par le temps que TON tour tracé perd ou gagne réellement, mètre par mètre, face au tour du rival choisi"
             aria-pressed={modeCmp}
             className={`px-3 py-1.5 rounded-lg border text-sm font-bold transition-colors whitespace-nowrap ${
@@ -491,6 +514,20 @@ export default function CircuitMap({
             }`}
           >
             {modeCmp ? '🗺️ Secteurs' : '🆚 Trace vs trace'}
+          </button>
+        )}
+        {heatDisponible && (
+          <button
+            onClick={() => { setModeHeat(m => !m); setModeCmp(false); setSurvol(null); }}
+            title="Heatmap communautaire : colore chaque secteur par l'écart entre les pilotes de la config — là où c'est le plus rose, c'est là que tout se joue"
+            aria-pressed={modeHeat}
+            className={`px-3 py-1.5 rounded-lg border text-sm font-bold transition-colors whitespace-nowrap ${
+              modeHeat
+                ? 'bg-pink-500/10 border-pink-400 text-pink-500'
+                : 'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white hover:border-pink-400 hover:text-pink-500'
+            }`}
+          >
+            {modeHeat ? '🗺️ Secteurs' : '🔥 Secteurs disputés'}
           </button>
         )}
       </div>
@@ -548,9 +585,12 @@ export default function CircuitMap({
           }) : segments.map((seg, i) => {
             const s = secteurs[i];
             const surligne = survol?.idx === i;
+            const colore = modeHeat
+              ? (ecarts[i]?.ecartMs ?? 0) > 0
+              : s?.deltaMs !== null;
             return (
               <g key={i}>
-                {(s?.deltaMs !== null || surligne) && (
+                {(colore || surligne) && (
                   <path
                     d={cheminSvg(seg)}
                     fill="none"
@@ -558,7 +598,7 @@ export default function CircuitMap({
                     vectorEffect="non-scaling-stroke"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className={classeSecteur(s)}
+                    className={modeHeat ? classeHeat(ecarts[i]) : classeSecteur(s)}
                   />
                 )}
                 {/* Zone de survol large (la tranche fine serait pénible à viser). */}
@@ -615,8 +655,21 @@ export default function CircuitMap({
           </span>
         )}
 
+        {/* Étiquette du secteur le plus disputé (mode heatmap). */}
+        {modeHeat && piresEcarts.length > 0 && secteurs.length > 0 && !survol && (
+          <span
+            className="absolute -translate-x-1/2 -translate-y-[130%] px-1.5 py-0.5 rounded-md text-[11px] font-bold bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white border border-neutral-300 dark:border-neutral-600 shadow pointer-events-none whitespace-nowrap"
+            style={enPourcent(pointADistance(
+              carte.points,
+              ((piresEcarts[0].index + 0.5) * carte.longueurM) / secteurs.length,
+            ))}
+          >
+            🔥 S{piresEcarts[0].index + 1} · {fmtDelta(piresEcarts[0].ecartMs).slice(1)} d&apos;écart
+          </span>
+        )}
+
         {/* Étiquette du pire secteur (label direct sélectif : uniquement le max). */}
-        {!modeCmp && pire !== undefined && pireMilieu && !survol && (
+        {!modeCmp && !modeHeat && pire !== undefined && pireMilieu && !survol && (
           <span
             className="absolute -translate-x-1/2 -translate-y-[130%] px-1.5 py-0.5 rounded-md text-[11px] font-bold bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white border border-neutral-300 dark:border-neutral-600 shadow pointer-events-none whitespace-nowrap"
             style={enPourcent(pireMilieu)}
@@ -662,8 +715,44 @@ export default function CircuitMap({
           );
         })()}
 
+        {/* Infobulle du mode heatmap : écart communautaire du secteur. */}
+        {modeHeat && survol && ecarts[survol.idx] && (() => {
+          const e = ecarts[survol.idx];
+          const s = secteurs[survol.idx];
+          return (
+            <div
+              className="absolute z-10 -translate-x-1/2 -translate-y-[115%] px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 shadow-lg text-xs pointer-events-none whitespace-nowrap"
+              style={{ left: survol.x, top: survol.y }}
+            >
+              <p className="font-bold text-neutral-900 dark:text-white mb-0.5">
+                Secteur {survol.idx + 1}
+                {virages.length > 0 && (
+                  <span className="font-normal text-neutral-500"> · {libelleVirages(survol.idx)}</span>
+                )}
+              </p>
+              {e.nbPilotes >= 2 ? (
+                <>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    Écart entre pilotes :{' '}
+                    <span className="font-mono font-bold text-pink-500">{fmtDelta(e.ecartMs).slice(1)}</span>
+                    <span className="text-neutral-500"> · {e.nbPilotes} pilotes</span>
+                  </p>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    Meilleur : <span className="font-mono font-bold text-neutral-900 dark:text-white">{formatTime(e.bestMs!)}</span>
+                    {s?.bestPseudo ? ` (${s.bestPseudo})` : ''}
+                  </p>
+                </>
+              ) : (
+                <p className="text-neutral-500">
+                  {e.nbPilotes === 1 ? 'Un seul pilote chronométré ici.' : 'Aucune donnée sur ce secteur.'}
+                </p>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Infobulle secteur. */}
-        {!modeCmp && survol && secteurs[survol.idx] && (
+        {!modeCmp && !modeHeat && survol && secteurs[survol.idx] && (
           <div
             className="absolute z-10 -translate-x-1/2 -translate-y-[115%] px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 shadow-lg text-xs pointer-events-none whitespace-nowrap"
             style={{ left: survol.x, top: survol.y }}
@@ -767,7 +856,46 @@ export default function CircuitMap({
             </>
           )}
 
-          {!modeCmp && (aMesDonnees ? (
+          {/* Résumé + légende du mode heatmap communautaire. */}
+          {modeHeat && (
+            <>
+              <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                {piresEcarts.length > 0 ? (
+                  <>
+                    🔥 C&apos;est au{' '}
+                    {piresEcarts.slice(0, 3).map((e, j) => (
+                      <span key={e.index}>
+                        {j > 0 && (j === Math.min(piresEcarts.length, 3) - 1 ? ' puis au ' : ', ')}
+                        <strong>secteur {e.index + 1}</strong>
+                        {' ('}
+                        {virages.length > 0 && <>{libelleVirages(e.index)} · </>}
+                        {fmtDelta(e.ecartMs).slice(1)} entre {e.nbPilotes} pilotes)
+                      </span>
+                    ))}
+                    {' '}que les pilotes de cette config se départagent le plus.
+                  </>
+                ) : (
+                  <>Pas encore assez de pilotes chronométrés sur cette config pour comparer les secteurs.</>
+                )}
+              </p>
+              {maxEcart > 0 && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                  {BIN_FONDS.map((f, b) => (
+                    <span key={b} className="flex items-center gap-1.5">
+                      <span className={`inline-block w-3 h-3 rounded-sm ${f}`} />
+                      {b === 0 ? 'Pilotes groupés' : b === 3 ? 'Tout se joue là' : b === 1 ? 'Écart modéré' : 'Gros écart'}
+                    </span>
+                  ))}
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block w-3 h-3 rounded-sm bg-neutral-300 dark:bg-neutral-700" />
+                    Moins de 2 pilotes
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
+          {!modeCmp && !modeHeat && (aMesDonnees ? (
             <p className="text-sm text-neutral-700 dark:text-neutral-300">
               {pires.length > 0 ? (
                 <>
@@ -799,7 +927,7 @@ export default function CircuitMap({
             </p>
           ))}
 
-          {!modeCmp && aMesDonnees && maxDelta > 0 && (
+          {!modeCmp && !modeHeat && aMesDonnees && maxDelta > 0 && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
               <span className="flex items-center gap-1.5">
                 <span className={`inline-block w-3 h-3 rounded-sm ${VIOLET_FOND}`} />

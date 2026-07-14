@@ -266,6 +266,9 @@ export default function Navbar() {
                   drivetrain: 'border-l-2 border-l-orange-400',
                   class:      'border-l-2 border-l-blue-400',
                   rival:      'border-l-2 border-l-emerald-400',
+                  duel:       'border-l-2 border-l-violet-400',
+                  objectif:   'border-l-2 border-l-violet-400',
+                  defi:       'border-l-2 border-l-pink-500',
                 };
                 return (
                   <>
