@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-trace-vs-trace-et-relais-360-voix",
+  id: "2026-07-relais-v361-mono-instance",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Double nouveauté ! 🆚 Mode « Trace vs trace » sur la carte des circuits : le tracé se colore mètre par mètre selon le temps que TON tour perd ou gagne réellement face au rival de ton choix (vitesses comparées au survol). Et 🔊 relais v3.6.0 : les annonces vocales — ton delta annoncé à la voix à chaque secteur, « moins deux dixièmes », sans quitter la route des yeux (inclut la v3.5.0 : plus jamais un chrono perdu si le site est injoignable).",
+  message: "Relais v3.6.1 : fini le piège du double lancement ! Si le relais tourne déjà, un deuxième clic sur l'exe affiche simplement « Le relais est déjà lancé » au lieu de créer une instance fantôme qui volait les données de Forza (symptôme : « En attente de Forza » à l'infini et un overlay illisible). Inclut la v3.6.0 : annonces vocales 🔊 du delta à chaque secteur.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
-  linkLabel: "Télécharger la v3.6.0",
+  linkLabel: "Télécharger la v3.6.1",
 
   /**
    * Style de la bannière.
