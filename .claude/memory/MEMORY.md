@@ -1,6 +1,6 @@
 # Mémoire — Better Rivals Web
 
-- [Roadmap idées juillet 2026](roadmap-idees-juillet-2026.md) — 14/07 : A (🆚) et E (voix) ✅ VALIDÉES en réel ; hors-ligne v3.5.0 intestable (pas de wifi sur le PC, ne plus redemander) ; C (Web Push) et F (auto-update) ❌ REJETÉES par le proprio — ne plus proposer ; B (défis coach) et D (heatmap secteurs) ✅ APPROUVÉES → chantier en cours
+- [Roadmap idées juillet 2026](roadmap-idees-juillet-2026.md) — SOLDÉE le 14/07 : A/E validées en réel ; C (Web Push) et F (auto-update) ❌ REJETÉES — ne plus proposer ; hors-ligne v3.5.0 intestable (pas de wifi) ; **B (défis coach) et D (heatmap 🔥 secteurs disputés) LIVRÉES (49d993e, migration coach_defis appliquée)** — reste vérif en réel ; ⚠️ + bug prod corrigé : CHECK notifications.type bloquait duel/objectif/rival EN SILENCE depuis toujours (élargi en prod ; leçon : vérifier `error` des inserts supabase-js)
 
 - [Bannière d'annonce à chaque nouveauté](bannière-annonce-nouveautes.md) — RÈGLE : toute feature site visible ⇒ bump `content/announcement.ts` (id + message + lien)
 - [Feature score de régularité](feature-regularite.md) — LIVRÉ 10/07 : session_laps (via /api/sectors, 90 j) + lib/regularite + GET /api/regularite + section 🎯 onglet Stats (1 ligne par config, dernière session + record). Tour n°1 écarté (relais v3.4.1 releasée : lap_number). À vérifier en conditions réelles au premier retour

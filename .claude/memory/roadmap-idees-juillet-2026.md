@@ -16,9 +16,10 @@ Le 13/07, le proprio a demandé une analyse d'optimisation site+relais puis des 
 - ⏸️ **v3.5.0 file d'attente hors-ligne : INTESTABLE** — le proprio n'a pas de wifi sur son PC (Ethernet), impossible de couper le réseau proprement pour tester. Ne plus la redemander ; elle se validera d'elle-même à la première vraie panne réseau.
 - ❌ **C. Web Push REJETÉE** (« pas de notif sur le téléphone ») — ne plus la proposer.
 - ❌ **F. Auto-update REJETÉE** (« sans solution pour le moment ») — le bandeau « màj dispo » reste le compromis.
-- ✅ **B. Défis générés par le coach : APPROUVÉE** (« oui, pourquoi pas ») — « gagne 0,3 s secteur 4 », validation auto par les traces suivantes.
-- ✅ **D. Heatmap communautaire des secteurs : APPROUVÉE** (« ça me va ») — depuis best_sectors, sur les pages circuit.
+- ✅ **B. Défis coach : LIVRÉE le 14/07 (commit 49d993e)** — table `coach_defis` (migration appliquée, RLS fermée, 1 défi actif/secteur/config par index unique partiel), API /api/defis (cible calculée SERVEUR : `lib/defisCoach.cibleDefi` = ~30 % de l'écart au meilleur secteur, borné [0,1 s ; 1 s], null si écart < 150 ms ; testée), validation auto dans POST /api/sectors (after(), garde anti-double-notif via update conditionnel), notif type 'defi', UI onglet Coach (bloc « Mes défis » + bouton par secteur). RESTE : vérif en réel par le proprio (créer un défi, le réussir en jeu).
+- ✅ **D. Heatmap secteurs disputés : LIVRÉE le 14/07 (même commit)** — `lib/secteursDisputes` (écart max−min par secteur, testée), mode « 🔥 Secteurs disputés » sur la carte circuit (public, même déconnecté), bloc serveur indexable « Les secteurs les plus disputés » sur les pages circuit (SEO ; rendu vérifié en local sur le circuit 7). RESTE : coup d'œil du proprio.
+- ⚠️ **BUG PROD TROUVÉ ET CORRIGÉ en route** : le CHECK `notifications.type` n'autorisait que exact/drivetrain/class → les notifs duel/objectif/rival échouaient EN SILENCE depuis leur création (0 ligne de ces types en base, inserts sans vérif d'erreur). Contrainte élargie en prod aux 7 types (+ 'defi'). Leçon : les inserts supabase-js ne lèvent PAS d'exception — toujours vérifier `error` sur les écritures qui comptent.
 + en réserve : [[idee-section-reglages]] (vraie UI de bibliothèque de réglages, tune_setups existe déjà).
 
-**Why:** ne pas re-proposer C/F (rejetées), ne pas redemander le test hors-ligne (pas de wifi), savoir que B et D sont le chantier en cours.
-**How to apply:** implémenter D (petite) puis B (grosse) ; mise en œuvre lancée le 14/07 par Claude Fixe.
+**Why:** ne pas re-proposer C/F (rejetées), ne pas redemander le test hors-ligne (pas de wifi) ; B et D sont livrées, la roadmap juillet est soldée.
+**How to apply:** au prochain retour du proprio, faire vérifier B (créer/réussir un défi) et D (mode 🔥 + bloc sous la carte) en réel.
