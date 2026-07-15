@@ -48,18 +48,13 @@ Retour proprio 15/07 (au portable) :
 3. **Site — mode 🆚 « Trace vs trace »** : ✅ FONCTIONNE connecté.
 4. **Régularité (onglet Stats)** : ✅ TROUVÉE et FONCTIONNE (15/07). (C'est le dernier bloc en bas de l'onglet 📊 Stats de /profil.)
 
-## 3bis. REPRISE 15/07 — heatmap secteurs (idée D) quasi finie sur le portable
+## 3bis. ⚠️ INCIDENT DE COORDINATION 15/07 — leçon
 
-Le proprio a tranché le 15/07 : C (Web Push) et F (auto-update) ÉCARTÉES définitivement, D (heatmap) choisie, B (défis coach) conditionnelle — voir [[roadmap-idees-juillet-2026]].
+Le 15/07 sur le portable, le proprio a redonné les décisions B/C/D/F (les mêmes que celles données au fixe le 14/07) et Claude Portable a RÉIMPLÉMENTÉ l'idée D de zéro (lib/sectorHeatmap + SecteursHeatmap, une matinée de travail)… avant de découvrir AU PUSH que le fixe avait déjà livré B **et** D la veille (commit 49d993e : lib/secteursDisputes, mode 🔥 carte, bloc SEO, défis coach). Le doublon a été abandonné au rebase (`git rebase --skip`), la version du fixe (plus complète) est conservée. **LEÇON (la deuxième fois !) : `git fetch`/`git pull` sur le repo web AVANT toute session de travail, et surtout avant de commencer une feature** — les mémoires versionnées du repo racontent ce que l'autre instance a fait.
 
-**D est LIVRÉE et commitée** (commit `4e9375b`, poussé après rebase) : `lib/sectorHeatmap.ts` (logique pure, 7 tests) + `lib/circuitHeatmap.ts` (fetch anon + unstable_cache 5 min) + `app/circuits/[slug]/SecteursHeatmap.tsx` (bande « 🔥 Où se joue la différence » par config, rampe séquentielle pink VALIDÉE dataviz clair ET sombre : clair 400→600→800→950, sombre 800→700→500→400, ancre inversée) + intégration page circuit + bannière annonce bumpée (`2026-07-heatmap-secteurs`). Vérifié : 94 tests, lint 0 warning, typecheck, build, rendu réel contrôlé en SOMBRE sur /circuits/7-circuit-de-l-autoroute (screenshot headless, nickel).
-
-**RESTE (petit, à faire au prochain démarrage)** :
-1. Le tout dernier fix (espace insécable « 2 pilotes » dans SecteursHeatmap.tsx, commité) n'a PAS été re-vérifié en rendu — recharger une page circuit et relire la phrase « Plus gros écart ».
-2. Contrôle visuel du mode CLAIR jamais fait (le thème est piloté par next-themes via la classe `.dark`, le headless anonyme rend le sombre) — basculer le thème dans le navigateur et vérifier la bande. La rampe claire est déjà validée par le script dataviz, c'est une formalité.
-3. Vercel déploie le push : vérifier en prod au passage.
+État réel : voir [[roadmap-idees-juillet-2026]] (version du fixe, à jour) — B et D LIVRÉES le 14/07, C et F rejetées, roadmap juillet soldée. Restent les vérifs proprio : B (créer/réussir un défi en jeu) et D (mode 🔥 sur la carte + bloc « secteurs disputés » des pages circuit).
 
 ## 4. Reste au long cours
 
-- Idées non tranchées : voir [[roadmap-idees-juillet-2026]] (C push web recommandée en premier). Ne pas pousser, attendre le choix du proprio.
+- Roadmap juillet SOLDÉE (voir 3bis). Prochaine idée éventuelle en réserve : [[idee-section-reglages]].
 - Découpe du relais (4 400 lignes) en modules : envisagée, plutôt à faire sur le fixe, à l'occasion d'un gros chantier.
