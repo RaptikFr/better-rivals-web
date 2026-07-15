@@ -1,6 +1,6 @@
 ---
 name: feature-delta-live
-description: "Delta live vs PB (#1 de la chaîne télémétrie) : overlay relais « +0,3s vs PB » à distance égale, par interpolation de la trace du meilleur temps perso. CODE RELAIS ÉCRIT le 20/06 (source v21, APP_VERSION 1.14.0) côté FIXE. GET /api/traces déjà fait (e1b2cfa). PAS encore release : attend validation offsets en jeu, puis build+gh+bump /telecharger"
+description: "✅ LIVRÉ : delta live vs PB (#1 chaîne télémétrie), overlay relais par interpolation de la trace du PB (GET /api/traces, e1b2cfa). Releasé (relais v2.0.0 par le fixe, toujours présent en v3.6.0 où LiveDelta.fraction_courante alimente les annonces vocales). Détails d'implémentation ci-dessous."
 metadata:
   node_type: memory
   type: project

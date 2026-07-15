@@ -1,6 +1,6 @@
 ---
 name: todo-proprio-delta-live
-description: "Actions PROPRIO pour débloquer le delta live (#1), à restituer mot pour mot quand il est sur le PC fixe. Le GET /api/traces côté site est FAIT (commit e1b2cfa) ; reste sa validation en jeu + l'intégration relais (gitignoré)"
+description: "✅ CLOS (constaté 15/07) : le delta live est releasé depuis longtemps (relais v2.0.0 puis suivantes, LiveDelta sert de base aux annonces vocales v3.6.0). Plus aucune action proprio en attente ici."
 metadata: 
   node_type: memory
   type: project
