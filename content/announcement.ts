@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-defis-coach-et-secteurs-disputes",
+  id: "2026-07-relais-v362",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Double nouveauté ! 🎯 Défis coach : depuis l'onglet Coach de ton profil, transforme un conseil en défi chiffré (« passe le secteur 4 sous 25,5 s ») — validé automatiquement dès qu'un de tes tours y arrive, notification à la clé. Et 🔥 secteurs disputés : sur la carte de chaque circuit, une heatmap montre où les pilotes de la config se départagent le plus — c'est là que ça se joue.",
+  message: "Relais v3.6.2 : l'enregistrement d'une nouvelle voiture est fiabilisé 🚗 — le bouton « Créer » de la popup fonctionne désormais partout (écran de sélection du circuit, monde ouvert), plus seulement au moment d'envoyer un chrono, et les erreurs affichent leur vraie cause. Mets ton relais à jour !",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
-  link: "/circuits",
-  linkLabel: "Voir les circuits",
+  link: "/telecharger",
+  linkLabel: "Télécharger",
 
   /**
    * Style de la bannière.
