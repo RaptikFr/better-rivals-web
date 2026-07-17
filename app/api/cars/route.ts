@@ -31,6 +31,81 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ found: !!data }, { status: 200 });
 }
 
+// Création depuis le relais : le bouton « Créer » de la popup voiture inconnue.
+// Jusqu'au relais v3.6.1 la création ne partait qu'accrochée à un POST /api/times ;
+// hors envoi de chrono (écran de sélection, monde ouvert) le formulaire était
+// perdu. Cette route donne au bouton un vrai backend, quel que soit le contexte.
+export async function POST(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Token manquant.' }, { status: 401 });
+    }
+
+    const user = await utilisateurDepuisAuthHeader(authHeader);
+    if (!user) {
+      return NextResponse.json({ error: 'Token invalide ou expiré. Reconnecte-toi.' }, { status: 401 });
+    }
+
+    const body         = await request.json();
+    const carOrdinal   = Number(body?.car_ordinal);
+    const manufacturer = typeof body?.manufacturer === 'string' ? body.manufacturer.trim() : '';
+    const name         = typeof body?.name === 'string' ? body.name.trim() : '';
+    const year         = Number(body?.year);
+    if (!Number.isInteger(carOrdinal) || carOrdinal <= 0 ||
+        !manufacturer || manufacturer.length > 60 ||
+        !name || name.length > 100 ||
+        !Number.isInteger(year) || year < 1900 || year > 2030) {
+      return NextResponse.json({ error: 'Paramètres invalides.' }, { status: 400 });
+    }
+
+    const { data: existing } = await supabaseAdmin
+      .from('cars')
+      .select('id')
+      .eq('car_ordinal', carOrdinal)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json({ error: 'Cet ordinal est déjà associé à une voiture.' }, { status: 409 });
+    }
+
+    // Même voiture déjà au catalogue sans ordinal → on associe au lieu de créer
+    // un doublon (équivaut à un Rapprocher que l'utilisateur n'a pas trouvé).
+    const motif = (s: string) => s.replace(/[\\%_]/g, '\\$&');
+    const { data: doublon } = await supabaseAdmin
+      .from('cars')
+      .select('id')
+      .is('car_ordinal', null)
+      .ilike('manufacturer', motif(manufacturer))
+      .ilike('name', motif(name))
+      .eq('year', year)
+      .limit(1)
+      .maybeSingle();
+
+    if (doublon) {
+      const { error: linkError } = await supabaseAdmin
+        .from('cars')
+        .update({ car_ordinal: carOrdinal })
+        .eq('id', doublon.id);
+      if (linkError) {
+        return NextResponse.json({ error: 'Association impossible.' }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true, linked: true }, { status: 200 });
+    }
+
+    const { error: insertError } = await supabaseAdmin
+      .from('cars')
+      .insert([{ car_ordinal: carOrdinal, manufacturer, name, year }]);
+
+    if (insertError) {
+      return NextResponse.json({ error: 'Création impossible.' }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, created: true }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
+  }
+}
+
 // Rapprochement depuis le relais : associe un car_ordinal détecté en jeu à une
 // voiture du catalogue qui n'en a pas encore. Les écritures directes sur cars
 // sont fermées par RLS depuis l'audit du 11 juin 2026 — tout passe par ici.
