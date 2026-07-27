@@ -79,6 +79,56 @@ export default async function Home() {
         </div>
       </div>
 
+      {/* --- SECTION POURQUOI BETTER RIVALS --- */}
+      <div className="mt-24 max-w-5xl mx-auto text-left w-full border-t border-neutral-200 dark:border-neutral-800 pt-16">
+        <h2 className="text-3xl font-bold text-center mb-4">Pourquoi Better Rivals ?</h2>
+        <p className="text-center text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mb-12">
+          Sur les classements officiels de Forza Horizon 6, la voiture la plus rapide gagne toujours — peu importe qui est au volant. Better Rivals change la règle du jeu.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-8 rounded-xl">
+            <div className="text-sm font-bold uppercase tracking-wide text-neutral-500 mb-3">Le problème</div>
+            <h3 className="text-xl font-bold mb-3">Un classement, mais pas un vrai duel</h3>
+            <p className="text-neutral-600 dark:text-neutral-400">
+              Deux joueurs peuvent avoir exactement le même talent, mais un écart de plusieurs secondes simplement parce que l&apos;un roule dans une supercar mieux classée que l&apos;autre. Le classement récompense le garage, pas le pilotage.
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-pink-500/10 to-violet-600/10 border border-pink-500/30 p-8 rounded-xl">
+            <div className="text-sm font-bold uppercase tracking-wide text-pink-500 mb-3">La solution Better Rivals</div>
+            <h3 className="text-xl font-bold mb-3">Même voiture, même classe, même transmission</h3>
+            <p className="text-neutral-600 dark:text-neutral-400">
+              Chaque classement isole une configuration précise : même modèle, même classe de performance, même transmission. Ton temps n&apos;est comparé qu&apos;à ceux qui ont pris exactement les mêmes armes. Le seul écart qui reste, c&apos;est le pilotage.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-6">
+          <div className="p-6">
+            <div className="text-2xl mb-2">📊</div>
+            <h4 className="font-bold mb-1">Télémétrie &amp; coach pilotage</h4>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              Le relais capture ta trace tour par tour et t&apos;indique précisément où tu perds du temps, secteur par secteur.
+            </p>
+          </div>
+          <div className="p-6">
+            <div className="text-2xl mb-2">⚔️</div>
+            <h4 className="font-bold mb-1">Duels &amp; objectifs</h4>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              Défie un rival sur une configuration précise, ou fixe-toi l&apos;objectif de battre le temps d&apos;un joueur donné.
+            </p>
+          </div>
+          <div className="p-6">
+            <div className="text-2xl mb-2">🏁</div>
+            <h4 className="font-bold mb-1">Circuits officiels &amp; communauté</h4>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              Que tu roules sur un tracé Forza ou une épreuve EventLab de la communauté, ton chrono compte.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <NouveauxLeaders items={leaders} />
 
       <DerniersChronos chronos={chronos} />
