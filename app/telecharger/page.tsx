@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Télécharger le Relais',
-  description: 'Téléchargez BetterRivals.exe, le relais UDP Windows qui capte automatiquement vos données télémétriques Forza et les envoie sur Better Rivals.',
+  description: 'Téléchargez le Relais, le programme UDP Windows qui capte automatiquement vos données télémétriques Forza et les envoie sur Better Rivals.',
 };
 
 export default function TelechargerPage() {
@@ -27,7 +27,7 @@ export default function TelechargerPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <a
-            href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals.exe"
+            href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.6.4.exe"
             className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:scale-105 hover:opacity-90 transition-all shadow-lg shadow-pink-500/20"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -35,7 +35,7 @@ export default function TelechargerPage() {
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Télécharger v3.6.3
+            Télécharger v3.6.4
           </a>
           <Link
             href="/inscription"
@@ -105,7 +105,7 @@ export default function TelechargerPage() {
           <div className="flex gap-5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6">
             <div className="text-violet-500 font-black text-3xl leading-none w-10 shrink-0">02</div>
             <div>
-              <p className="font-bold mb-1">Télécharge et lance <code className="text-sm bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded">BetterRivals.exe</code></p>
+              <p className="font-bold mb-1">Télécharge et lance le fichier <code className="text-sm bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded">.exe</code> téléchargé</p>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 Aucune installation — un simple double-clic suffit. Windows SmartScreen peut
                 afficher un avertissement la première fois ; clique sur &quot;Informations complémentaires&quot;
@@ -187,7 +187,7 @@ export default function TelechargerPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
             <a
-              href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals.exe"
+              href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.6.4.exe"
               className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:scale-105 hover:opacity-90 transition-all shadow-lg shadow-pink-500/20"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -195,7 +195,7 @@ export default function TelechargerPage() {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Télécharger v3.6.3
+              Télécharger v3.6.4
             </a>
             <Link
               href="/classements"

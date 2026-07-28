@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v363",
+  id: "2026-07-relais-v364",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.6.3 : la popup « Nouvelle voiture détectée » ne s'ouvre plus à moitié hors écran quand l'overlay est placé tout en haut 🚗. Mets ton relais à jour !",
+  message: "Relais v3.6.4 : le mot de passe n'est plus stocké en clair pour « Se souvenir de moi », et les chronos en attente de renvoi sont mieux protégés contre les coupures 🔒. Mets ton relais à jour !",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
