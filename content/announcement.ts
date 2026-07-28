@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v364",
+  id: "2026-07-relais-v365",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.6.4 : le mot de passe n'est plus stocké en clair pour « Se souvenir de moi », et les chronos en attente de renvoi sont mieux protégés contre les coupures 🔒. Mets ton relais à jour !",
+  message: "Relais v3.6.5 : nouvelles icônes (l'exe et les fenêtres du relais affichent enfin le logo Better Rivals). Mets ton relais à jour !",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",

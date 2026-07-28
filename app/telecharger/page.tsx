@@ -27,7 +27,7 @@ export default function TelechargerPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <a
-            href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.6.4.exe"
+            href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.6.5.exe"
             className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:scale-105 hover:opacity-90 transition-all shadow-lg shadow-pink-500/20"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -35,7 +35,7 @@ export default function TelechargerPage() {
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Télécharger v3.6.4
+            Télécharger v3.6.5
           </a>
           <Link
             href="/inscription"
@@ -187,7 +187,7 @@ export default function TelechargerPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
             <a
-              href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.6.4.exe"
+              href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.6.5.exe"
               className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:scale-105 hover:opacity-90 transition-all shadow-lg shadow-pink-500/20"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -195,7 +195,7 @@ export default function TelechargerPage() {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Télécharger v3.6.4
+              Télécharger v3.6.5
             </a>
             <Link
               href="/classements"
