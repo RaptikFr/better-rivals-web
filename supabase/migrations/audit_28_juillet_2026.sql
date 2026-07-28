@@ -1,0 +1,33 @@
+-- Audit complet du 28 juillet 2026 — correctifs sécurité + revue perf.
+--
+-- 1. SÉCURITÉ — my_discord_tag() : la migration audit_juillet_2026.sql avait
+--    déjà révoqué EXECUTE pour anon, mais un CREATE OR REPLACE ultérieur a
+--    redonné le droit par défaut à `authenticated` (advisor Supabase :
+--    authenticated_security_definer_function_executable). Impact réel faible
+--    (la fonction ne renvoie que le discord_tag de l'appelant lui-même via
+--    auth.uid()), mais on referme quand même la surface. ⚠️ Ce droit sera
+--    redonné par défaut à CHAQUE futur CREATE OR REPLACE de cette fonction —
+--    penser à rejouer ce REVOKE si elle est un jour modifiée.
+REVOKE EXECUTE ON FUNCTION public.my_discord_tag() FROM authenticated;
+
+-- 2. INDEX FK NON COUVERTES (advisor unindexed_foreign_keys, 12 signalées) —
+--    DÉLIBÉRÉMENT AUCUNE AJOUTÉE cette fois. Vérification colonne par colonne
+--    du code applicatif (app/api/**, lib/**) le 28 juillet 2026 :
+--    - best_sectors.player_id, duels.winner_id, tracks.submitted_by,
+--      track_geometries.source_player_id, tune_setups.car_ordinal/track_id,
+--      lap_times_history.car_ordinal/track_id : jamais utilisées comme
+--      prédicat WHERE, seulement lues/affichées ou filtrées côté client.
+--    - coach_defis.track_id : filtrée en combo avec player_id sur le chemin
+--      chaud POST /api/sectors (chaque tour posté par le relais), déjà
+--      couverte par coach_defis_validation_idx (player_id, track_id,
+--      car_ordinal) — l'advisor cherche une colonne EN TÊTE d'index, pas une
+--      requête réellement non couverte.
+--    - objectifs.track_id, duels.track_id, reports.lap_time_id : idem,
+--      toujours filtrées en égalité combinée avec d'autres colonnes déjà
+--      couvertes par un index composite existant (objectifs_config_unique,
+--      reports_reporter_id_lap_time_id_key) même si la colonne FK n'est pas
+--      en tête — un btree reste utilisable quand toutes les colonnes
+--      contraintes par égalité y figurent, peu importe l'ordre du .eq().
+--    Ajouter ces index maintenant coûterait en écriture sans gain de lecture
+--    mesurable. À ré-évaluer seulement si un nouveau pattern de requête
+--    filtre réellement sur une de ces colonnes seule.

@@ -59,11 +59,12 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
 
   useEffect(() => {
     async function load() {
-      const { data: player, error: playerError } = await supabase
-        .from('players')
-        .select('id, pseudo')
-        .eq('pseudo', pseudo)
-        .single();
+      // Le joueur consulté et la session du visiteur sont indépendants : on
+      // les résout en parallèle plutôt qu'en cascade.
+      const [{ data: player, error: playerError }, { data: { session } }] = await Promise.all([
+        supabase.from('players').select('id, pseudo').eq('pseudo', pseudo).single(),
+        supabase.auth.getSession(),
+      ]);
 
       if (playerError || !player) {
         setNotFound(true);
@@ -89,7 +90,6 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
       // Mes objectifs visant CE joueur → état initial des boutons « 🎯 »
       // (uniquement si connecté ; sinon les boutons restent masqués).
       try {
-        const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
           const res = await fetch('/api/objectifs', {
             headers: { Authorization: `Bearer ${session.access_token}` },
