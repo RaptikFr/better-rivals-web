@@ -14,6 +14,8 @@ import { FollowButton } from '@/components/FollowButton';
 import { TargetButton } from '@/components/TargetButton';
 import { ChallengeButton } from '@/components/ChallengeButton';
 import { objectifConfigKey } from '@/lib/objectifs';
+import { usePlayer } from '@/hooks/usePlayer';
+import { suggestDuels, type OwnLap } from '@/lib/garage';
 import type { Drivetrain } from '@/types/supabase';
 
 interface Lap {
@@ -37,6 +39,7 @@ interface Circuit {
 
 export default function JoueurClient({ pseudo }: { pseudo: string }) {
   const { formatTime } = usePreferences();
+  const { player: me } = usePlayer();
   const [laps,         setLaps]         = useState<Lap[]>([]);
   const [playerId,     setPlayerId]     = useState<string | null>(null);
   const [rankings,     setRankings]     = useState<PlayerRankings | null>(null);
@@ -47,6 +50,10 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
   // Configs sur lesquelles j'ai déjà un objectif visant ce joueur (état initial
   // des boutons « 🎯 »). Vide si je ne suis pas connecté.
   const [myObjectifKeys, setMyObjectifKeys] = useState<Set<string>>(new Set());
+  // Suggestions de défi : mes temps sur des modèles que CE joueur déclare
+  // posséder (garage), même s'il n'a jamais roulé la config exacte.
+  const [theirGarage,   setTheirGarage]   = useState<{ car_ordinal: number; cars: { manufacturer: string | null; name: string; year: number | null } | null }[]>([]);
+  const [myMatchingLaps, setMyMatchingLaps] = useState<Lap[]>([]);
 
   function toggleCircuit(trackId: number) {
     setOpenCircuits(prev => {
@@ -107,6 +114,63 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
     }
     load();
   }, [pseudo]);
+
+  // Voitures en commun : le garage de CE joueur × mes propres temps sur ces
+  // modèles. Ignoré si je ne suis pas connecté ou si je consulte mon propre
+  // profil (même garde que ChallengeButton/TargetButton).
+  useEffect(() => {
+    if (!me || !playerId || me.id === playerId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset volontaire des suggestions au changement de joueur/session (même pattern que hooks/usePlayer.ts)
+      setTheirGarage([]);
+      setMyMatchingLaps([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // Pas de FK garage.car_ordinal → cars (même choix que duels.car_ordinal),
+      // donc pas d'embed PostgREST possible : deux requêtes séparées.
+      const { data: garageRows } = await supabase
+        .from('garage')
+        .select('car_ordinal')
+        .eq('player_id', playerId);
+      const ordinals = (garageRows ?? []).map(r => r.car_ordinal);
+      if (cancelled) return;
+      if (ordinals.length === 0) { setTheirGarage([]); setMyMatchingLaps([]); return; }
+
+      const { data: carsRows } = await supabase
+        .from('cars')
+        .select('car_ordinal, manufacturer, name, year')
+        .in('car_ordinal', ordinals);
+      if (cancelled) return;
+      const carByOrdinal = new Map((carsRows ?? []).map(c => [c.car_ordinal, c]));
+      const garage = ordinals.map(car_ordinal => ({ car_ordinal, cars: carByOrdinal.get(car_ordinal) ?? null }));
+      setTheirGarage(garage);
+
+      const { data: myLaps } = await supabase
+        .from('lap_times')
+        .select('time_ms, car_class, car_pi, drivetrain, car_ordinal, track_id, created_at, cars(manufacturer, name, year), tracks(name, length_km)')
+        .eq('player_id', me.id)
+        .in('car_ordinal', garage.map(g => g.car_ordinal));
+      if (!cancelled) setMyMatchingLaps((myLaps ?? []) as Lap[]);
+    })();
+    return () => { cancelled = true; };
+  }, [me, playerId]);
+
+  const commonCarSuggestions = useMemo(
+    () => (playerId ? suggestDuels(myMatchingLaps as OwnLap[], playerId, new Set(theirGarage.map(g => g.car_ordinal))) : []),
+    [myMatchingLaps, theirGarage, playerId],
+  );
+  const commonCarLabel = useMemo(() => {
+    const byOrdinal = new Map(theirGarage.map(g => [g.car_ordinal, g.cars]));
+    return (carOrdinal: number) => {
+      const c = byOrdinal.get(carOrdinal);
+      return c ? `${c.year ?? ''} ${c.manufacturer ?? ''} ${c.name ?? ''}`.trim() : `Voiture #${carOrdinal}`;
+    };
+  }, [theirGarage]);
+  const commonTrackLabel = useMemo(() => {
+    const byTrackId = new Map(myMatchingLaps.map(l => [l.track_id, l.tracks?.name]));
+    return (trackId: number) => byTrackId.get(trackId) ?? `Circuit #${trackId}`;
+  }, [myMatchingLaps]);
 
   const badges = useMemo(
     () => computeBadges({ laps, ranked: rankings?.ranked ?? [] }),
@@ -195,6 +259,28 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
             </div>
           )}
         </div>
+
+        {/* Voitures en commun — suggestions de défi via le garage déclaré */}
+        {commonCarSuggestions.length > 0 && (
+          <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 mb-8">
+            <h2 className="font-bold text-neutral-900 dark:text-white mb-1">
+              🚗 Voitures en commun — {commonCarSuggestions.length} défi{commonCarSuggestions.length > 1 ? 's' : ''} possible{commonCarSuggestions.length > 1 ? 's' : ''}
+            </h2>
+            <p className="text-sm text-neutral-500 mb-4">
+              {pseudo} déclare posséder ces modèles — tu as déjà un temps dessus, tu peux le défier directement.
+            </p>
+            <div className="space-y-2">
+              {commonCarSuggestions.map(s => (
+                <div key={`${s.trackId}-${s.carOrdinal}-${s.carClass}-${s.drivetrain}`} className="flex items-center justify-between gap-3 text-sm bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg px-4 py-2.5">
+                  <span className="text-neutral-700 dark:text-neutral-300 truncate">
+                    {commonTrackLabel(s.trackId)} — {commonCarLabel(s.carOrdinal)} ({s.carClass}/{s.drivetrain})
+                  </span>
+                  <ChallengeButton compact config={s} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Tableau des temps */}
         {laps.length === 0 ? (

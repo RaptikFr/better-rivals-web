@@ -949,6 +949,24 @@ export type Database = {
           },
         ]
       }
+      garage: {
+        Row: {
+          car_ordinal: number
+          created_at: string
+          player_id: string
+        }
+        Insert: {
+          car_ordinal: number
+          created_at?: string
+          player_id: string
+        }
+        Update: {
+          car_ordinal?: number
+          created_at?: string
+          player_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

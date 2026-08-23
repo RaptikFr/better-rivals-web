@@ -15,10 +15,10 @@ import { EmptyState, LapTable, ProgressionChart, type ProfileLap, type Stats } f
 import { SuiviTab } from './SuiviTab';
 import { CoachTab } from './CoachTab';
 import { CopiloteTab } from './CopiloteTab';
-import { ClassementsTab, RivauxTab, StatsTab } from './ProfilTabs';
+import { ClassementsTab, RivauxTab, StatsTab, GarageTab } from './ProfilTabs';
 import { usePreferences } from '@/hooks/usePreferences';
 
-type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'suivi' | 'rivaux' | 'coach' | 'copilote';
+type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'suivi' | 'rivaux' | 'garage' | 'coach' | 'copilote';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'recents',     label: 'Récents',        icon: '🕐' },
@@ -26,6 +26,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'suivi',       label: 'Suivi',           icon: '📈' },
   { id: 'classements', label: 'Mes classements', icon: '🏆' },
   { id: 'rivaux',      label: 'Mes rivaux',      icon: '👥' },
+  { id: 'garage',      label: 'Mon garage',      icon: '🚗' },
   { id: 'stats',       label: 'Statistiques',    icon: '📊' },
 ];
 
@@ -465,7 +466,8 @@ export default function ProfilClient() {
 
         {activeTab === 'classements' && <ClassementsTab laps={laps} rivalsByConfig={rankings?.rivalsByConfig ?? new Map()} />}
         {activeTab === 'suivi'       && playerId !== null && <SuiviTab playerId={playerId} laps={laps} />}
-        {activeTab === 'rivaux'      && playerId !== null && <RivauxTab playerId={playerId} />}
+        {activeTab === 'rivaux'      && playerId !== null && <RivauxTab playerId={playerId} laps={laps} />}
+        {activeTab === 'garage'      && playerId !== null && <GarageTab playerId={playerId} />}
         {activeTab === 'stats'       && <StatsTab stats={stats} laps={laps} />}
         {activeTab === 'coach'       && prefs.coachReport && <CoachTab laps={laps} />}
         {activeTab === 'copilote'    && prefs.coachReport && <CopiloteTab />}

@@ -6,8 +6,12 @@ import { supabase } from '@/lib/supabase';
 import { usePreferences } from '@/hooks/usePreferences';
 import { DrivetrainBadge } from '@/components/DrivetrainBadge';
 import { RivalsCell } from '@/components/RivalsCell';
+import { ChallengeButton } from '@/components/ChallengeButton';
 import type { ConfigRivals } from '@/lib/rivals';
 import { rivalsFor } from '@/lib/playerRankings';
+import { fetchAllRows } from '@/lib/fetchAllRows';
+import { configKey } from '@/lib/podiums';
+import { suggestDuels } from '@/lib/garage';
 import { EmptyState, type ProfileLap, type Stats, type FollowedPlayer } from './profilShared';
 import { RegulariteSection } from './RegulariteSection';
 
@@ -62,10 +66,22 @@ export function ClassementsTab({ laps, rivalsByConfig }: { laps: ProfileLap[]; r
   );
 }
 
-export function RivauxTab({ playerId }: { playerId: string }) {
+export function RivauxTab({ playerId, laps }: { playerId: string; laps: ProfileLap[] }) {
   const [followed, setFollowed] = useState<FollowedPlayer[]>([]);
+  const [garageByPlayer, setGarageByPlayer] = useState<Map<string, Set<number>>>(new Map());
   const [loading,  setLoading]  = useState(true);
   const [busyId,   setBusyId]   = useState<string | null>(null);
+
+  // Libellé « circuit — voiture » par config, pour afficher les suggestions
+  // de défi sans requête supplémentaire (laps porte déjà les jointures).
+  const labelByConfig = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const lap of laps) {
+      const car = `${lap.cars?.year ?? ''} ${lap.cars?.manufacturer ?? ''} ${lap.cars?.name ?? ''}`.trim();
+      map.set(configKey(lap), `${lap.tracks?.name ?? '—'} — ${car || '—'} (${lap.car_class}/${lap.drivetrain})`);
+    }
+    return map;
+  }, [laps]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,17 +93,22 @@ export function RivauxTab({ playerId }: { playerId: string }) {
         .order('created_at', { ascending: false });
       const ids = (rows ?? []).map(r => r.followed_player_id);
       if (ids.length === 0) {
-        if (!cancelled) { setFollowed([]); setLoading(false); }
+        if (!cancelled) { setFollowed([]); setGarageByPlayer(new Map()); setLoading(false); }
         return;
       }
-      const { data: players } = await supabase
-        .from('players')
-        .select('id, pseudo, discord_tag:discord_tag_public')
-        .in('id', ids);
+      const [{ data: players }, { data: garageRows }] = await Promise.all([
+        supabase.from('players').select('id, pseudo, discord_tag:discord_tag_public').in('id', ids),
+        supabase.from('garage').select('player_id, car_ordinal').in('player_id', ids),
+      ]);
       // On conserve l'ordre des suivis (du plus récent au plus ancien).
       const byId = new Map((players ?? []).map(p => [p.id, p as FollowedPlayer]));
       const ordered = ids.map(id => byId.get(id)).filter((p): p is FollowedPlayer => !!p);
-      if (!cancelled) { setFollowed(ordered); setLoading(false); }
+      const garageMap = new Map<string, Set<number>>();
+      for (const row of garageRows ?? []) {
+        if (!garageMap.has(row.player_id)) garageMap.set(row.player_id, new Set());
+        garageMap.get(row.player_id)!.add(row.car_ordinal);
+      }
+      if (!cancelled) { setFollowed(ordered); setGarageByPlayer(garageMap); setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [playerId]);
@@ -119,35 +140,157 @@ export function RivauxTab({ playerId }: { playerId: string }) {
         <>
           <p className="text-sm text-neutral-500">{followed.length} pilote{followed.length !== 1 ? 's' : ''} suivi{followed.length !== 1 ? 's' : ''}</p>
           <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
-            {followed.map(p => (
-              <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
-                <div className="w-10 h-10 flex-shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center text-sm font-extrabold text-white">
-                  {p.pseudo.charAt(0).toUpperCase()}
+            {followed.map(p => {
+              const suggestions = suggestDuels(laps, p.id, garageByPlayer.get(p.id) ?? new Set());
+              return (
+                <div key={p.id} className="border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0">
+                  <div className="flex items-center gap-3 px-4 py-3 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
+                    <div className="w-10 h-10 flex-shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center text-sm font-extrabold text-white">
+                      {p.pseudo.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/joueurs/${encodeURIComponent(p.pseudo)}`} className="font-bold text-neutral-900 dark:text-white hover:text-pink-400 transition-colors truncate block">
+                        {p.pseudo}
+                      </Link>
+                      {p.discord_tag && <span className="text-xs text-indigo-400">Discord lié</span>}
+                    </div>
+                    <Link
+                      href={`/joueurs/${encodeURIComponent(p.pseudo)}`}
+                      className="hidden sm:inline-block px-3 py-1.5 rounded-full text-sm font-semibold text-neutral-600 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-700 hover:border-pink-400 hover:text-pink-400 transition-colors"
+                    >
+                      Voir le profil
+                    </Link>
+                    <button
+                      onClick={() => unfollow(p.id)}
+                      disabled={busyId === p.id}
+                      className="px-3 py-1.5 rounded-full text-sm font-bold text-neutral-700 dark:text-neutral-300 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 hover:border-red-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                    >
+                      {busyId === p.id ? '…' : 'Ne plus suivre'}
+                    </button>
+                  </div>
+                  {suggestions.length > 0 && (
+                    <div className="px-4 pb-3 pl-[3.75rem] space-y-1.5">
+                      <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                        ⚔️ Défis possibles ({suggestions.length}) — voitures en commun
+                      </p>
+                      {suggestions.map(s => (
+                        <div key={`${s.trackId}-${s.carOrdinal}-${s.carClass}-${s.drivetrain}`} className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-neutral-600 dark:text-neutral-400 truncate">
+                            {labelByConfig.get(configKey({ track_id: s.trackId, car_ordinal: s.carOrdinal, car_class: s.carClass, drivetrain: s.drivetrain })) ?? '—'}
+                          </span>
+                          <ChallengeButton compact config={s} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <Link href={`/joueurs/${encodeURIComponent(p.pseudo)}`} className="font-bold text-neutral-900 dark:text-white hover:text-pink-400 transition-colors truncate block">
-                    {p.pseudo}
-                  </Link>
-                  {p.discord_tag && <span className="text-xs text-indigo-400">Discord lié</span>}
-                </div>
-                <Link
-                  href={`/joueurs/${encodeURIComponent(p.pseudo)}`}
-                  className="hidden sm:inline-block px-3 py-1.5 rounded-full text-sm font-semibold text-neutral-600 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-700 hover:border-pink-400 hover:text-pink-400 transition-colors"
-                >
-                  Voir le profil
-                </Link>
-                <button
-                  onClick={() => unfollow(p.id)}
-                  disabled={busyId === p.id}
-                  className="px-3 py-1.5 rounded-full text-sm font-bold text-neutral-700 dark:text-neutral-300 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 hover:border-red-400 hover:text-red-400 transition-colors disabled:opacity-50"
-                >
-                  {busyId === p.id ? '…' : 'Ne plus suivre'}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+interface GarageCar {
+  id: number;
+  car_ordinal: number | null;
+  manufacturer: string;
+  name: string;
+  year: number;
+}
+
+export function GarageTab({ playerId }: { playerId: string }) {
+  const [cars,        setCars]        = useState<GarageCar[]>([]);
+  const [owned,       setOwned]       = useState<Set<number>>(new Set());
+  const [loading,     setLoading]     = useState(true);
+  const [search,      setSearch]      = useState('');
+  const [busyOrdinal, setBusyOrdinal] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [{ data: catalog }, { data: garageRows }] = await Promise.all([
+        fetchAllRows<GarageCar>((from, to) =>
+          supabase.from('cars')
+            .select('id, car_ordinal, manufacturer, name, year')
+            .order('manufacturer').order('name').order('id')
+            .range(from, to)
+        ),
+        supabase.from('garage').select('car_ordinal').eq('player_id', playerId),
+      ]);
+      if (cancelled) return;
+      setCars(catalog.filter(c => c.car_ordinal != null));
+      setOwned(new Set((garageRows ?? []).map(r => r.car_ordinal)));
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [playerId]);
+
+  async function toggle(carOrdinal: number) {
+    if (busyOrdinal !== null) return;
+    setBusyOrdinal(carOrdinal);
+    const isOwned = owned.has(carOrdinal);
+    if (isOwned) {
+      await supabase.from('garage').delete()
+        .eq('player_id', playerId).eq('car_ordinal', carOrdinal);
+      setOwned(prev => { const next = new Set(prev); next.delete(carOrdinal); return next; });
+    } else {
+      await supabase.from('garage').insert({ player_id: playerId, car_ordinal: carOrdinal });
+      setOwned(prev => new Set(prev).add(carOrdinal));
+    }
+    setBusyOrdinal(null);
+  }
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return cars.filter(c => !q || c.manufacturer.toLowerCase().includes(q) || c.name.toLowerCase().includes(q));
+  }, [cars, search]);
+
+  if (loading) return <p className="text-neutral-500 animate-pulse p-4">Chargement de ton garage…</p>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4">
+        <span aria-hidden="true">🚗</span>
+        <p>
+          Déclare les modèles que tu possèdes : ça permet aux autres joueurs de voir quels défis
+          ils peuvent te lancer, même sur des configs que tu n&apos;as pas encore roulées.
+        </p>
+      </div>
+      <input
+        type="text"
+        placeholder="Rechercher un constructeur ou un modèle…"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
+      />
+      <p className="text-sm text-neutral-500">{owned.size} voiture{owned.size !== 1 ? 's' : ''} dans ton garage</p>
+      <div className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden max-h-[70vh] overflow-y-auto">
+        {filtered.length === 0 ? (
+          <p className="text-neutral-500 text-sm p-4">Aucune voiture ne correspond à cette recherche.</p>
+        ) : filtered.map(car => {
+          const ordinal = car.car_ordinal!;
+          const isOwned = owned.has(ordinal);
+          return (
+            <div key={car.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-neutral-200/50 dark:border-neutral-800/50 last:border-0">
+              <span className="flex-1 text-sm text-neutral-700 dark:text-neutral-300 truncate">{car.year} {car.manufacturer} {car.name}</span>
+              <button
+                onClick={() => toggle(ordinal)}
+                disabled={busyOrdinal === ordinal}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all disabled:opacity-50 flex-shrink-0 ${
+                  isOwned
+                    ? 'bg-pink-500/15 border border-pink-500/40 text-pink-400'
+                    : 'bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-pink-400 hover:text-pink-400'
+                }`}
+              >
+                {busyOrdinal === ordinal ? '…' : isOwned ? '✓ Possédée' : '+ Ajouter'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
