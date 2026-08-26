@@ -515,7 +515,13 @@ export async function POST(request: NextRequest) {
     ]);
 
     const { data: player, error: playerError } = playerRes;
-    if (playerError || !player) {
+    if (playerError && playerError.code !== 'PGRST116') {
+      // Erreur DB transitoire (timeout, coupure…) : pas un vrai profil manquant.
+      // 500 (pas 404) pour que le relais mette le chrono en file d'attente et le
+      // renvoie automatiquement au lieu de le perdre silencieusement.
+      return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
+    }
+    if (!player) {
       return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
     }
     const trackData   = trackRes.data;
