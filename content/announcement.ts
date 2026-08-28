@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-07-relais-v365",
+  id: "2026-08-relais-v370",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.6.5 : nouvelles icônes (l'exe et les fenêtres du relais affichent enfin le logo Better Rivals). Mets ton relais à jour !",
+  message: "Relais v3.7.0 : le dernier tour des défis communauté à nombre de tours fixe est enfin récupéré (reconstruit à ±3 ms, avec confirmation à l'écran). Mets ton relais à jour !",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",

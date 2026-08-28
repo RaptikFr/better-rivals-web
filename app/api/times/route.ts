@@ -11,6 +11,7 @@ import {
   identifiantsValides,
   tempsDansBornes,
   plusRapideQueRecord,
+  tourFinalReconstruitCoherent,
 } from '@/lib/lap-validation';
 
 export const dynamic = 'force-dynamic';
@@ -473,7 +474,12 @@ export async function POST(request: NextRequest) {
       drivetrain, car_class, car_pi, num_cylinders,
       car_manufacturer, car_name, car_year,
       is_sprint,
+      // [tour-final] Tour final d'une épreuve à tours fixes reconstruit par le
+      // relais (Forza ne le transmet pas). `last_cur_ms` = dernier current_lap_s
+      // vu, sert d'ancrage de cohérence (temps ≈ last_cur_ms + 1 trame).
+      reconstructed, last_cur_ms,
     } = body;
+    const estReconstruit = reconstructed === true;
 
     if (!is_valid) {
       return NextResponse.json({ error: 'Tour invalide détecté par la télémétrie.' }, { status: 400 });
@@ -496,6 +502,17 @@ export async function POST(request: NextRequest) {
 
     if (!identifiantsValides({ trackId: numTrackId, carOrdinal: numCarOrdinal, timeMs: newTimeMs })) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
+    }
+
+    // [tour-final] Garde-fou : un tour final reconstruit doit rester dans la
+    // fenêtre plausible autour du dernier current_lap_s transmis (la ligne est
+    // ~1 trame après le dernier paquet, jamais avant). Attrape une régression du
+    // relais, pas un tricheur (qui n'enverrait pas `reconstructed`).
+    if (estReconstruit && !tourFinalReconstruitCoherent(newTimeMs, last_cur_ms)) {
+      return NextResponse.json(
+        { error: 'Tour final reconstruit incohérent avec la télémétrie.' },
+        { status: 400 }
+      );
     }
 
     // --- LECTURES INDÉPENDANTES EN PARALLÈLE ---
@@ -640,6 +657,7 @@ export async function POST(request: NextRequest) {
               // Secteurs du nouveau meilleur tour ; remis à NULL si non fournis,
               // pour ne pas garder ceux d'un tour précédent désormais battu.
               sectors_ms: secteurs,
+              reconstructed: estReconstruit,
             })
             .eq('id', existingTime.id)
             .select(),
@@ -675,6 +693,7 @@ export async function POST(request: NextRequest) {
           car_pi,
           num_cylinders,
           sectors_ms:   secteurs,
+          reconstructed: estReconstruit,
         }])
         .select();
 

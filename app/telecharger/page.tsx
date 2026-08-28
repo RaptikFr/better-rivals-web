@@ -27,7 +27,7 @@ export default function TelechargerPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <a
-            href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.6.5.exe"
+            href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.7.0.exe"
             className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:scale-105 hover:opacity-90 transition-all shadow-lg shadow-pink-500/20"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -35,7 +35,7 @@ export default function TelechargerPage() {
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Télécharger v3.6.5
+            Télécharger v3.7.0
           </a>
           <Link
             href="/inscription"
@@ -152,26 +152,30 @@ export default function TelechargerPage() {
         </div>
       </div>
 
-      {/* Bon à savoir — limitation télémétrie */}
+      {/* Bon à savoir — tour final des épreuves à tours fixe */}
       <div className="mt-20 max-w-3xl mx-auto w-full">
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-6 sm:p-8">
           <div className="flex items-start gap-4">
-            <div className="text-2xl leading-none mt-0.5">⚠️</div>
+            <div className="text-2xl leading-none mt-0.5">🏁</div>
             <div className="space-y-2">
               <h3 className="text-lg font-bold text-amber-900 dark:text-amber-200">
-                Épreuves à nombre de tours fixe&nbsp;: le dernier tour n&apos;est pas capté
+                Épreuves à nombre de tours fixe&nbsp;: le dernier tour est reconstruit (v3.7.0+)
               </h3>
               <p className="text-sm text-amber-800/90 dark:text-amber-100/80">
                 Sur les épreuves à <strong>nombre de tours fixe</strong> (défis communauté notamment), Forza
-                <strong> arrête d&apos;émettre sa télémétrie juste avant la ligne d&apos;arrivée du dernier tour</strong> et
-                remet les temps à zéro dès la fin de la course. Le temps du tour final n&apos;est donc jamais
-                transmis&nbsp;: c&apos;est une limite de Forza, pas du Relais — il est impossible de le récupérer.
+                <strong> arrête d&apos;émettre sa télémétrie une image avant la ligne du dernier tour</strong> et
+                remet les temps à zéro&nbsp;: le temps du tour final n&apos;est jamais transmis tel quel.
               </p>
               <p className="text-sm text-amber-800/90 dark:text-amber-100/80">
-                <strong>Conséquence&nbsp;:</strong> tous tes tours sont enregistrés <em>sauf</em> le dernier. Si ton
-                meilleur tour risque d&apos;être le dernier, privilégie un mode où tu peux <strong>enchaîner les tours
-                sans limite</strong> (contre-la-montre / rivals), ou fais un tour supplémentaire après ton tour rapide
-                quand l&apos;épreuve le permet.
+                Le Relais le <strong>reconstruit</strong> à partir de la dernière donnée reçue (précision
+                mesurée <strong>±3&nbsp;ms</strong>) et te l&apos;affiche avec un bouton de confirmation&nbsp;:
+                compare-le à l&apos;écran de résultats Forza, puis valide l&apos;envoi. <strong>Rien n&apos;est envoyé
+                sans ta confirmation.</strong>
+              </p>
+              <p className="text-sm text-amber-800/90 dark:text-amber-100/80">
+                Il faut avoir <strong>bouclé au moins deux tours</strong> avant le dernier pour la reconstruction
+                complète&nbsp;; sur une course de 2&nbsp;tours, le temps est marqué «&nbsp;estimé&nbsp;»&nbsp;— vérifie-le
+                bien à l&apos;écran.
               </p>
             </div>
           </div>
@@ -187,7 +191,7 @@ export default function TelechargerPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
             <a
-              href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.6.5.exe"
+              href="https://github.com/RaptikFr/better-rivals-web/releases/latest/download/BetterRivals-v3.7.0.exe"
               className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white font-bold rounded-full hover:scale-105 hover:opacity-90 transition-all shadow-lg shadow-pink-500/20"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -195,7 +199,7 @@ export default function TelechargerPage() {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Télécharger v3.6.5
+              Télécharger v3.7.0
             </a>
             <Link
               href="/classements"

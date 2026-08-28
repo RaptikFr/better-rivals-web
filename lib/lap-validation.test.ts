@@ -5,6 +5,7 @@ import {
   identifiantsValides,
   tempsDansBornes,
   plusRapideQueRecord,
+  tourFinalReconstruitCoherent,
   nbSecteurs,
   secteursDepuisTrace,
   secteursPlausibles,
@@ -119,6 +120,31 @@ describe('plusRapideQueRecord', () => {
     expect(plusRapideQueRecord(1, null)).toBe(false);
     expect(plusRapideQueRecord(1, undefined)).toBe(false);
     expect(plusRapideQueRecord(1, 0)).toBe(false);
+  });
+});
+
+describe('tourFinalReconstruitCoherent', () => {
+  it('accepte le cas nominal (last_cur + ~1 trame)', () => {
+    expect(tourFinalReconstruitCoherent(92_043, 92_026)).toBe(true); // Legend Island réel
+    expect(tourFinalReconstruitCoherent(60_222, 60_205)).toBe(true); // Daikoku réel
+  });
+
+  it('tolère une petite correction manuelle vers le bas (bruit de mesure)', () => {
+    expect(tourFinalReconstruitCoherent(92_020, 92_026)).toBe(true); // −6 ms
+  });
+
+  it('rejette un temps très en dessous du dernier current_lap_s', () => {
+    expect(tourFinalReconstruitCoherent(90_000, 92_026)).toBe(false);
+  });
+
+  it('rejette un temps trop loin au-dessus (régression relais)', () => {
+    expect(tourFinalReconstruitCoherent(92_500, 92_026)).toBe(false);
+  });
+
+  it('ne juge pas sans ancrage last_cur_ms', () => {
+    expect(tourFinalReconstruitCoherent(92_043, undefined)).toBe(true);
+    expect(tourFinalReconstruitCoherent(92_043, null)).toBe(true);
+    expect(tourFinalReconstruitCoherent(92_043, 0)).toBe(true);
   });
 });
 

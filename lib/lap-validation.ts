@@ -57,6 +57,28 @@ export function plusRapideQueRecord(timeMs: number, worldRecordMs: number | null
   return timeMs < worldRecordMs * 0.985;
 }
 
+// Tolérances autour de `last_cur_ms` pour un tour final reconstruit par le relais.
+// Le relais pose  temps = last_cur_ms + 1 trame 60 Hz (16,7 ms), l'erreur mesurée
+// tenant dans [−6, +1] ms. Fenêtre volontairement large (le vrai temps est
+// PROUVÉ ≥ last_cur — le chrono Forza tournait encore — et à moins d'une trame de
+// la ligne) : ce n'est pas un filtre anti-triche fin mais un garde-fou contre une
+// régression du relais qui enverrait une valeur folle.
+const TOUR_FINAL_MARGE_BASSE_MS = 10;
+const TOUR_FINAL_MARGE_HAUTE_MS = 45;
+
+/**
+ * Un temps de tour final `reconstructed` est-il cohérent avec le dernier
+ * `current_lap_s` transmis (last_cur_ms) ? Attendu : la ligne est ~1 trame après
+ * le dernier paquet, jamais avant. Hors fenêtre → on rejette le chrono.
+ * `lastCurMs` absent/non fini → on ne juge pas (true).
+ */
+export function tourFinalReconstruitCoherent(timeMs: number, lastCurMs: unknown): boolean {
+  const last = Number(lastCurMs);
+  if (!Number.isFinite(last) || last <= 0) return true; // pas d'ancrage → pas de filtre
+  return timeMs >= last - TOUR_FINAL_MARGE_BASSE_MS
+      && timeMs <= last + TOUR_FINAL_MARGE_HAUTE_MS;
+}
+
 // Bornes sur le nombre de secteurs acceptées par le serveur. Le relais découpe
 // par distance (min 5, plafonné à 20) ; on tolère 2→30 pour rester souple sans
 // laisser passer un tableau aberrant.
