@@ -5,6 +5,9 @@ import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
+// Doit rester aligné avec RAISONS dans app/classements/classementsShared.tsx.
+const RAISONS = ['Temps impossible', 'Mauvais circuit sélectionné', 'Autre'];
+const DETAILS_MAX = 2000;
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,9 +34,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { lap_time_id, raison, details } = await request.json();
-    if (!lap_time_id || !raison) {
+    if (typeof lap_time_id !== 'string' || !lap_time_id || !RAISONS.includes(raison)) {
       return NextResponse.json({ error: 'Données incomplètes.' }, { status: 400 });
     }
+    const detailsClean = typeof details === 'string' && details.trim()
+      ? details.trim().slice(0, DETAILS_MAX)
+      : null;
 
     const { data: lapTime } = await supabaseAdmin
       .from('lap_times')
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
         reporter_id: reporter.id,
         lap_time_id,
         raison,
-        details: details || null,
+        details: detailsClean,
         status: 'non_lu',
       }]);
     if (insertError) {

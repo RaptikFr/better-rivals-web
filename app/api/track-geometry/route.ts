@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       lap_time_ms:      lapTimeMs,
       bounds:           bounds as unknown as Json,
       car_ordinal:      carOrdinal,
-      car_class:        typeof car_class === 'string' ? car_class : null,
+      car_class:        typeof car_class === 'string' ? car_class.slice(0, 16) : null,
       source_player_id: player?.id ?? null,
     });
 

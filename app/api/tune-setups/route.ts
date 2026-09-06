@@ -36,9 +36,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { car_ordinal, share_code, label, track_id, track_type, is_original, perf_stats: rawPerf } = body;
 
-    if (!car_ordinal || !share_code) {
+    const carOrdinal = Number(car_ordinal);
+    const shareCode  = typeof share_code === 'string' ? share_code.trim() : '';
+    if (!Number.isInteger(carOrdinal) || carOrdinal <= 0 || !shareCode || shareCode.length > 30) {
       return NextResponse.json({ error: 'Données incomplètes.' }, { status: 400 });
     }
+    const labelClean = typeof label === 'string' && label.trim() ? label.trim().slice(0, 80) : null;
+    const trackType  = typeof track_type === 'string' && track_type ? track_type.slice(0, 40) : null;
+    const trackId    = Number.isInteger(Number(track_id)) && Number(track_id) > 0 ? Number(track_id) : null;
 
     let perf_stats: Json | null = null;
     if (rawPerf !== undefined && rawPerf !== null) {
@@ -54,7 +59,7 @@ export async function POST(request: NextRequest) {
       const { data: conflict } = await supabaseAdmin
         .from('tune_setups')
         .select('id')
-        .eq('share_code', share_code.trim())
+        .eq('share_code', shareCode)
         .eq('is_original', true)
         .neq('player_id', player.id)
         .maybeSingle();
@@ -70,11 +75,11 @@ export async function POST(request: NextRequest) {
       .from('tune_setups')
       .insert([{
         player_id:   player.id,
-        car_ordinal,
-        share_code:  share_code.trim(),
-        label:       label?.trim() || null,
-        track_id:    track_id || null,
-        track_type:  track_type || null,
+        car_ordinal: carOrdinal,
+        share_code:  shareCode,
+        label:       labelClean,
+        track_id:    trackId,
+        track_type:  trackType,
         is_original: is_original ?? false,
         perf_stats:  perf_stats ?? null,
       }])

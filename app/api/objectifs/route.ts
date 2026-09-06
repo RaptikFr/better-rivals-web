@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { objectifConfigKey, type ObjectifView } from '@/lib/objectifs';
+import { estUuid } from '@/lib/ids';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { target_player_id, track_id, car_ordinal, car_class, drivetrain } = body;
 
-    if (typeof target_player_id !== 'string' ||
+    if (!estUuid(target_player_id) ||
         typeof track_id        !== 'number' ||
         typeof car_ordinal     !== 'number' ||
         typeof car_class       !== 'string' || !car_class ||

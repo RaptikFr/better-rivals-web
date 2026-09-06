@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { duelConfigKey, type DuelView, type DuelSide, type DuelStatus } from '@/lib/duels';
+import { estUuid } from '@/lib/ids';
 
 export const dynamic = 'force-dynamic';
 
@@ -185,7 +186,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { opponent_id, track_id, car_ordinal, car_class, drivetrain, days } = body;
 
-    if (typeof opponent_id !== 'string' ||
+    if (!estUuid(opponent_id) ||
         typeof track_id    !== 'number' ||
         typeof car_ordinal !== 'number' ||
         typeof car_class   !== 'string' || !car_class ||

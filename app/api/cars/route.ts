@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,9 @@ export async function GET(request: NextRequest) {
 // perdu. Cette route donne au bouton un vrai backend, quel que soit le contexte.
 export async function POST(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, 'cars-write', 20, 60_000);
+    if (limited) return limited;
+
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Token manquant.' }, { status: 401 });
@@ -111,6 +115,9 @@ export async function POST(request: NextRequest) {
 // sont fermées par RLS depuis l'audit du 11 juin 2026 — tout passe par ici.
 export async function PATCH(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, 'cars-write', 20, 60_000);
+    if (limited) return limited;
+
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Token manquant.' }, { status: 401 });

@@ -24,21 +24,33 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, event_lab_code, type, length_km, description, is_sprint } = body;
+    const { type, length_km, is_sprint } = body;
 
-    if (!name || !event_lab_code || !type) {
+    const name          = typeof body.name === 'string' ? body.name.trim() : '';
+    const eventLabCode  = typeof body.event_lab_code === 'string' ? body.event_lab_code.trim() : '';
+    const description    = typeof body.description === 'string' ? body.description.trim() : '';
+
+    if (!name || !eventLabCode || !type) {
       return NextResponse.json({ error: 'Nom, code EventLab et type sont obligatoires.' }, { status: 400 });
+    }
+
+    if (name.length > 120 || eventLabCode.length > 40 || description.length > 2000) {
+      return NextResponse.json({ error: 'Un des champs dépasse la longueur autorisée.' }, { status: 400 });
     }
 
     if (!TRACK_CATEGORIES.includes(type as TrackCategory)) {
       return NextResponse.json({ error: 'Type d\'épreuve invalide.' }, { status: 400 });
     }
 
+    // length_km : nombre plausible (0 < km ≤ 100) ou absent.
+    const lengthKm = Number(length_km);
+    const lengthKmValide = Number.isFinite(lengthKm) && lengthKm > 0 && lengthKm <= 100 ? lengthKm : null;
+
     // Vérifie si le code EventLab est déjà utilisé
     const { data: existing } = await supabaseAdmin
       .from('tracks')
       .select('id')
-      .eq('event_lab_code', event_lab_code)
+      .eq('event_lab_code', eventLabCode)
       .single();
 
     if (existing) {
@@ -50,9 +62,9 @@ export async function POST(request: NextRequest) {
       .from('tracks')
       .insert([{
         name,
-        event_lab_code,
+        event_lab_code: eventLabCode,
         type,
-        length_km:    length_km ? parseFloat(length_km) : null,
+        length_km:    lengthKmValide,
         description:  description || null,
         is_official:  false,
         is_sprint:    is_sprint ?? false,
