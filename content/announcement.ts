@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-09-relais-v372",
+  id: "2026-09-relais-v373",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.7.2 : correctif important pour les épreuves à tours fixes — avant, le dernier tour reconstruit pouvait partir sous une mauvaise config (D/FWD) et rester invisible sur le classement. Mets ton relais à jour. Un tour final manquant ? Signale-le, on le rebascule.",
+  message: "Relais v3.7.3 : correctif important pour les défis à tours fixes — avant, cliquer « Recommencer » effaçait le tour final en attente et le bouton « Envoyer » ne faisait plus rien. Le tour final n'arrivait pas sur le site. Mets ton relais à jour.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
