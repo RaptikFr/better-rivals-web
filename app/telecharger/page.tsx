@@ -177,6 +177,12 @@ export default function TelechargerPage() {
                 complète&nbsp;; sur une course de 2&nbsp;tours, le temps est marqué «&nbsp;estimé&nbsp;»&nbsp;— vérifie-le
                 bien à l&apos;écran.
               </p>
+              <p className="text-sm text-amber-800/90 dark:text-amber-100/80">
+                <strong>Aucun bouton n&apos;apparaît après l&apos;arrivée&nbsp;?</strong> La reconstruction a échoué
+                (course interrompue, temps jugé incohérent…) et ton dernier tour n&apos;a <strong>pas</strong> été
+                envoyé automatiquement&nbsp;: reporte-le à la main si besoin. Une prochaine mise à jour du Relais
+                affichera un message explicite dans ce cas plutôt que de rester muette.
+              </p>
             </div>
           </div>
         </div>

@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-08-relais-v370",
+  id: "2026-09-relais-tour-final",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.7.0 : le dernier tour des défis communauté à nombre de tours fixe est enfin récupéré (reconstruit à ±3 ms, avec confirmation à l'écran). Mets ton relais à jour !",
+  message: "Épreuves à tours fixes (défis communauté) : après la ligne d'arrivée, le Relais te propose de confirmer le dernier tour reconstruit — pense à cliquer sur « Envoyer » ! S'il n'apparaît pas, vérifie ton temps à la main sur l'écran de résultats Forza.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
-  linkLabel: "Télécharger",
+  linkLabel: "En savoir plus",
 
   /**
    * Style de la bannière.
@@ -29,7 +29,7 @@ const announcement = {
    * "success" → vert
    * "warning" → orange / ambre
    */
-  type: "info" as "info" | "success" | "warning",
+  type: "warning" as "info" | "success" | "warning",
 };
 
 export default announcement;
