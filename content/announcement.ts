@@ -11,17 +11,17 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-09-relais-tour-final",
+  id: "2026-09-relais-v371",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Épreuves à tours fixes (défis communauté) : après la ligne d'arrivée, le Relais te propose de confirmer le dernier tour reconstruit — pense à cliquer sur « Envoyer » ! S'il n'apparaît pas, vérifie ton temps à la main sur l'écran de résultats Forza.",
+  message: "Relais v3.7.1 : sur les épreuves à tours fixes, si la reconstruction du dernier tour échoue, le Relais te le dit maintenant clairement (avant : ni bouton, ni message). Pense toujours à confirmer le tour final via « Envoyer ». Mets ton relais à jour !",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
-  linkLabel: "En savoir plus",
+  linkLabel: "Télécharger",
 
   /**
    * Style de la bannière.
