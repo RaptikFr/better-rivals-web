@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-09-relais-v380-courbe-moteur",
+  id: "2026-09-relais-v381-banc-moteur",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.8.0 : nouvelle capture de courbe moteur. Coche « 📈 Capture de courbe moteur » et choisis un rapport avant de lancer les mesures, fais une accélération pied au plancher, et retrouve la courbe couple/puissance de ton build dans l'onglet « 📈 Moteur » de ton profil — pour caler ta boîte de vitesses.",
+  message: "Relais v3.8.1 : la capture de courbe moteur se fait maintenant sans choisir de circuit — bouton « 📈 Banc moteur » dans l'écran de sélection, une accélération pied au plancher sur une ligne droite, et la courbe couple/puissance de ton build apparaît dans l'onglet « 📈 Moteur » de ton profil.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
