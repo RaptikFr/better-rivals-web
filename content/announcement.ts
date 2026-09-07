@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-09-relais-v373",
+  id: "2026-09-relais-v380-courbe-moteur",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.7.3 : correctif important pour les défis à tours fixes — avant, cliquer « Recommencer » effaçait le tour final en attente et le bouton « Envoyer » ne faisait plus rien. Le tour final n'arrivait pas sur le site. Mets ton relais à jour.",
+  message: "Relais v3.8.0 : nouvelle capture de courbe moteur. Coche « 📈 Capture de courbe moteur » et choisis un rapport avant de lancer les mesures, fais une accélération pied au plancher, et retrouve la courbe couple/puissance de ton build dans l'onglet « 📈 Moteur » de ton profil — pour caler ta boîte de vitesses.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
@@ -29,7 +29,7 @@ const announcement = {
    * "success" → vert
    * "warning" → orange / ambre
    */
-  type: "warning" as "info" | "success" | "warning",
+  type: "info" as "info" | "success" | "warning",
 };
 
 export default announcement;

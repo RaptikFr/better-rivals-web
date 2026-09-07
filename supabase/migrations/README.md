@@ -47,6 +47,7 @@ Toutes **✅ appliquées** (vérifié le 19/06/2026).
 | `secteurs.sql` | Colonne `lap_times.sectors_ms` (brique télémétrie #2). |
 | `lap_traces.sql` | Table `lap_traces` — trace échantillonnée d'un tour (fondation télémétrie). |
 | `coach_reglage_reports.sql` | Table `coach_reglage_reports` — comptes rendus du copilote de réglage (relais ≥ v3 → onglet 🔧 Copilote). **Appliqué le 23/06.** |
+| `torque_curves.sql` | Table `torque_curves` — courbe couple/puissance/régime d'un build, capturée en jeu par le relais (≥ v3.8.0) → onglet 📈 Moteur. RLS fermée. |
 
 ### RPC (scalabilité — calcul côté Postgres)
 

@@ -785,6 +785,75 @@ export type Database = {
           },
         ]
       }
+      torque_curves: {
+        Row: {
+          captured_at: string
+          car_class: string | null
+          car_ordinal: number
+          car_pi: number | null
+          drivetrain: string | null
+          engine_max_rpm: number | null
+          gear: number
+          id: string
+          peak_power_kw: number | null
+          peak_power_rpm: number | null
+          peak_torque_nm: number | null
+          peak_torque_rpm: number | null
+          player_id: string
+          points: Json
+          share_code: string
+        }
+        Insert: {
+          captured_at?: string
+          car_class?: string | null
+          car_ordinal: number
+          car_pi?: number | null
+          drivetrain?: string | null
+          engine_max_rpm?: number | null
+          gear: number
+          id?: string
+          peak_power_kw?: number | null
+          peak_power_rpm?: number | null
+          peak_torque_nm?: number | null
+          peak_torque_rpm?: number | null
+          player_id: string
+          points?: Json
+          share_code: string
+        }
+        Update: {
+          captured_at?: string
+          car_class?: string | null
+          car_ordinal?: number
+          car_pi?: number | null
+          drivetrain?: string | null
+          engine_max_rpm?: number | null
+          gear?: number
+          id?: string
+          peak_power_kw?: number | null
+          peak_power_rpm?: number | null
+          peak_torque_nm?: number | null
+          peak_torque_rpm?: number | null
+          player_id?: string
+          points?: Json
+          share_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "torque_curves_car_ordinal_fkey"
+            columns: ["car_ordinal"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["car_ordinal"]
+          },
+          {
+            foreignKeyName: "torque_curves_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tracks: {
         Row: {
           description: string | null

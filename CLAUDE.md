@@ -36,7 +36,7 @@ Le flux central est : **Relais Python (UDP Forza → HTTP)** → `/api/times` �
 
 Pattern systématique : **page.tsx async server component** (metadata, prefetch) + **un Client component** (`*Client.tsx`) pour l'interactivité. Les pages publiques (classements, voitures, circuits) sont rendues côté serveur avec `supabaseAdmin` ; les pages personnelles (profil, duels, objectifs) chargent côté client via les API routes.
 
-Pages notables : `/profil` (onglets : Récents, Tous, Suivi, Classements, Rivaux, Stats, Coach, Copilote — les deux derniers requièrent opt-in `coachReport`), `/classements`, `/joueurs/[pseudo]`, `/voitures/[slug]`, `/circuits/[slug]`.
+Pages notables : `/profil` (onglets : Récents, Tous, Suivi, Classements, Rivaux, Garage, Stats, Coach, Copilote, Moteur — les trois derniers requièrent opt-in `coachReport`), `/classements`, `/joueurs/[pseudo]`, `/voitures/[slug]`, `/circuits/[slug]`.
 
 ### Base de données Supabase
 
@@ -48,11 +48,12 @@ Pages notables : `/profil` (onglets : Récents, Tous, Suivi, Classements, Rivaux
 | `lap_traces` | Trace sparse d'un tour (JSON : d/t/v/thr/brk/str/temps pneus optionnels). Relation 1:1 avec lap_times. |
 | `best_sectors` | Meilleur secteur par index pour une config (tous joueurs) — construit le « tour optimal ». |
 | `coach_reglage_reports` | Diagnostics compacts de réglage postés par le relais (survirage, amortisseurs…). |
+| `torque_curves` | Courbe couple/puissance/régime d'un build (`points` JSONB, ~1 pt/100 tr/min), une par (player, car_ordinal, share_code). Capturée en jeu par le relais ≥ v3.8.0 → onglet 📈 Moteur. Upsert : dernière capture gagne. |
 | `players` | Compte utilisateur + préférences JSON cross-device. |
 | `duels` | Défi challenger vs opponent sur une config, avec deadline. |
 | `objectifs` | Objectif personnel : battre le PB d'un autre joueur sur une config. |
 
-**RLS :** `lap_times`, `players` = lecture publique. `lap_traces`, `duels`, `objectifs`, `coach_reglage_reports` = fermés (service role only via API routes avec vérif JWT Bearer).
+**RLS :** `lap_times`, `players` = lecture publique. `lap_traces`, `duels`, `objectifs`, `coach_reglage_reports`, `torque_curves` = fermés (service role only via API routes avec vérif JWT Bearer).
 
 ### API routes (`app/api/`)
 
@@ -62,6 +63,7 @@ Points d'entrée du relais Python et du frontend :
 - **`/api/traces`** — POST trace d'un tour (recalcule `sectors_ms` + alimente `best_sectors`) ; GET trace de référence (delta live).
 - **`/api/coach`** — GET rapport coach pilotage par secteur (Bearer JWT requis).
 - **`/api/coach-reports`** — POST/GET/DELETE diagnostics de réglage du relais.
+- **`/api/torque-curves`** — POST courbe moteur d'un build (upsert sur `player_id,car_ordinal,share_code`, points validés + pics recalculés) ; GET courbes du joueur + libellé voiture. Bearer JWT.
 - **`/api/duels`**, **`/api/objectifs`** — CRUD social.
 - **`/api/cron/weekly-recap`** — Job hebdomadaire (cron Vercel, `CRON_SECRET`).
 
@@ -85,6 +87,7 @@ Le relais Python capture l'UDP Forza et poste :
 1. Le chrono (`/api/times`) — déclenche classements + notifs + détection objectifs atteints.
 2. La trace du tour (`/api/traces`) — débloque coach pilotage, delta live, tour optimal.
 3. Les diagnostics de réglage (`/api/coach-reports`) — agrégés par config dans l'onglet Copilote.
+4. La courbe moteur (`/api/torque-curves`) — capture optionnelle : sur opt-in `capture_courbe` + rapport visé (keyring), `TorqueCurveRecorder` échantillonne `engine_rpm@16`/`torque_nm@264`/`power_w@260` pendant une bosse pied au plancher à rapport constant (fin dès qu'une condition tombe), sous-échantillonne à ~100 tr/min, désarme après une capture réussie. `CourbePopup` demande le code de partage Forza. Affichée dans l'onglet 📈 Moteur (opt-in `coachReport`). Offsets moteur validés hors-ligne via `debug_moteur.py` (OneDrive/Relais).
 
 Les secteurs sont des **tranches égales en distance** (N = max(5, min(20, round(km/1.5)))), pas les checkpoints Forza. Chaque `SectorCoaching` expose `startM`/`endM` en mètres depuis le départ pour localiser les conseils.
 

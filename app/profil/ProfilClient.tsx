@@ -15,10 +15,11 @@ import { EmptyState, LapTable, ProgressionChart, type ProfileLap, type Stats } f
 import { SuiviTab } from './SuiviTab';
 import { CoachTab } from './CoachTab';
 import { CopiloteTab } from './CopiloteTab';
+import { MoteurTab } from './MoteurTab';
 import { ClassementsTab, RivauxTab, StatsTab, GarageTab } from './ProfilTabs';
 import { usePreferences } from '@/hooks/usePreferences';
 
-type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'suivi' | 'rivaux' | 'garage' | 'coach' | 'copilote';
+type Tab = 'recents' | 'tous' | 'classements' | 'stats' | 'suivi' | 'rivaux' | 'garage' | 'coach' | 'copilote' | 'moteur';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'recents',     label: 'Récents',        icon: '🕐' },
@@ -35,6 +36,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 const COACH_TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'coach',    label: 'Coach',    icon: '🧠' },
   { id: 'copilote', label: 'Copilote', icon: '🔧' },
+  { id: 'moteur',   label: 'Moteur',   icon: '📈' },
 ];
 
 export default function ProfilClient() {
@@ -471,6 +473,7 @@ export default function ProfilClient() {
         {activeTab === 'stats'       && <StatsTab stats={stats} laps={laps} />}
         {activeTab === 'coach'       && prefs.coachReport && <CoachTab laps={laps} />}
         {activeTab === 'copilote'    && prefs.coachReport && <CopiloteTab />}
+        {activeTab === 'moteur'      && prefs.coachReport && <MoteurTab />}
 
       </div>
     </main>
