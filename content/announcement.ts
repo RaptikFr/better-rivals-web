@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-09-relais-v382-banc-moteur",
+  id: "2026-09-relais-v383-tour-final",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.8.2 : la courbe moteur se capture uniquement au « 📈 Banc moteur » (la capture en course ne balayait que le haut de la courbe). Bonne méthode : sur une longue ligne droite, ralentis à ~40 km/h dans un rapport long (4e+) puis plein gaz sans changer jusqu'au rupteur — c'est ce qui donne toute la courbe pour régler ta boîte.",
+  message: "Relais v3.8.3 : sur les épreuves à tours fixes, mettre le jeu en pause pendant le dernier tour ne fait plus perdre sa reconstruction — le relais attend la vraie ligne d'arrivée avant de te proposer le temps du tour final.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
