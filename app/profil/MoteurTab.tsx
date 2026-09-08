@@ -68,7 +68,7 @@ export function MoteurTab() {
   if (status === 'error')   return <p className="text-red-400 px-1">Impossible de charger tes courbes moteur. Réessaie plus tard.</p>;
   if (status === 'empty') {
     return (
-      <EmptyState message="Aucune courbe moteur enregistrée. Dans le relais (≥ v3.8.1), clique « 📈 Banc moteur » dans l'écran de sélection (ou coche « Capturer pendant la session »), choisis un rapport (4e par ex.) puis fais une accélération pied au plancher sur une ligne droite, du bas de la plage jusqu'au rupteur. La courbe couple/puissance de ce build arrivera ici." />
+      <EmptyState message="Aucune courbe moteur enregistrée. Dans le relais (≥ v3.8.2), clique « 📈 Banc moteur » dans l'écran de sélection, choisis un rapport long (4e ou 5e), puis sur une longue ligne droite dégagée ralentis à ~40 km/h et remets plein gaz sans changer de rapport jusqu'au rupteur. Un rapport long évite le patinage et fait partir le régime du bas — c'est ce qui donne toute la courbe. Elle arrivera ici." />
     );
   }
 

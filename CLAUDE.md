@@ -48,7 +48,7 @@ Pages notables : `/profil` (onglets : Récents, Tous, Suivi, Classements, Rivaux
 | `lap_traces` | Trace sparse d'un tour (JSON : d/t/v/thr/brk/str/temps pneus optionnels). Relation 1:1 avec lap_times. |
 | `best_sectors` | Meilleur secteur par index pour une config (tous joueurs) — construit le « tour optimal ». |
 | `coach_reglage_reports` | Diagnostics compacts de réglage postés par le relais (survirage, amortisseurs…). |
-| `torque_curves` | Courbe couple/puissance/régime d'un build (`points` JSONB, ~1 pt/100 tr/min), une par (player, car_ordinal, share_code). Capturée en jeu par le relais ≥ v3.8.0 → onglet 📈 Moteur. Upsert : dernière capture gagne. |
+| `torque_curves` | Courbe couple/puissance/régime d'un build (`points` JSONB, ~1 pt/100 tr/min), une par (player, car_ordinal, share_code). Capturée en jeu par le relais (Banc moteur, ≥ v3.8.2 : pull roll-on uniquement) → onglet 📈 Moteur. Upsert : dernière capture gagne. |
 | `players` | Compte utilisateur + préférences JSON cross-device. |
 | `duels` | Défi challenger vs opponent sur une config, avec deadline. |
 | `objectifs` | Objectif personnel : battre le PB d'un autre joueur sur une config. |
@@ -87,7 +87,7 @@ Le relais Python capture l'UDP Forza et poste :
 1. Le chrono (`/api/times`) — déclenche classements + notifs + détection objectifs atteints.
 2. La trace du tour (`/api/traces`) — débloque coach pilotage, delta live, tour optimal.
 3. Les diagnostics de réglage (`/api/coach-reports`) — agrégés par config dans l'onglet Copilote.
-4. La courbe moteur (`/api/torque-curves`) — capture optionnelle, deux voies : le **Banc moteur** (`BancMoteurWindow`, bouton dans l'écran de sélection, aucun circuit requis) ou la case « capturer pendant la session » (`capture_courbe` + rapport, keyring). `TorqueCurveRecorder` échantillonne `engine_rpm@16`/`torque_nm@264`/`power_w@260` pendant une bosse pied au plancher à rapport constant (fin dès qu'une condition tombe), sous-échantillonne à ~100 tr/min, désarme après une capture réussie. `CourbePopup` demande le code de partage Forza. Affichée dans l'onglet 📈 Moteur (opt-in `coachReport`). Offsets moteur validés hors-ligne via `debug_moteur.py` (OneDrive/Relais).
+4. La courbe moteur (`/api/torque-curves`) — capture optionnelle via le **Banc moteur** (`BancMoteurWindow`, bouton dans l'écran de sélection, aucun circuit requis ; rapport visé en keyring). Méthode = pull *roll-on* : ralentir à ~40 km/h dans un rapport long (4e+), puis plein gaz sans changer jusqu'au rupteur — rapport long = pas de patinage + régime qui part du bas. `TorqueCurveRecorder` échantillonne `engine_rpm@16`/`torque_nm@264`/`power_w@260` pendant la bosse à rapport constant (fin dès qu'une condition tombe), sous-échantillonne à ~100 tr/min, et **rejette les captures partielles** (pic de couple dans les 2 premières tranches + bas du balayage > 45 % du rupteur → on n'a jamais vu le pic). `CourbePopup` demande le code de partage Forza. Affichée dans l'onglet 📈 Moteur (opt-in `coachReport`). La capture « pendant la session » a été retirée en v3.8.2 (en course le régime ne redescend jamais → seul le haut de la courbe était balayé). Offsets moteur validés hors-ligne via `debug_moteur.py` (OneDrive/Relais).
 
 Les secteurs sont des **tranches égales en distance** (N = max(5, min(20, round(km/1.5)))), pas les checkpoints Forza. Chaque `SectorCoaching` expose `startM`/`endM` en mètres depuis le départ pour localiser les conseils.
 
