@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-09-relais-v383-tour-final",
+  id: "2026-09-relais-v384-tour-final",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.8.3 : sur les épreuves à tours fixes, mettre le jeu en pause pendant le dernier tour ne fait plus perdre sa reconstruction — le relais attend la vraie ligne d'arrivée avant de te proposer le temps du tour final.",
+  message: "Relais v3.8.4 : sur les épreuves à tours fixes, le temps du dernier tour est désormais proposé dès la ligne d'arrivée, même quand le jeu ne revient pas au monde ouvert après la course (certaines épreuves restaient bloquées sans jamais te proposer le tour final).",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
