@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { cibleDefi, type DefiView } from '@/lib/defisCoach';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
       .order('achieved_at', { ascending: true, nullsFirst: true })
       .order('created_at', { ascending: false });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'defis.GET');
     if (!defis || defis.length === 0) {
       return NextResponse.json({ defis: [] }, { status: 200 });
     }
@@ -166,7 +167,7 @@ export async function POST(request: NextRequest) {
       if (error.code === '23505') {
         return NextResponse.json({ success: true, already: true }, { status: 200 });
       }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return erreurServeur(error, 'defis.POST');
     }
 
     return NextResponse.json(
@@ -190,7 +191,7 @@ export async function DELETE(request: NextRequest) {
 
     const { error } = await supabaseAdmin
       .from('coach_defis').delete().eq('player_id', playerId).eq('id', id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'defis.DELETE');
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAdmin } from '@/lib/admin-auth';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     .eq('status', 'pending')
     .order('id', { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return erreurServeur(error, 'admin/tracks');
   return NextResponse.json({ tracks: data });
 }
 
@@ -28,6 +29,6 @@ export async function PATCH(request: NextRequest) {
   }
 
   const { error } = await supabaseAdmin.from('tracks').update({ status }).eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return erreurServeur(error, 'admin/tracks');
   return NextResponse.json({ success: true });
 }

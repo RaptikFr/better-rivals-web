@@ -4,6 +4,7 @@ import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { duelConfigKey, type DuelView, type DuelSide, type DuelStatus } from '@/lib/duels';
 import { estUuid } from '@/lib/ids';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
       .or(`challenger_id.eq.${playerId},opponent_id.eq.${playerId}`)
       .order('created_at', { ascending: false });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'duels');
     if (!duels || duels.length === 0) {
       return NextResponse.json({ duels: [] }, { status: 200 });
     }
@@ -245,7 +246,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'duels');
 
     // Notifie le défié.
     const [trackRes, carRes] = await Promise.all([
@@ -297,7 +298,7 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'Seul l’auteur du défi peut l’annuler.' }, { status: 403 });
       }
       const { error } = await supabaseAdmin.from('duels').update({ status: 'cancelled' }).eq('id', id).eq('status', 'pending');
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) return erreurServeur(error, 'duels');
       return NextResponse.json({ success: true }, { status: 200 });
     }
 
@@ -311,7 +312,7 @@ export async function PATCH(request: NextRequest) {
       .update({ status: newStatus, responded_at: new Date().toISOString() })
       .eq('id', id)
       .eq('status', 'pending');
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'duels');
 
     // Notifie le challenger de la réponse.
     await supabaseAdmin.from('notifications').insert([{

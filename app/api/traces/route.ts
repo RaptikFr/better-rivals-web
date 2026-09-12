@@ -4,6 +4,7 @@ import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { traceValide, nbSecteurs, secteursDepuisTrace, secteursValides, secteursPlausibles } from '@/lib/lap-validation';
 import { enregistrerMeilleursSecteurs } from '@/lib/best-sectors';
+import { erreurServeur } from '@/lib/api-error';
 import type { Json } from '@/types/database.types';
 
 export const dynamic = 'force-dynamic';
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
         { onConflict: 'lap_time_id' },
       );
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'traces');
 
     // Archive (append-only, jamais écrasée) : le relais n'envoie une trace QUE
     // quand ce tour vient de battre le record de la config (cf. commentaire en

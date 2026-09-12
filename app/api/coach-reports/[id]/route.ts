@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,7 @@ export async function DELETE(
       .delete()
       .eq('id', id)
       .eq('player_id', player.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'coach-reports/[id]');
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch {

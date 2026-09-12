@@ -5,6 +5,7 @@ import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { siteUrl } from '@/lib/site';
 import { annoncerNouveauLeaderDiscord } from '@/lib/discord';
+import { erreurServeur } from '@/lib/api-error';
 import {
   formatTime,
   bornesTempsMs,
@@ -685,7 +686,7 @@ export async function POST(request: NextRequest) {
         ]);
 
         const { data, error } = updateRes;
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error) return erreurServeur(error, 'times.update');
         // Notifications + emails : différés après la réponse au relais (after).
         after(() => notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: existingTime.time_ms }));
         after(() => verifierObjectifsAtteints({ ...objectifOpts, newTimeMs }));
@@ -793,7 +794,7 @@ export async function GET(request: NextRequest) {
       .limit(100);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return erreurServeur(error, 'times.GET');
     }
 
     // Garde uniquement le meilleur temps par joueur + voiture + classe + transmission

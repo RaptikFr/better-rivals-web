@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/rate-limit';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +58,7 @@ export async function PATCH(
     .select()
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return erreurServeur(error, 'times/[id]');
   if (!data) return NextResponse.json({ error: 'Chrono introuvable' }, { status: 404 });
 
   return NextResponse.json({ success: true, data });

@@ -4,6 +4,7 @@ import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { objectifConfigKey, type ObjectifView } from '@/lib/objectifs';
 import { estUuid } from '@/lib/ids';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       .eq('player_id', playerId)
       .order('created_at', { ascending: false });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'objectifs');
     if (!objectifs || objectifs.length === 0) {
       return NextResponse.json({ objectifs: [] }, { status: 200 });
     }
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
       if (error.code === '23505') {
         return NextResponse.json({ success: true, already: true }, { status: 200 });
       }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return erreurServeur(error, 'objectifs.POST');
     }
 
     return NextResponse.json({ success: true, id: data.id, already_achieved: dejaAtteint }, { status: 201 });
@@ -221,7 +222,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { error } = await query;
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'objectifs');
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch {

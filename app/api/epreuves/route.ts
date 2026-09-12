@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { TRACK_CATEGORIES, type TrackCategory } from '@/types/supabase';
 import { rateLimit } from '@/lib/rate-limit';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return erreurServeur(error, 'epreuves');
     }
 
     return NextResponse.json({

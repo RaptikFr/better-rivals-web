@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { parsePerfInput } from '@/lib/tunePerf';
+import { erreurServeur } from '@/lib/api-error';
 import type { Json } from '@/types/database.types';
 
 export const dynamic = 'force-dynamic';
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return erreurServeur(error, 'tune-setups');
     }
 
     return NextResponse.json({ success: true, data }, { status: 201 });

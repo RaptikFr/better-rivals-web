@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
         peak_power_kw:   peakP.kw,
         captured_at:     new Date().toISOString(),
       }, { onConflict: 'player_id,car_ordinal,share_code' });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'torque-curves.POST');
 
     // Élagage best-effort : on ne garde que les MAX_PAR_JOUEUR plus récentes.
     try {
@@ -154,7 +155,7 @@ export async function GET(request: NextRequest) {
       .eq('player_id', auth.playerId)
       .order('captured_at', { ascending: false })
       .limit(MAX_PAR_JOUEUR);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'torque-curves.GET');
 
     const rows = curves ?? [];
     if (rows.length === 0) return NextResponse.json({ curves: [] }, { status: 200 });

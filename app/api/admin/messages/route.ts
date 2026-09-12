@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAdmin } from '@/lib/admin-auth';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     .select('id, gamertag, email, sujet, message, created_at, status')
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return erreurServeur(error, 'admin/messages');
   return NextResponse.json({ messages: data });
 }
 
@@ -27,7 +28,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const { error } = await supabaseAdmin.from('contact_messages').update({ status }).eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return erreurServeur(error, 'admin/messages');
   return NextResponse.json({ success: true });
 }
 
@@ -39,6 +40,6 @@ export async function DELETE(request: NextRequest) {
   if (!id) return NextResponse.json({ error: 'Paramètre id manquant.' }, { status: 400 });
 
   const { error } = await supabaseAdmin.from('contact_messages').delete().eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return erreurServeur(error, 'admin/messages');
   return NextResponse.json({ success: true });
 }

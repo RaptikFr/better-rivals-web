@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
 import { regulariteConfig, type TourSession, type RegulariteConfig } from '@/lib/regularite';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       .gte('created_at', depuis90j)
       .order('created_at', { ascending: false })
       .limit(5000);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'regularite');
 
     const rows = laps ?? [];
     if (rows.length === 0) return NextResponse.json({ regularites: [] }, { status: 200 });

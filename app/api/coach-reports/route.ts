@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       transmission,
       n_virages:    nVirages,
     });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'coach-reports.POST');
 
     // Élagage best-effort : on ne garde que les MAX_PAR_JOUEUR plus récents.
     try {
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
       .eq('player_id', auth.playerId)
       .order('created_at', { ascending: false })
       .limit(MAX_PAR_JOUEUR);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return erreurServeur(error, 'coach-reports.GET');
 
     const rows = reports ?? [];
     if (rows.length === 0) return NextResponse.json({ reports: [] }, { status: 200 });

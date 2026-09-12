@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { utilisateurDepuisAuthHeader } from '@/lib/auth-token';
 import { rateLimit } from '@/lib/rate-limit';
+import { erreurServeur } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return erreurServeur(error, 'votes.GET');
     }
 
     return NextResponse.json({ voted_track_ids: (data ?? []).map(v => v.track_id) }, { status: 200 });
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       .insert([{ track_id, user_id: user.id, vote }]);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return erreurServeur(error, 'votes.POST');
     }
 
     return NextResponse.json({ success: true, message: 'Vote enregistré !' }, { status: 201 });
