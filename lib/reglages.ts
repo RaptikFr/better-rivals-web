@@ -101,10 +101,13 @@ async function buildReglages(): Promise<ReglageEntry[]> {
         .order('id')
         .range(from, to),
     ),
-    supabaseAdmin
-      .from('tune_setups')
-      .select(`share_code, car_ordinal, label, is_original, track_type, perf_stats, player_id, players(pseudo), cars(${carSel}), tracks(name)`)
-      .then(r => ({ data: (r.data ?? []) as unknown as TuneRow[] })),
+    fetchAllRows<TuneRow>((from, to) =>
+      supabaseAdmin
+        .from('tune_setups')
+        .select(`share_code, car_ordinal, label, is_original, track_type, perf_stats, player_id, players(pseudo), cars(${carSel}), tracks(name)`)
+        .order('id')
+        .range(from, to),
+    ).then(r => ({ data: r.data })),
   ]);
 
   const acc = new Map<string, Acc>();

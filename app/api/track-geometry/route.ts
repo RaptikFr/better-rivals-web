@@ -110,6 +110,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'track_id invalide.' }, { status: 400 });
     }
 
+    // Un circuit communautaire pas encore approuvé ne doit pas figer sa
+    // géométrie avant validation (le premier tracé envoyé gagne définitivement).
+    const { data: track } = await supabaseAdmin
+      .from('tracks').select('status').eq('id', trackId).maybeSingle();
+    if (!track || track.status !== 'approved') {
+      return NextResponse.json({ error: 'Circuit inconnu ou non approuvé.' }, { status: 403 });
+    }
+
     // Validation du tracé : trois tableaux (x, z, d) de MÊME longueur, faits de
     // nombres finis, en quantité plausible.
     const xs = points?.x, zs = points?.z, ds = points?.d;

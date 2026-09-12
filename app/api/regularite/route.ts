@@ -38,10 +38,12 @@ export async function GET(request: NextRequest) {
       .from('players').select('id').eq('user_id', user.id).single();
     if (!player) return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
 
+    const depuis90j = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
     const { data: laps, error } = await supabaseAdmin
       .from('session_laps')
       .select('track_id, car_ordinal, car_class, drivetrain, lap_ms, lap_number, created_at')
       .eq('player_id', player.id)
+      .gte('created_at', depuis90j)
       .order('created_at', { ascending: false })
       .limit(5000);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -521,7 +521,7 @@ export async function POST(request: NextRequest) {
     // les enchaîner en série pour répondre plus vite au relais.
     const [playerRes, trackRes, worldRecordRes, existingCarRes] = await Promise.all([
       supabaseAdmin.from('players').select('id, pseudo').eq('user_id', user.id).single(),
-      supabaseAdmin.from('tracks').select('length_km, name, is_sprint').eq('id', numTrackId).maybeSingle(),
+      supabaseAdmin.from('tracks').select('length_km, name, is_sprint, status').eq('id', numTrackId).maybeSingle(),
       // World records : couverture des circuits officiels (les 6 types d'épreuves :
       // route, tous chemins, cross-country, rue, drag, touge), classes D→R (X
       // exclue volontairement, records trop instables). L'anti-triche s'applique
@@ -542,9 +542,20 @@ export async function POST(request: NextRequest) {
     if (!player) {
       return NextResponse.json({ error: 'Profil joueur introuvable.' }, { status: 404 });
     }
+    // Capturé dans une const pour que TS le garde non-nul à l'intérieur de la
+    // fonction imbriquée `appliquerMeilleurTemps` plus bas (les closures ne
+    // conservent pas le rétrécissement de type de la garde ci-dessus).
+    const playerId    = player.id;
     const trackData   = trackRes.data;
     const worldRecord = worldRecordRes.data;
     const existingCar = existingCarRes.data;
+
+    // Circuit inconnu, ou communauté pas encore approuvé par un admin : pas de
+    // chrono enregistré dessus (éviterait de polluer un circuit qui n'est pas
+    // encore visible publiquement, ou plus du tout après rejet).
+    if (!trackData || trackData.status !== 'approved') {
+      return NextResponse.json({ error: 'Circuit inconnu ou non approuvé.' }, { status: 403 });
+    }
 
     // --- VALIDATION DU TEMPS PAR RAPPORT À LA LONGUEUR DU CIRCUIT ---
     // is_sprint vient de la base : la valeur du client ne doit pas pouvoir
@@ -624,7 +635,7 @@ export async function POST(request: NextRequest) {
     };
 
     // --- GESTION DU CLASSEMENT ---
-    const { data: existingTime } = await supabaseAdmin
+    const configQuery = () => supabaseAdmin
       .from('lap_times')
       .select('id, time_ms, car_pi, share_code, setup_author')
       .eq('player_id',   player.id)
@@ -634,7 +645,16 @@ export async function POST(request: NextRequest) {
       .eq('drivetrain',  drivetrain)
       .maybeSingle();
 
-    if (existingTime) {
+    const { data: existingTime } = await configQuery();
+
+    // Compare et met à jour le record si `newTimeMs` l'améliore. Partagé entre
+    // le cas normal (ligne déjà lue ci-dessus) et le cas de course (l'insert a
+    // échoué sur la contrainte unique car une requête concurrente — un retry du
+    // relais typiquement — a créé la ligne entre notre lecture et notre écriture).
+    async function appliquerMeilleurTemps(existingTime: {
+      id: string; time_ms: number; car_pi: number | null;
+      share_code: string | null; setup_author: string | null;
+    }) {
       if (newTimeMs < existingTime.time_ms) {
         // Historique de l'ancien temps et mise à jour du record sont
         // indépendants → écrits en parallèle.
@@ -642,7 +662,7 @@ export async function POST(request: NextRequest) {
         // dans le flux « Derniers chronos » de l'accueil.
         const [, updateRes] = await Promise.all([
           supabaseAdmin.from('lap_times_history').insert([{
-            player_id:   player.id,
+            player_id:   playerId,
             car_ordinal: numCarOrdinal,
             car_class,
             drivetrain,
@@ -674,12 +694,16 @@ export async function POST(request: NextRequest) {
         // celui du chrono amélioré (même circuit), sinon celui d'un autre circuit
         const previousSetup = existingTime.share_code
           ? { share_code: existingTime.share_code, setup_author: existingTime.setup_author, car_pi: existingTime.car_pi }
-          : await chercherReglagePrecedent({ playerId: player.id, carOrdinal: numCarOrdinal, carClass: car_class, drivetrain });
+          : await chercherReglagePrecedent({ playerId, carOrdinal: numCarOrdinal, carClass: car_class, drivetrain });
 
         return NextResponse.json({ success: true, is_new_record: true, message: "Nouveau record ! 🏆", data, id: data?.[0]?.id ?? null, previous_setup: previousSetup }, { status: 200 });
       } else {
         return NextResponse.json({ success: true, is_new_record: false, message: "Ton record avec cette config est déjà meilleur.", id: existingTime.id }, { status: 200 });
       }
+    }
+
+    if (existingTime) {
+      return await appliquerMeilleurTemps(existingTime);
     } else {
       const { data, error } = await supabaseAdmin
         .from('lap_times')
@@ -698,7 +722,17 @@ export async function POST(request: NextRequest) {
         }])
         .select();
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        // 23505 = violation de la contrainte unique (player/track/car/class/
+        // drivetrain) : une requête concurrente (retry du relais typiquement)
+        // a créé la ligne entre notre lecture et notre insertion. On rejoue la
+        // comparaison en update au lieu de renvoyer une erreur Postgres brute.
+        if (error.code === '23505') {
+          const { data: raceExisting } = await configQuery();
+          if (raceExisting) return await appliquerMeilleurTemps(raceExisting);
+        }
+        return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
+      }
       after(() => notifierRecordBattu({ ...notifOpts, newTimeMs, previousTimeMs: null }));
       after(() => verifierObjectifsAtteints({ ...objectifOpts, newTimeMs }));
 
