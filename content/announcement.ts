@@ -11,13 +11,13 @@
  */
 const announcement = {
   /** Identifiant unique. Changer cet id rouvre la bannière pour tout le monde. */
-  id: "2026-09-relais-v385-drag",
+  id: "2026-09-relais-v100-stable",
 
   /** Afficher la bannière ? */
   active: true,
 
   /** Texte principal affiché dans la bannière. */
-  message: "Relais v3.8.5 : les courses de drag courtes (moins de 10 s, comme la Piste de drag du centre spatial d'Irokawa) enregistrent enfin leur chrono et leur tracé — le relais ne les prenait plus pour des sprints incomplets.",
+  message: "Le relais passe en version 1.0 : aucune nouvelle fonctionnalité, mais une réorganisation complète du code en coulisses pour le rendre plus simple à maintenir. Comportement inchangé.",
 
   /** Lien optionnel (bouton « En savoir plus » ou « Télécharger »). */
   link: "/telecharger",
