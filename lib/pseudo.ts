@@ -5,6 +5,9 @@
 
 export const PSEUDO_MAX = 15;
 
+// Identifiant Discord lié au profil : même borne que la contrainte en base.
+export const DISCORD_TAG_MAX = 32;
+
 const CARACTERES_INTERDITS = /[<>"'&/\\\u0000-\u001f\u007f]/;
 
 /** Message d'erreur si le pseudo n'est pas valide, sinon null. */

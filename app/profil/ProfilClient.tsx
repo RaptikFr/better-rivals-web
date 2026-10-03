@@ -10,6 +10,7 @@ import { DRIVETRAIN_FILTER_COLORS } from '@/components/DrivetrainBadge';
 import type { Podiums } from '@/lib/podiums';
 import { loadPlayerRankings, type PlayerRankings } from '@/lib/playerRankings';
 import { computeBadges } from '@/lib/badges';
+import { DISCORD_TAG_MAX } from '@/lib/pseudo';
 import { BadgesBar } from '@/components/BadgesBar';
 import { EmptyState, LapTable, ProgressionChart, type ProfileLap, type Stats } from './profilShared';
 import { SuiviTab } from './SuiviTab';
@@ -48,6 +49,7 @@ export default function ProfilClient() {
   const [activeTab, setActiveTab] = useState<Tab>('recents');
   const [pseudo,      setPseudo]      = useState<string>('');
   const [discordTag,  setDiscordTag]  = useState<string>('');
+  const [discordError, setDiscordError] = useState<string | null>(null);
   const [editDiscord, setEditDiscord] = useState(false);
   const [savingDiscord, setSavingDiscord] = useState(false);
   const [hideDiscord, setHideDiscord] = useState(false);
@@ -121,9 +123,20 @@ export default function ProfilClient() {
 
   async function saveDiscordTag() {
     if (!playerId) return;
+    const tag = discordTag.trim();
+    if (tag.length > DISCORD_TAG_MAX) {
+      setDiscordError(`L'identifiant Discord fait au maximum ${DISCORD_TAG_MAX} caractères.`);
+      return;
+    }
     setSavingDiscord(true);
-    await supabase.from('players').update({ discord_tag: discordTag.trim() || null }).eq('id', playerId);
+    const { error } = await supabase.from('players').update({ discord_tag: tag || null }).eq('id', playerId);
     setSavingDiscord(false);
+    // Une erreur n'était pas lue : le champ se refermait comme si tout était enregistré.
+    if (error) {
+      setDiscordError("Enregistrement impossible, réessaie.");
+      return;
+    }
+    setDiscordError(null);
     setEditDiscord(false);
   }
 
@@ -227,9 +240,11 @@ export default function ProfilClient() {
                           value={discordTag}
                           onChange={e => setDiscordTag(e.target.value)}
                           placeholder="Ton ID Discord (ex: 123456789)"
+                          maxLength={DISCORD_TAG_MAX}
                           className="text-sm bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded px-2 py-0.5 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-indigo-400 w-56"
                         />
                         <span className="text-xs text-neutral-500">Discord → Paramètres → Mode développeur → clic droit sur ton profil → Copier l&apos;identifiant</span>
+                        {discordError && <span className="text-xs text-red-400">{discordError}</span>}
                       </div>
                       <button onClick={saveDiscordTag} disabled={savingDiscord} className="text-xs font-bold text-indigo-400 hover:text-indigo-300 disabled:opacity-50">
                         {savingDiscord ? '…' : 'Sauvegarder'}
