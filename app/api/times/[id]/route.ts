@@ -40,14 +40,27 @@ export async function PATCH(
     .single();
   if (!player) return NextResponse.json({ error: 'Joueur introuvable' }, { status: 404 });
 
-  const body = await req.json();
-  // setup_author n'est mis à jour que si la clé est présente : le site n'envoie
-  // que share_code et ne doit pas écraser l'auteur renseigné via le relais
-  const updates: { share_code?: string | null; setup_author?: string | null } = {
-    share_code: typeof body.share_code === 'string' ? body.share_code.trim().slice(0, CHAMP_MAX) || null : null,
-  };
-  if ('setup_author' in body) {
-    updates.setup_author = typeof body.setup_author === 'string' ? body.setup_author.trim().slice(0, CHAMP_MAX) || null : null;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
+  }
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
+  }
+
+  // Chaque champ n'est mis à jour que s'il est présent dans le body : un PATCH
+  // qui ne parle que de setup_author ne doit pas effacer le share_code (et
+  // inversement). Une valeur vide ou non textuelle efface le champ.
+  const champs = body as { share_code?: unknown; setup_author?: unknown };
+  const nettoyer = (v: unknown) => typeof v === 'string' ? v.trim().slice(0, CHAMP_MAX) || null : null;
+  const updates: { share_code?: string | null; setup_author?: string | null } = {};
+  if ('share_code' in champs)   updates.share_code   = nettoyer(champs.share_code);
+  if ('setup_author' in champs) updates.setup_author = nettoyer(champs.setup_author);
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: 'Aucun champ à mettre à jour.' }, { status: 400 });
   }
 
   const { data, error } = await supabaseAdmin
