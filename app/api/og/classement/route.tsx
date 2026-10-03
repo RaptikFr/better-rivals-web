@@ -209,7 +209,13 @@ export async function GET(request: NextRequest) {
           </div>
         </div>
       ),
-      { width: 1200, height: 630 }
+      {
+        width: 1200,
+        height: 630,
+        // Image publique qui ne dépend que de l'URL : sans cache, chaque
+        // prévisualisation (Discord, réseaux) relançait requête DB + rendu.
+        headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' },
+      }
     );
   } catch {
     return new Response("Impossible de générer l'image", { status: 500 });
