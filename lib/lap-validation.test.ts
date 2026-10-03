@@ -10,6 +10,7 @@ import {
   secteursDepuisTrace,
   secteursPlausibles,
   traceValide,
+  metaVoitureValide,
 } from './lap-validation';
 
 describe('traceValide — températures optionnelles', () => {
@@ -223,5 +224,32 @@ describe('secteursDepuisTrace', () => {
     expect(secteursDepuisTrace({ d: [0, 1000], t: [0, 10] }, 1)).toBeNull();   // n < 2
     expect(secteursDepuisTrace(null, 5)).toBeNull();
     expect(secteursDepuisTrace({ d: [0, 0, 0, 0, 0, 0], t: [0, 1, 2, 3, 4, 5] }, 5)).toBeNull(); // dFinal = 0
+  });
+});
+
+describe('metaVoitureValide', () => {
+  it('accepte une voiture sans métadonnées (défauts côté route)', () => {
+    expect(metaVoitureValide({})).toBe(true);
+    expect(metaVoitureValide({ manufacturer: null, name: '', year: '' })).toBe(true);
+  });
+
+  it('accepte des métadonnées dans les bornes de POST /api/cars', () => {
+    expect(metaVoitureValide({ manufacturer: 'Ford', name: 'GT', year: 2020 })).toBe(true);
+    expect(metaVoitureValide({ manufacturer: 'Ford', name: 'GT', year: '2020' })).toBe(true);
+    expect(metaVoitureValide({ year: 0 })).toBe(true); // année inconnue
+  });
+
+  it('refuse des textes trop longs ou non textuels', () => {
+    expect(metaVoitureValide({ manufacturer: 'x'.repeat(61) })).toBe(false);
+    expect(metaVoitureValide({ name: 'x'.repeat(101) })).toBe(false);
+    expect(metaVoitureValide({ manufacturer: 42 })).toBe(false);
+    expect(metaVoitureValide({ name: { a: 1 } })).toBe(false);
+  });
+
+  it('refuse une année hors bornes ou non entière', () => {
+    expect(metaVoitureValide({ year: 1899 })).toBe(false);
+    expect(metaVoitureValide({ year: 2031 })).toBe(false);
+    expect(metaVoitureValide({ year: 2020.5 })).toBe(false);
+    expect(metaVoitureValide({ year: 'abc' })).toBe(false);
   });
 });

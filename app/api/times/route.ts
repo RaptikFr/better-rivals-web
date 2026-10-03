@@ -13,6 +13,9 @@ import {
   tempsDansBornes,
   plusRapideQueRecord,
   tourFinalReconstruitCoherent,
+  metaVoitureValide,
+  DRIVETRAINS_VALIDES,
+  CAR_CLASSES_VALIDES,
 } from '@/lib/lap-validation';
 
 export const dynamic = 'force-dynamic';
@@ -502,6 +505,14 @@ export async function POST(request: NextRequest) {
     const secteurs = null;
 
     if (!identifiantsValides({ trackId: numTrackId, carOrdinal: numCarOrdinal, timeMs: newTimeMs })) {
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
+    }
+
+    // Transmission / classe : déjà contraintes en base (CHECK sur lap_times), mais
+    // une valeur hors liste donnerait un 500 que le relais retente indéfiniment.
+    // Métadonnées voiture : elles entrent dans la table publique `cars`, donc bornées.
+    if (!DRIVETRAINS_VALIDES.includes(drivetrain) || !CAR_CLASSES_VALIDES.includes(car_class) ||
+        !metaVoitureValide({ manufacturer: car_manufacturer, name: car_name, year: car_year })) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 

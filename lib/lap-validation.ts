@@ -275,3 +275,31 @@ export function secteursDepuisTrace(
   }
   return durees;
 }
+
+/** Valeurs de transmission et de classe acceptées (miroir des CHECK de lap_times). */
+export const DRIVETRAINS_VALIDES = ['FWD', 'RWD', 'AWD'] as const;
+export const CAR_CLASSES_VALIDES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'R', 'X'] as const;
+
+/**
+ * Métadonnées voiture facultatives envoyées avec un chrono. Absentes (ou vides)
+ * = acceptées : la route applique alors ses défauts (« Inconnu », année 0).
+ * Présentes = bornées comme sur POST /api/cars, sinon n'importe quel texte
+ * finirait dans la table publique `cars`.
+ */
+export function metaVoitureValide(opts: {
+  manufacturer?: unknown;
+  name?:         unknown;
+  year?:         unknown;
+}): boolean {
+  const { manufacturer, name, year } = opts;
+
+  if (manufacturer != null && manufacturer !== '' &&
+      (typeof manufacturer !== 'string' || manufacturer.length > 60)) return false;
+
+  if (name != null && name !== '' &&
+      (typeof name !== 'string' || name.length > 100)) return false;
+
+  if (year == null || year === '') return true;
+  const annee = Number(year);
+  return Number.isInteger(annee) && (annee === 0 || (annee >= 1900 && annee <= 2030));
+}
