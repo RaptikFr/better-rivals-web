@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -5,6 +6,21 @@ import { siteUrl } from '@/lib/site';
 import { computeWeeklyRecap } from '@/lib/weeklyRecap';
 
 export const dynamic = 'force-dynamic';
+
+// Le pseudo vient des joueurs (non borné à l'inscription) : échappé avant d'entrer
+// dans le HTML de l'email, sinon un pseudo forgé injecterait du markup dans un
+// mail envoyé depuis le domaine du site.
+function echapperHtml(texte: string): string {
+  return texte.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+}
+
+// Comparaison en temps constant du header Authorization (évite une attaque par
+// mesure du temps sur le secret partagé).
+function authorisationValide(recue: string | null, secret: string): boolean {
+  const attendue = Buffer.from(`Bearer ${secret}`);
+  const recu     = Buffer.from(recue ?? '');
+  return recu.length === attendue.length && timingSafeEqual(recu, attendue);
+}
 
 // Instanciation paresseuse (le constructeur lève si la clé manque) — voir la
 // même logique dans app/api/times/route.ts.
@@ -37,7 +53,7 @@ function buildRecapHtml(opts: { pseudo: string; gained: number; lost: number }):
       <span style="font-size:20px;font-weight:900;color:#ec4899;">Better</span><span style="font-size:20px;font-weight:900;color:#7c3aed;">Rivals</span>
     </div>
     <div style="background:#ffffff;border-radius:12px;padding:32px;border:1px solid #e5e5e5;">
-      <h1 style="margin:0 0 6px;font-size:20px;font-weight:800;color:#0a0a0a;">Ton récap de la semaine, ${opts.pseudo}</h1>
+      <h1 style="margin:0 0 6px;font-size:20px;font-weight:800;color:#0a0a0a;">Ton récap de la semaine, ${echapperHtml(opts.pseudo)}</h1>
       <p style="margin:0 0 20px;color:#737373;font-size:14px;">${netLabel}</p>
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;background:#fafafa;border-radius:10px;">
         <tr>
@@ -62,7 +78,7 @@ export async function GET(request: NextRequest) {
   // qu'un envoi de masse ne parte jamais par accident.
   const secret = process.env.CRON_SECRET;
   const auth   = request.headers.get('Authorization');
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!secret || !authorisationValide(auth, secret)) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 
