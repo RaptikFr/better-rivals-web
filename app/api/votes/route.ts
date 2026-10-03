@@ -76,6 +76,11 @@ export async function POST(request: NextRequest) {
       .insert([{ track_id, user_id: user.id, vote }]);
 
     if (error) {
+      // 23505 = double vote concurrent (contrainte unique track_id + user_id) :
+      // même réponse que le contrôle ci-dessus, pas une erreur serveur.
+      if (error.code === '23505') {
+        return NextResponse.json({ error: 'Tu as déjà voté pour cette épreuve.' }, { status: 409 });
+      }
       return erreurServeur(error, 'votes.POST');
     }
 
