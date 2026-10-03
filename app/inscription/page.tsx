@@ -4,6 +4,7 @@ import { useState, type SyntheticEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { erreurPseudo, echapperMotif, PSEUDO_MAX } from '@/lib/pseudo';
 
 export default function InscriptionPage() {
   const router = useRouter();
@@ -21,16 +22,26 @@ export default function InscriptionPage() {
 
     const pseudoClean = pseudo.trim();
 
+    const erreurGamertag = erreurPseudo(pseudoClean);
+    if (erreurGamertag) {
+      setError(erreurGamertag);
+      setLoading(false);
+      return;
+    }
+
     // 1. Vérifier la disponibilité du Gamertag AVANT de créer le compte Auth :
     // un échec après signUp laisserait un compte sans profil joueur, et l'email
-    // serait définitivement bloqué pour une nouvelle inscription
-    const { data: taken } = await supabase
+    // serait définitivement bloqué pour une nouvelle inscription.
+    // Motif échappé : sans ça, « % » ou « _ » matcheraient d'autres pseudos.
+    // limit(1) + tableau : maybeSingle() échouerait silencieusement si plusieurs
+    // pseudos ne différant que par la casse existent déjà.
+    const { data: pris } = await supabase
       .from('players')
       .select('id')
-      .ilike('pseudo', pseudoClean)
-      .maybeSingle();
+      .ilike('pseudo', echapperMotif(pseudoClean))
+      .limit(1);
 
-    if (taken) {
+    if (pris && pris.length > 0) {
       setError("Ce Gamertag est déjà utilisé. Choisis-en un autre.");
       setLoading(false);
       return;
@@ -102,6 +113,7 @@ export default function InscriptionPage() {
               value={pseudo}
               onChange={e => setPseudo(e.target.value)}
               placeholder="Ton Gamertag exact"
+              maxLength={PSEUDO_MAX}
               required
               className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-4 py-3 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-pink-500 transition-colors"
             />
