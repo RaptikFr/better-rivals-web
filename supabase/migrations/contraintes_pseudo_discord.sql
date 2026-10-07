@@ -6,13 +6,14 @@
 -- est le seul garde-fou fiable.
 --
 -- NOT VALID : la contrainte s'applique aux nouvelles écritures immédiatement,
--- sans scanner les lignes existantes (un ancien pseudo trop long ne bloque donc
--- pas la migration). Pour vérifier les lignes existantes ensuite :
---   SELECT id, pseudo FROM players WHERE NOT (char_length(pseudo) BETWEEN 1 AND 15);
---   ALTER TABLE players VALIDATE CONSTRAINT chk_players_pseudo_longueur;
+-- sans scanner les lignes existantes. Vérifié avant application : 0 ligne
+-- hors bornes, 0 doublon insensible à la casse.
 --
--- Mêmes bornes que lib/pseudo.ts (PSEUDO_MAX = 15) et discord (32 caractères,
--- limite des pseudos Discord).
+-- Mêmes règles que lib/pseudo.ts (PSEUDO_MAX = 15, DISCORD_TAG_MAX = 32).
+-- Pas de backslash dans les littéraux : le serveur les interprète comme des
+-- échappements, d'où chr(39) et chr(92) pour l'apostrophe et l'antislash.
+
+BEGIN;
 
 ALTER TABLE players
   ADD CONSTRAINT chk_players_pseudo_longueur
@@ -20,8 +21,15 @@ ALTER TABLE players
 
 ALTER TABLE players
   ADD CONSTRAINT chk_players_pseudo_caracteres
-  CHECK (pseudo !~ '[<>"''&/\\\x00-\x1f\x7f]') NOT VALID;
+  CHECK (
+    pseudo !~ '[<>"&/]'
+    AND strpos(pseudo, chr(39)) = 0
+    AND strpos(pseudo, chr(92)) = 0
+    AND pseudo !~ '[[:cntrl:]]'
+  ) NOT VALID;
 
 ALTER TABLE players
   ADD CONSTRAINT chk_players_discord_tag_longueur
   CHECK (discord_tag IS NULL OR char_length(discord_tag) <= 32) NOT VALID;
+
+COMMIT;

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import DerniersChronos from '@/components/DerniersChronos';
@@ -5,6 +6,12 @@ import NouveauxLeaders from '@/components/NouveauxLeaders';
 import { siteUrl } from '@/lib/site';
 import { getDerniersChronos } from '@/lib/derniersChronos';
 import { getNouveauxLeaders } from '@/lib/leadersFeed';
+
+// Sans canonical explicite, Search Console remonte la page d'accueil comme
+// « doublon sans URL canonique sélectionnée par l'utilisateur ».
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 const jsonLd = {
   '@context': 'https://schema.org',

@@ -59,6 +59,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // Page supprimée le 22/06/2026 (classement général au mérite cumulé,
+      // trop facile à exploiter) — encore indexée par Google, 404 sinon.
+      {
+        source: '/classement-general',
+        destination: '/classements',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
