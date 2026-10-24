@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Better Rivals FH6
 
-## Getting Started
+Classements alternatifs pour **Forza Horizon 6** : chaque classement isole une
+configuration exacte (même voiture, même classe, même transmission) pour que
+seul le pilotage fasse la différence.
 
-First, run the development server:
+Site : <https://better-rivals-fh6.org>
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Fonctionnement
+
+```
+Forza (UDP « Sortie de données »)
+   └─▶ Relais Windows (BetterRivals.exe, Python)
+          ├─ POST /api/times          chrono → classements, notifications, objectifs
+          ├─ POST /api/traces         trace du tour → coach, delta live, tour optimal
+          ├─ POST /api/coach-reports  diagnostics de réglage → onglet Copilote
+          └─ POST /api/torque-curves  courbe moteur (Banc moteur) → onglet Moteur
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Le relais n'est pas dans ce dépôt (gitignoré, synchronisé à part). Les joueurs le
+téléchargent depuis `/telecharger`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
+Supabase (Postgres, Auth, RLS, Realtime) · Vitest · Vercel (hébergement + cron).
 
-## Learn More
+> Next.js 16 a des changements incompatibles avec les versions précédentes : la
+> documentation de référence est celle embarquée dans `node_modules/next/dist/docs/`.
 
-To learn more about Next.js, take a look at the following resources:
+## Démarrer en local
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Prérequis : Node.js 20+ (LTS).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm install
+cp .env.example .env.local   # puis renseigner au minimum les 3 variables Supabase
+npm run dev                  # http://localhost:3000
+```
 
-## Deploy on Vercel
+Toutes les variables sont documentées dans [`.env.example`](.env.example). Seules
+les variables Supabase sont obligatoires : e-mails (Resend), captcha (Turnstile),
+rate-limit partagé (Upstash), cron et Discord se désactivent proprement si leurs
+clés sont absentes.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Commandes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Commande | Rôle |
+|---|---|
+| `npm run dev` | Serveur de développement |
+| `npm run build` | Build de production |
+| `npm run lint` | ESLint — objectif **0 warning** |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run test` | Tests unitaires Vitest (`lib/**/*.test.ts`) |
+
+## Organisation du code
+
+| Dossier | Contenu |
+|---|---|
+| `app/` | Pages (un `page.tsx` serveur + un `*Client.tsx` interactif) et routes API (`app/api/`) |
+| `components/` | Composants partagés (carte du circuit, replay, navbar…) |
+| `lib/` | Logique métier pure et testée (validation des chronos, coach, classements, notifications…) |
+| `hooks/` | `useAuth`, `usePlayer`, `usePreferences`, `useNotifications` |
+| `supabase/migrations/` | Schéma SQL versionné — **appliqué à la main** (voir son [README](supabase/migrations/README.md)) |
+| `types/` | Types Supabase (`database.types.ts`) |
+
+Conventions détaillées (accès Supabase, format des temps, règles de lint…) :
+voir [`CLAUDE.md`](CLAUDE.md).
+
+## Base de données
+
+Les migrations ne sont pas jouées automatiquement : chaque fichier de
+`supabase/migrations/` s'applique dans **Supabase → SQL Editor**. Les fonctions
+RPC récentes ont un repli côté code, donc l'ordre déploiement / migration est
+libre ; le README des migrations indique comment vérifier ce qui est appliqué.
+
+## Déploiement
+
+Vercel, à chaque push sur `main`. Le cron hebdomadaire (`vercel.json`) appelle
+`/api/cron/weekly-recap` le dimanche à 18 h UTC, protégé par `CRON_SECRET`.

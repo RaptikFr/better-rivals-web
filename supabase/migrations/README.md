@@ -56,6 +56,7 @@ Toutes **✅ appliquées** (vérifié le 19/06/2026).
 | `classement_rpc.sql` | RPC `player_config_rankings` — classements par config d'un joueur. |
 | `general_ranking_rpc.sql` | RPC `general_ranking` — classement général agrégé. ⚠️ **fonction supprimée** le 22/06 (feature retirée), cf. `nettoyage_post_classement_general.sql`. |
 | `track_best_times_rpc.sql` | RPC `track_best_times` — meilleurs temps dédupliqués par circuit (remplace le `.limit(100)` + dédup JS de `GET /api/times`). |
+| `stats_recap_sitemap_rpc.sql` | ⏳ **À appliquer** (ajoutée le 24/10/2026). RPC `stats_globales` (/stats, accueil), `recap_leaders_depuis` (cron récap hebdo), `track_last_activity` / `car_last_activity` / `joueurs_indexables` (sitemap). Repli JS en place tant qu'elle n'est pas appliquée. |
 
 ### Sécurité & audits
 

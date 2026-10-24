@@ -7,6 +7,7 @@ import { siteUrl } from '@/lib/site';
 import { annoncerNouveauLeaderDiscord } from '@/lib/discord';
 import { erreurServeur } from '@/lib/api-error';
 import { echapperHtml } from '@/lib/html';
+import { cibleBattue, rivauxDepasses } from '@/lib/notifRecords';
 import {
   formatTime,
   bornesTempsMs,
@@ -33,7 +34,7 @@ function getResend(): Resend | null {
 }
 
 // Notifie les suiveurs de l'auteur du chrono qu'il vient de les dépasser sur
-// la config exacte. `estDepassement` garantit qu'on ne notifie qu'un vrai
+// la config exacte. `rivauxDepasses` garantit qu'on ne notifie qu'un vrai
 // dépassement (le suiveur était devant l'ancien temps de l'auteur).
 async function notifierRivauxDepasses(opts: {
   playerId:   string;
@@ -45,7 +46,7 @@ async function notifierRivauxDepasses(opts: {
   drivetrain: string;
   trackName:  string;
   carLabel:   string;
-  estDepassement: (targetTimeMs: number) => boolean;
+  previousTimeMs: number | null;
 }) {
   const { data: followerRows } = await supabaseAdmin
     .from('follows')
@@ -72,8 +73,7 @@ async function notifierRivauxDepasses(opts: {
   });
   const link = `/classements?${params.toString()}`;
 
-  const beaten = (rivalLaps ?? [])
-    .filter(rl => opts.newTimeMs < rl.time_ms && opts.estDepassement(rl.time_ms));
+  const beaten = rivauxDepasses(opts.newTimeMs, opts.previousTimeMs, rivalLaps ?? []);
   if (beaten.length === 0) return;
 
   // Respecte la préférence « notify_rival » de chaque suiveur dépassé.
@@ -126,9 +126,6 @@ async function notifierRecordBattu(opts: {
   trackName:  string;
   carLabel:   string;
 }) {
-  // La cible n'est « dépassée » que si elle était devant l'ancien temps
-  const estDepassement = (targetTimeMs: number) =>
-    opts.previousTimeMs === null || targetTimeMs < opts.previousTimeMs;
   // Nom de la voiture depuis la DB (source de vérité, car déjà insérée/mise à jour)
   const { data: carData } = await supabaseAdmin
     .from('cars')
@@ -152,7 +149,7 @@ async function notifierRecordBattu(opts: {
     drivetrain: opts.drivetrain,
     trackName:  opts.trackName,
     carLabel,
-    estDepassement,
+    previousTimeMs: opts.previousTimeMs,
   });
 
   // Niveau 1 : même voiture + classe + transmission (config exacte)
@@ -168,7 +165,7 @@ async function notifierRecordBattu(opts: {
     .limit(1)
     .maybeSingle();
 
-  if (exact && opts.newTimeMs < exact.time_ms && estDepassement(exact.time_ms)) {
+  if (cibleBattue(opts.newTimeMs, opts.previousTimeMs, exact)) {
     const params = new URLSearchParams({
       track_id:  String(opts.trackId),
       class:     opts.carClass,
@@ -224,7 +221,7 @@ async function notifierRecordBattu(opts: {
     .limit(1)
     .maybeSingle();
 
-  if (diffDrive && opts.newTimeMs < diffDrive.time_ms && estDepassement(diffDrive.time_ms)) {
+  if (cibleBattue(opts.newTimeMs, opts.previousTimeMs, diffDrive)) {
     if (await notifTypeActive(diffDrive.player_id, 'notify_drivetrain')) {
       const params = new URLSearchParams({
         track_id: String(opts.trackId),
@@ -254,7 +251,7 @@ async function notifierRecordBattu(opts: {
     .limit(1)
     .maybeSingle();
 
-  if (diffCar && opts.newTimeMs < diffCar.time_ms && estDepassement(diffCar.time_ms)) {
+  if (cibleBattue(opts.newTimeMs, opts.previousTimeMs, diffCar)) {
     if (await notifTypeActive(diffCar.player_id, 'notify_class')) {
       const params = new URLSearchParams({
         track_id: String(opts.trackId),

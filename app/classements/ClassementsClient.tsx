@@ -18,6 +18,8 @@ import {
   ReportModal, theoreticalFromBest,
 } from './classementsShared';
 import { RankingTableView, RankingCardView } from './RankingViews';
+import ComboRecherche from './ComboRecherche';
+import Pagination from './Pagination';
 
 // Ligne best_sectors telle que lue (anon), désormais PAR JOUEUR (player_id), avec
 // le pseudo embarqué. Plusieurs lignes par index (une par pilote) → on réduit au
@@ -79,12 +81,10 @@ export default function ClassementsClient({
 
   // Filtre circuit avec recherche
   const [trackSearch,       setTrackSearch]       = useState('');
-  const [showTrackDropdown, setShowTrackDropdown] = useState(false);
 
   // Filtre voiture (client-side)
   const [selectedCar,    setSelectedCar]    = useState(initialCar ?? 'Toutes');
   const [carSearch,      setCarSearch]      = useState('');
-  const [showCarDropdown, setShowCarDropdown] = useState(false);
 
   // Filtre pseudo (client-side)
   const [pseudoSearch, setPseudoSearch] = useState('');
@@ -249,16 +249,6 @@ export default function ClassementsClient({
     if (h) setHighlightId(h);
   }, []);
 
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.car-dropdown-wrapper'))   setShowCarDropdown(false);
-      if (!target.closest('.track-dropdown-wrapper')) setShowTrackDropdown(false);
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
 
   const filteredTrackOptions = useMemo(() =>
     allTracks.filter(t => t.name.toLowerCase().includes(trackSearch.toLowerCase())),
@@ -502,51 +492,17 @@ export default function ClassementsClient({
         <div className="flex flex-col gap-4 mb-6 p-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
 
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex flex-col relative track-dropdown-wrapper">
-              <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Circuit :</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={selectedTrackId !== null ? selectedTrackName : trackSearch}
-                  onChange={e => {
-                    setTrackSearch(e.target.value);
-                    setSelectedTrackId(null);
-                    setShowTrackDropdown(true);
-                  }}
-                  onFocus={() => setShowTrackDropdown(true)}
-                  placeholder="Tous les circuits"
-                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
-                />
-                {selectedTrackId !== null && (
-                  <button
-                    onClick={() => { setSelectedTrackId(null); setTrackSearch(''); }}
-                    aria-label="Effacer le filtre circuit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
-                  >✕</button>
-                )}
-              </div>
-              {showTrackDropdown && filteredTrackOptions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                  {filteredTrackOptions.map(track => (
-                    <button
-                      key={track.id}
-                      onClick={() => {
-                        setSelectedTrackId(track.id);
-                        setTrackSearch('');
-                        setShowTrackDropdown(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                        selectedTrackId === track.id
-                          ? 'bg-pink-500/20 text-pink-400'
-                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                      }`}
-                    >
-                      {track.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ComboRecherche
+              label="Circuit :"
+              placeholder="Tous les circuits"
+              selection={selectedTrackId !== null ? { cle: selectedTrackId, libelle: selectedTrackName } : null}
+              recherche={trackSearch}
+              onRecherche={t => { setTrackSearch(t); setSelectedTrackId(null); }}
+              options={filteredTrackOptions.map(t => ({ cle: t.id, libelle: t.name }))}
+              onChoisir={id => { setSelectedTrackId(id); setTrackSearch(''); }}
+              onEffacer={() => { setSelectedTrackId(null); setTrackSearch(''); }}
+              libelleEffacer="Effacer le filtre circuit"
+            />
 
             <div className="flex flex-col">
               <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Classe :</label>
@@ -560,51 +516,17 @@ export default function ClassementsClient({
             </div>
           </div>
 
-          <div className="flex flex-col relative car-dropdown-wrapper">
-            <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Voiture :</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={selectedCar === 'Toutes' ? carSearch : selectedCar}
-                onChange={e => {
-                  setCarSearch(e.target.value);
-                  setSelectedCar('Toutes');
-                  setShowCarDropdown(true);
-                }}
-                onFocus={() => setShowCarDropdown(true)}
-                placeholder="Toutes les voitures"
-                className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white p-2 pr-8 rounded-lg focus:outline-none focus:border-pink-500 text-sm"
-              />
-              {selectedCar !== 'Toutes' && (
-                <button
-                  onClick={() => { setSelectedCar('Toutes'); setCarSearch(''); }}
-                  aria-label="Effacer le filtre voiture"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
-                >✕</button>
-              )}
-            </div>
-            {showCarDropdown && filteredCarOptions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                {filteredCarOptions.map((car, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setSelectedCar(car);
-                      setCarSearch('');
-                      setShowCarDropdown(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                      selectedCar === car
-                        ? 'bg-pink-500/20 text-pink-400'
-                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                    }`}
-                  >
-                    {car}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <ComboRecherche
+            label="Voiture :"
+            placeholder="Toutes les voitures"
+            selection={selectedCar === 'Toutes' ? null : { cle: selectedCar, libelle: selectedCar }}
+            recherche={carSearch}
+            onRecherche={t => { setCarSearch(t); setSelectedCar('Toutes'); }}
+            options={filteredCarOptions.map(c => ({ cle: c, libelle: c }))}
+            onChoisir={c => { setSelectedCar(c); setCarSearch(''); }}
+            onEffacer={() => { setSelectedCar('Toutes'); setCarSearch(''); }}
+            libelleEffacer="Effacer le filtre voiture"
+          />
 
           <div className="flex flex-col">
             <label className="text-sm text-neutral-600 dark:text-neutral-400 font-bold mb-1">Pilote :</label>
@@ -741,55 +663,7 @@ export default function ClassementsClient({
 
         {/* --- PAGINATION --- */}
         {!isLoading && !error && totalPages > 1 && (
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={safePage === 1}
-              className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              ← Précédent
-            </button>
-
-            <div className="flex gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter(page =>
-                  page === 1 ||
-                  page === totalPages ||
-                  Math.abs(page - safePage) <= 1
-                )
-                .reduce<(number | "...")[]>((acc, page, i, arr) => {
-                  if (i > 0 && page - (arr[i - 1] as number) > 1) acc.push("...");
-                  acc.push(page);
-                  return acc;
-                }, [])
-                .map((item, i) =>
-                  item === "..." ? (
-                    <span key={`ellipsis-${i}`} className="px-2 py-2 text-neutral-500 dark:text-neutral-600 text-sm">…</span>
-                  ) : (
-                    <button
-                      key={item}
-                      onClick={() => setCurrentPage(item as number)}
-                      className={`w-9 h-9 rounded-lg text-sm font-bold transition-all ${
-                        safePage === item
-                          ? "bg-pink-500 text-white border border-pink-500"
-                          : "border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-500"
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  )
-                )
-              }
-            </div>
-
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={safePage === totalPages}
-              className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              Suivant →
-            </button>
-          </div>
+          <Pagination page={safePage} totalPages={totalPages} onChange={setCurrentPage} />
         )}
 
       </div>

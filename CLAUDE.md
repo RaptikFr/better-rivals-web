@@ -36,7 +36,7 @@ Le flux central est : **Relais Python (UDP Forza → HTTP)** → `/api/times` �
 
 Pattern systématique : **page.tsx async server component** (metadata, prefetch) + **un Client component** (`*Client.tsx`) pour l'interactivité. Les pages publiques (classements, voitures, circuits) sont rendues côté serveur avec `supabaseAdmin` ; les pages personnelles (profil, duels, objectifs) chargent côté client via les API routes.
 
-Pages notables : `/profil` (onglets : Récents, Tous, Suivi, Classements, Rivaux, Garage, Stats, Coach, Copilote, Moteur — les trois derniers requièrent opt-in `coachReport`), `/classements`, `/joueurs/[pseudo]`, `/voitures/[slug]`, `/circuits/[slug]`.
+Pages notables : `/profil` (onglets : Récents, Tous, Suivi, Classements, Rivaux, Garage, Stats, Coach, Copilote, Moteur — les trois derniers requièrent opt-in `coachReport`), `/classements`, `/joueurs/[pseudo]`, `/voitures/[slug]`, `/circuits/[slug]` (carte + bloc 📈 progression des records ; `?config=<clé>&rival=<player_id>#carte` présélectionne la config et le rival du replay — lien 🎬 Replay de la page joueur), `/notifications` (historique complet, la cloche n'en montre que 30).
 
 ### Base de données Supabase
 
@@ -73,6 +73,10 @@ Points d'entrée du relais Python et du frontend :
 - **`coachPilotage.ts`** — Analyse post-tour : `analyserPilotage(trace, sectorsMs, bestMs)` découpe la trace en secteurs égaux en distance, calcule apex/freinage/roue libre/réaccélération et produit des conseils. `analyseThermique(trace)` pour l'équilibre AV/AR. **Couvert par tests.**
 - **`*Rankings.ts`** (`carRankings`, `circuitRankings`, `playerRankings`) — Calculs de classements avec `unstable_cache` Next.js pour les pages serveur.
 - **`best-sectors.ts`** — Enregistrement du meilleur secteur par index/config après chaque trace.
+- **`notifRecords.ts`** — Décision « cible réellement dépassée » des notifications de `/api/times` (records battus, rivaux suivis). **Couvert par tests.**
+- **`leaders.ts`** — Rejeu chronologique des records (`computeLeaderChanges`, `progressionRecords`). **Couvert par tests.**
+- **`siteStats.ts`** — Chiffres clés du site (RPC `stats_globales`, repli JS) pour `/stats` et l'accueil.
+- **`html.ts`** — `echapperHtml` : obligatoire pour toute valeur joueur (pseudo, nom de voiture, circuit) insérée dans un e-mail.
 - **`preferences.ts`** — Type `Preferences` (skins, densité, format temps/date, contraste, coachReport…) synchronisé entre localStorage et `players.preferences`.
 
 ### Hooks (`hooks/`)

@@ -21,7 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { usePlayer } from '@/hooks/usePlayer';
 import { usePreferences } from '@/hooks/usePreferences';
 import { pointADistance, interpoler, type CarteCircuit } from '@/lib/circuitGeometry';
-import type { ConfigCarte } from '@/components/CircuitMap';
+import type { ConfigCarte } from '@/components/circuitMap/types';
 
 interface ReplayLap {
   time_ms: number;

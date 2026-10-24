@@ -18,117 +18,19 @@ import {
   typeVirage,
   interpoler,
   type CarteCircuit,
-  type PointCarte,
   type Virage,
 } from '@/lib/circuitGeometry';
 import CircuitReplay from '@/components/CircuitReplay';
 import { comparerTraces, binDivergent, type SegmentComparaison } from '@/lib/traceComparison';
 import { ecartsParSecteur, secteursDisputes, type EcartSecteur } from '@/lib/secteursDisputes';
 
-export interface ConfigCarte {
-  key:        string; // `${car_class}|${drivetrain}|${car_ordinal}` — même clé que la page circuit
-  carClass:   string;
-  drivetrain: string;
-  carLabel:   string;
-  carOrdinal: number;
-}
+import { NEUTRE_STROKE, VIOLET_STROKE, BIN_STROKES, CMP_PERTE_STROKES, CMP_GAIN_STROKES, cheminSvg } from '@/components/circuitMap/palette';
+import { LegendeComparaison, LegendeHeat, LegendeSecteurs } from '@/components/circuitMap/Legendes';
+import TablePerteVirages from '@/components/circuitMap/TablePerteVirages';
+import TableSecteurs from '@/components/circuitMap/TableSecteurs';
+import type { ConfigCarte, BestSectorRow, SecteurInfo, ReplayLap, RivalDisponible, PerteVirage } from '@/components/circuitMap/types';
 
-type BestSectorRow = {
-  player_id:    string;
-  car_ordinal:  number;
-  car_class:    string;
-  drivetrain:   string;
-  sector_index: number;
-  best_ms:      number;
-  players:      { pseudo: string | null } | null;
-};
-
-interface SecteurInfo {
-  bestMs:     number | null;
-  bestPseudo: string | null;
-  mienMs:     number | null;
-  /** mien − meilleur (ms), null sans donnée personnelle ou de référence. */
-  deltaMs:    number | null;
-}
-
-// Trace réduite (GET /api/replay) — mêmes données que le replay 2D, réutilisées
-// ici pour chronométrer chaque VIRAGE (fenêtre exacte distDebutM→distFinM), au
-// lieu des tranches égales des secteurs qui peuvent chevaucher plusieurs virages.
-type ReplayLap = {
-  time_ms: number;
-  pseudo:  string | null;
-  d: number[];
-  t: number[];
-  v: number[];
-};
-
-// Candidat au rôle de rival (autre pilote tracé de la config) — pour peupler
-// le sélecteur. Renvoyé par /api/replay à chaque appel.
-type RivalDisponible = {
-  player_id: string;
-  pseudo:    string | null;
-  time_ms:   number;
-};
-
-interface PerteVirage {
-  virage:      Virage;
-  moiS:        number;
-  rivalS:      number;
-  rivalPseudo: string | null;
-  /** moi − rival (s), positif = je perds du temps dans ce virage. */
-  deltaS:      number;
-}
-
-// Rampe séquentielle « temps perdu » (famille rose), 4 pas, une teinte par mode,
-// validée clair ET sombre (validateur dataviz : L monotone, ΔL ≥ 0.06,
-// contraste du pas clair ≥ 2:1 sur la surface). Hex bruts exprès : une couleur
-// de DONNÉE ne suit ni les skins ni le remap d'accent.
-const BIN_STROKES = [
-  '[stroke:#fb7185] dark:[stroke:#9f1239]',
-  '[stroke:#e11d48]',
-  '[stroke:#9f1239] dark:[stroke:#fb7185]',
-  '[stroke:#4c0519] dark:[stroke:#fda4af]',
-];
-const BIN_FONDS = [
-  '[background:#fb7185] dark:[background:#9f1239]',
-  '[background:#e11d48]',
-  '[background:#9f1239] dark:[background:#fb7185]',
-  '[background:#4c0519] dark:[background:#fda4af]',
-];
-const VIOLET_STROKE  = '[stroke:#7c3aed] dark:[stroke:#a78bfa]';
-const VIOLET_FOND    = '[background:#7c3aed] dark:[background:#a78bfa]';
-const NEUTRE_STROKE  = 'stroke-neutral-300 dark:stroke-neutral-700';
-
-// Rampe DIVERGENTE du mode « trace vs trace » : rose = je perds, violet = je
-// gagne (mêmes familles de données que le reste de la carte), 3 pas par côté
-// d'intensité croissante, inversée en sombre comme BIN_STROKES. Validée
-// (validateur dataviz) : luminosité monotone par rampe, contraste ≥ 3:1 sur la
-// surface sombre ; en clair les pas faibles s'appuient sur le relief existant
-// (infobulle + tableaux + légende étiquetée).
-const CMP_PERTE_STROKES = [
-  '[stroke:#fb7185] dark:[stroke:#e11d48]',
-  '[stroke:#e11d48] dark:[stroke:#fb7185]',
-  '[stroke:#9f1239] dark:[stroke:#fda4af]',
-];
-const CMP_GAIN_STROKES = [
-  '[stroke:#a78bfa] dark:[stroke:#7c3aed]',
-  '[stroke:#7c3aed] dark:[stroke:#a78bfa]',
-  '[stroke:#5b21b6] dark:[stroke:#c4b5fd]',
-];
-const CMP_PERTE_FONDS = [
-  '[background:#fb7185] dark:[background:#e11d48]',
-  '[background:#e11d48] dark:[background:#fb7185]',
-  '[background:#9f1239] dark:[background:#fda4af]',
-];
-const CMP_GAIN_FONDS = [
-  '[background:#a78bfa] dark:[background:#7c3aed]',
-  '[background:#7c3aed] dark:[background:#a78bfa]',
-  '[background:#5b21b6] dark:[background:#c4b5fd]',
-];
-
-function cheminSvg(pts: PointCarte[]): string {
-  return pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.z.toFixed(1)}`).join(' ');
-}
+export type { ConfigCarte } from '@/components/circuitMap/types';
 
 export default function CircuitMap({
   trackId,
@@ -851,26 +753,7 @@ export default function CircuitMap({
                   </>
                 )}
               </p>
-              {maxAbsCmp > 0 && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                  {[...CMP_GAIN_FONDS].reverse().map((f, b) => (
-                    <span key={`g${b}`} className="flex items-center gap-1.5">
-                      <span className={`inline-block w-3 h-3 rounded-sm ${f}`} />
-                      {b === 0 ? 'Tu gagnes beaucoup' : b === 2 ? 'Tu gagnes un peu' : 'Tu gagnes'}
-                    </span>
-                  ))}
-                  <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-3 rounded-sm bg-neutral-300 dark:bg-neutral-700" />
-                    Égalité
-                  </span>
-                  {CMP_PERTE_FONDS.map((f, b) => (
-                    <span key={`p${b}`} className="flex items-center gap-1.5">
-                      <span className={`inline-block w-3 h-3 rounded-sm ${f}`} />
-                      {b === 0 ? 'Tu perds un peu' : b === 2 ? 'Tu perds beaucoup' : 'Tu perds'}
-                    </span>
-                  ))}
-                </div>
-              )}
+              {maxAbsCmp > 0 && <LegendeComparaison />}
             </>
           )}
 
@@ -896,20 +779,7 @@ export default function CircuitMap({
                   <>Pas encore assez de pilotes chronométrés sur cette config pour comparer les secteurs.</>
                 )}
               </p>
-              {maxEcart > 0 && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                  {BIN_FONDS.map((f, b) => (
-                    <span key={b} className="flex items-center gap-1.5">
-                      <span className={`inline-block w-3 h-3 rounded-sm ${f}`} />
-                      {b === 0 ? 'Pilotes groupés' : b === 3 ? 'Tout se joue là' : b === 1 ? 'Écart modéré' : 'Gros écart'}
-                    </span>
-                  ))}
-                  <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-3 rounded-sm bg-neutral-300 dark:bg-neutral-700" />
-                    Moins de 2 pilotes
-                  </span>
-                </div>
-              )}
+              {maxEcart > 0 && <LegendeHeat />}
             </>
           )}
 
@@ -946,139 +816,29 @@ export default function CircuitMap({
           ))}
 
           {!modeCmp && !modeHeat && aMesDonnees && maxDelta > 0 && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-              <span className="flex items-center gap-1.5">
-                <span className={`inline-block w-3 h-3 rounded-sm ${VIOLET_FOND}`} />
-                Meilleur secteur (toi)
-              </span>
-              {BIN_FONDS.map((f, b) => (
-                <span key={b} className="flex items-center gap-1.5">
-                  <span className={`inline-block w-3 h-3 rounded-sm ${f}`} />
-                  {b === 0 ? `≤ ${fmtDelta(seuil).slice(1)}` :
-                   b === 3 ? `> ${fmtDelta(3 * seuil).slice(1)}` :
-                   `${fmtDelta(b * seuil).slice(1)} – ${fmtDelta((b + 1) * seuil).slice(1)}`}
-                </span>
-              ))}
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block w-3 h-3 rounded-sm bg-neutral-300 dark:bg-neutral-700" />
-                Sans donnée
-              </span>
-            </div>
+            <LegendeSecteurs seuil={seuil} fmtDelta={fmtDelta} />
           )}
 
-          {/* Perte par virage : fenêtre exacte du virage (trace), pas la tranche du
-              secteur qui peut en chevaucher plusieurs (ex. « virages 5–6 »). */}
           {virages.length > 0 && (
-            <details open className="text-sm">
-              <summary className="cursor-pointer text-neutral-500 hover:text-pink-400 transition-colors text-xs font-semibold">
-                🌀 Perte par virage
-              </summary>
-              <div className="mt-2">
-                {!tracesAuth ? (
-                  <p className="text-xs text-neutral-500">
-                    Connecte-toi pour comparer virage par virage avec un tour tracé de cette config.
-                  </p>
-                ) : tracesLoading ? (
-                  <p className="text-xs text-neutral-500 animate-pulse">Chargement des tracés…</p>
-                ) : !perVirage ? (
-                  <p className="text-xs text-neutral-500">
-                    {traces?.moi || traces?.rival
-                      ? "Il manque l'une des deux traces (toi ou le rival) pour calculer la perte par virage."
-                      : 'Pas encore de tour tracé sur cette config — pose un temps avec le relais pour débloquer ce calcul.'}
-                  </p>
-                ) : (
-                  <>
-                    {piresVirages.length > 0 && (
-                      <p className="text-neutral-700 dark:text-neutral-300 mb-2">
-                        🔻 Le plus gros écart :{' '}
-                        {piresVirages.slice(0, 3).map((p, j) => (
-                          <span key={p.virage.numero}>
-                            {j > 0 && (j === Math.min(piresVirages.length, 3) - 1 ? ' puis ' : ', ')}
-                            <strong>virage {p.virage.numero}</strong> ({fmtDelta(Math.round(p.deltaS * 1000))})
-                          </span>
-                        ))}.
-                      </p>
-                    )}
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs border-collapse">
-                        <thead>
-                          <tr className="text-left text-[10px] uppercase tracking-wider text-neutral-500 border-b border-neutral-200 dark:border-neutral-800">
-                            <th className="px-2 py-1.5 font-bold">Virage</th>
-                            <th className="px-2 py-1.5 font-bold">Type</th>
-                            <th className="px-2 py-1.5 font-bold">Toi</th>
-                            <th className="px-2 py-1.5 font-bold">{perVirage[0]?.rivalPseudo ?? 'Rival'}</th>
-                            <th className="px-2 py-1.5 font-bold">Écart</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {perVirage.map(p => (
-                            <tr key={p.virage.numero} className="border-b border-neutral-200/60 dark:border-neutral-800/60 last:border-0">
-                              <td className="px-2 py-1.5 font-bold text-neutral-500">V{p.virage.numero}</td>
-                              <td className="px-2 py-1.5 text-neutral-600 dark:text-neutral-400">
-                                {p.virage.direction} · {typeVirage(p.virage)}
-                              </td>
-                              <td className="px-2 py-1.5 font-mono">{p.moiS.toFixed(2).replace('.', decSep)} s</td>
-                              <td className="px-2 py-1.5 font-mono">{p.rivalS.toFixed(2).replace('.', decSep)} s</td>
-                              <td className={`px-2 py-1.5 font-mono font-bold ${
-                                p.deltaS > 0 ? 'text-pink-500' : p.deltaS < 0 ? 'text-violet-500' : ''
-                              }`}>
-                                {p.deltaS === 0
-                                  ? `±0${decSep}00 s`
-                                  : `${p.deltaS > 0 ? '+' : '−'}${Math.abs(p.deltaS).toFixed(2).replace('.', decSep)} s`}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
-              </div>
-            </details>
+            <TablePerteVirages
+              tracesAuth={tracesAuth}
+              tracesLoading={tracesLoading}
+              uneTraceAuMoins={Boolean(traces?.moi || traces?.rival)}
+              perVirage={perVirage}
+              piresVirages={piresVirages}
+              fmtDelta={fmtDelta}
+              decSep={decSep}
+            />
           )}
 
-          {/* Détail par secteur en tableau (lisible sans les couleurs). */}
-          <details className="text-sm">
-            <summary className="cursor-pointer text-neutral-500 hover:text-pink-400 transition-colors text-xs font-semibold">
-              Détail des secteurs
-            </summary>
-            <div className="overflow-x-auto mt-2">
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="text-left text-[10px] uppercase tracking-wider text-neutral-500 border-b border-neutral-200 dark:border-neutral-800">
-                    <th className="px-2 py-1.5 font-bold">Secteur</th>
-                    {virages.length > 0 && <th className="px-2 py-1.5 font-bold">Virages</th>}
-                    <th className="px-2 py-1.5 font-bold">Meilleur</th>
-                    <th className="px-2 py-1.5 font-bold">Détenteur</th>
-                    {aMesDonnees && <th className="px-2 py-1.5 font-bold">Toi</th>}
-                    {aMesDonnees && <th className="px-2 py-1.5 font-bold">Écart</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {secteurs.map((s, i) => (
-                    <tr key={i} className="border-b border-neutral-200/60 dark:border-neutral-800/60 last:border-0">
-                      <td className="px-2 py-1.5 font-bold text-neutral-500">S{i + 1}</td>
-                      {virages.length > 0 && (
-                        <td className="px-2 py-1.5 text-neutral-600 dark:text-neutral-400">
-                          {viragesDuSecteur(i).length > 0
-                            ? viragesDuSecteur(i).map(v => `V${v.numero}`).join(', ')
-                            : '—'}
-                        </td>
-                      )}
-                      <td className="px-2 py-1.5 font-mono">{s.bestMs !== null ? formatTime(s.bestMs) : '—'}</td>
-                      <td className="px-2 py-1.5">{s.bestPseudo ?? '—'}</td>
-                      {aMesDonnees && <td className="px-2 py-1.5 font-mono">{s.mienMs !== null ? formatTime(s.mienMs) : '—'}</td>}
-                      {aMesDonnees && (
-                        <td className="px-2 py-1.5 font-mono font-bold">
-                          {s.deltaMs === null ? '—' : s.deltaMs <= 0 ? '💜' : fmtDelta(s.deltaMs)}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </details>
+          <TableSecteurs
+            secteurs={secteurs}
+            avecVirages={virages.length > 0}
+            viragesDuSecteur={viragesDuSecteur}
+            aMesDonnees={aMesDonnees}
+            formatTime={formatTime}
+            fmtDelta={fmtDelta}
+          />
         </div>
       )}
     </section>
