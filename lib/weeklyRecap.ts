@@ -18,6 +18,14 @@ export interface WeeklyRecapEntry {
 }
 
 export async function computeWeeklyRecap(sinceMs: number): Promise<WeeklyRecapEntry[]> {
+  // Voie rapide : même calcul côté Postgres (RPC recap_leaders_depuis, cf.
+  // stats_recap_sitemap_rpc.sql). Repli JS ci-dessous si la RPC est absente.
+  const { data: rpcData, error: rpcError } = await supabaseAdmin
+    .rpc('recap_leaders_depuis', { p_since: new Date(sinceMs).toISOString() });
+  if (!rpcError && rpcData) {
+    return rpcData.map(r => ({ playerId: r.player_id, pseudo: r.pseudo, gained: r.gained, lost: r.lost }));
+  }
+
   const [currentRes, historyRes] = await Promise.all([
     fetchAllRows<CurrentRow>((from, to) =>
       supabaseAdmin

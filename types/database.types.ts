@@ -1044,6 +1044,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      stats_globales: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      recap_leaders_depuis: {
+        Args: { p_since: string }
+        Returns: {
+          player_id: string
+          pseudo: string
+          gained: number
+          lost: number
+        }[]
+      }
+      track_last_activity: {
+        Args: Record<string, never>
+        Returns: { track_id: number; last_at: string }[]
+      }
+      car_last_activity: {
+        Args: Record<string, never>
+        Returns: { car_ordinal: number; last_at: string }[]
+      }
+      joueurs_indexables: {
+        Args: { p_min?: number }
+        Returns: { pseudo: string; times: number; last_at: string }[]
+      }
       enregistrer_meilleurs_secteurs: {
         Args: {
           p_track_id: number
