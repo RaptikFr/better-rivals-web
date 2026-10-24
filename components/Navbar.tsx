@@ -322,6 +322,13 @@ export default function Navbar() {
                             ))
                           )}
                         </div>
+                        <Link
+                          href="/notifications"
+                          onClick={() => setBellOpen(false)}
+                          className="block text-center text-xs font-semibold text-pink-500 hover:text-pink-400 py-2.5 border-t border-neutral-200 dark:border-neutral-800"
+                        >
+                          Voir tout l&apos;historique →
+                        </Link>
                       </div>
                     )}
                   </>

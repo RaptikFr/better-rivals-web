@@ -7,6 +7,7 @@ import { JsonLd } from '@/components/JsonLd';
 import { siteUrl } from '@/lib/site';
 import { getDerniersChronos } from '@/lib/derniersChronos';
 import { getNouveauxLeaders } from '@/lib/leadersFeed';
+import { getSiteStats } from '@/lib/siteStats';
 
 // Sans canonical explicite, Search Console remonte la page d'accueil comme
 // « doublon sans URL canonique sélectionnée par l'utilisateur ».
@@ -29,10 +30,20 @@ export default async function Home() {
   // Récupération serveur (cachée 60 s) : le contenu est dans le HTML initial
   // — meilleur SEO et affichage immédiat, sans waterfall côté client.
   // Un flux en échec ne doit pas casser la page d'accueil.
-  const [chronos, leaders] = await Promise.all([
+  const [chronos, leaders, siteStats] = await Promise.all([
     getDerniersChronos().catch(() => []),
     getNouveauxLeaders().catch(() => []),
+    getSiteStats().then(s => s.stats).catch(() => null),
   ]);
+
+  // Chiffres clés (preuve sociale pour un nouveau visiteur) — masqués si le
+  // calcul échoue plutôt que d'afficher des zéros trompeurs.
+  const chiffres = siteStats && siteStats.totalChronos > 0 ? [
+    { valeur: siteStats.totalPilotes,  label: 'pilotes' },
+    { valeur: siteStats.totalChronos,  label: 'chronos' },
+    { valeur: siteStats.totalCircuits, label: 'circuits' },
+    { valeur: siteStats.totalVoitures, label: 'voitures' },
+  ] : null;
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-start p-6 pb-24">
@@ -82,6 +93,17 @@ export default async function Home() {
             Télécharger le Relais UDP
           </Link>
         </div>
+
+        {chiffres && (
+          <Link href="/stats" className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 group" aria-label="Voir les statistiques du site">
+            {chiffres.map(c => (
+              <div key={c.label} className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 px-4 py-3 group-hover:border-pink-500/40 transition-colors">
+                <div className="text-2xl md:text-3xl font-black tabular-nums">{c.valeur.toLocaleString('fr-FR')}</div>
+                <div className="text-xs uppercase tracking-wide text-neutral-500">{c.label}</div>
+              </div>
+            ))}
+          </Link>
+        )}
       </div>
 
       {/* --- SECTION POURQUOI BETTER RIVALS --- */}

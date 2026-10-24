@@ -16,6 +16,7 @@ import { ChallengeButton } from '@/components/ChallengeButton';
 import { objectifConfigKey } from '@/lib/objectifs';
 import { usePlayer } from '@/hooks/usePlayer';
 import { suggestDuels, type OwnLap } from '@/lib/garage';
+import { circuitSlug } from '@/lib/circuitSlug';
 import type { Drivetrain } from '@/types/supabase';
 
 interface Lap {
@@ -367,6 +368,20 @@ export default function JoueurClient({ pseudo }: { pseudo: string }) {
                                   drivetrain:     lap.drivetrain,
                                 }}
                               />
+                              {/* Replay 2D « moi vs ce pilote » sur la carte du
+                                  circuit (config + rival présélectionnés). */}
+                              {me && me.id !== playerId && (
+                                <Link
+                                  href={`/circuits/${circuitSlug(lap.track_id, circuit.trackName)}?${new URLSearchParams({
+                                    config: `${lap.car_class}|${lap.drivetrain}|${lap.car_ordinal}`,
+                                    rival:  playerId,
+                                  })}#carte`}
+                                  title={`Comparer ta trace à celle de ${pseudo} sur la carte`}
+                                  className="text-xs font-semibold text-violet-400 hover:text-violet-300 whitespace-nowrap"
+                                >
+                                  🎬 Replay
+                                </Link>
+                              )}
                             </span>
                           )}
                         </div>

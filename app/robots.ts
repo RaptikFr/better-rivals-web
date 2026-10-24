@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // Pages privées ou personnelles : inutiles dans l'index Google
-      disallow: ['/admin', '/parametres', '/profil', '/api/'],
+      disallow: ['/admin', '/parametres', '/profil', '/notifications', '/api/'],
     },
     sitemap: `${siteUrl}/sitemap.xml`,
     host: siteUrl,

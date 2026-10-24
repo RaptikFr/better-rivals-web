@@ -87,3 +87,51 @@ export function computeLeaderChanges(rows: LeaderLap[]): LeaderChange[] {
   );
   return changes;
 }
+
+export interface EtapeRecord {
+  player_id:   string;
+  time_ms:     number;
+  recorded_at: string;
+  /** Gain sur le record précédent (null pour le tout premier temps). */
+  gainMs:      number | null;
+}
+
+/**
+ * Progression du record de chaque config : la suite chronologique des temps
+ * qui ont battu le meilleur temps du moment (détrônages ET améliorations du
+ * leader sur lui-même, contrairement à computeLeaderChanges). Même tri que
+ * computeLeaderChanges. Clé = configKey (`track-car-classe-transmission`).
+ */
+export function progressionRecords(rows: LeaderLap[]): Map<string, EtapeRecord[]> {
+  const byConfig = new Map<string, LeaderLap[]>();
+  for (const r of rows) {
+    const key = configKey(r);
+    if (!byConfig.has(key)) byConfig.set(key, []);
+    byConfig.get(key)!.push(r);
+  }
+
+  const out = new Map<string, EtapeRecord[]>();
+  for (const [key, events] of byConfig) {
+    events.sort((a, b) =>
+      new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime() ||
+      b.time_ms - a.time_ms
+    );
+    const etapes: EtapeRecord[] = [];
+    let best = Infinity;
+    for (const ev of events) {
+      if (ev.time_ms < best) {
+        etapes.push({
+          player_id:   ev.player_id,
+          time_ms:     ev.time_ms,
+          recorded_at: ev.recorded_at,
+          gainMs:      best === Infinity ? null : best - ev.time_ms,
+        });
+        best = ev.time_ms;
+      }
+    }
+    out.set(key, etapes);
+  }
+  return out;
+}
+
+export { configKey as cleConfigLeader };

@@ -158,6 +158,20 @@ export default function CircuitMap({
   // (en state : le portal doit se re-rendre quand le nœud est monté).
   const [replaySlot, setReplaySlot] = useState<HTMLDivElement | null>(null);
   const conteneurRef = useRef<HTMLDivElement>(null);
+  // Lien profond « comparer avec ce pilote » (page joueur) :
+  // /circuits/<slug>?config=<clé>&rival=<player_id>#carte. Lu au montage via
+  // window.location (pas useSearchParams : la page est statique/ISR et n'a pas
+  // de Suspense). Le rival demandé est appliqué une fois la config active.
+  const rivalDemande = useRef<{ key: string; rival: string } | null>(null);
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const key = sp.get('config');
+    if (!key) return;
+    const rival = sp.get('rival');
+    if (rival) rivalDemande.current = { key, rival };
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture unique des paramètres d'URL au montage
+    setSelectedKey(key);
+  }, []);
 
   useEffect(() => {
     let annule = false;
@@ -219,8 +233,12 @@ export default function CircuitMap({
   const [selectedRivalId, setSelectedRivalId] = useState<string | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset synchrone du rival choisi quand la config change (ses candidats ne valent plus)
-    setSelectedRivalId(null);
+    // Rival du lien profond s'il vise cette config (consommé une seule fois).
+    const demande = rivalDemande.current;
+    const rival = demande && demande.key === configActive?.key ? demande.rival : null;
+    if (rival) rivalDemande.current = null;
+    // Sinon reset : les candidats tracés changent avec la config.
+    setSelectedRivalId(rival);
   }, [configActive?.key]);
 
   useEffect(() => {
@@ -455,7 +473,7 @@ export default function CircuitMap({
   const seuil = maxDelta / 4;
 
   return (
-    <section className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 sm:p-6 mb-8">
+    <section id="carte" className="scroll-mt-20 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 sm:p-6 mb-8">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
         <h2 className="text-lg font-bold text-neutral-900 dark:text-white flex-1">
           🗺️ Carte du circuit <span className="text-neutral-500 font-normal text-sm">— où perds-tu du temps ?</span>

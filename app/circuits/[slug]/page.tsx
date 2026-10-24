@@ -13,6 +13,8 @@ import { fetchAllRows } from '@/lib/fetchAllRows';
 import { ecartsParSecteur, secteursDisputes, type EcartSecteur } from '@/lib/secteursDisputes';
 import CircuitMap from '@/components/CircuitMap';
 import { JsonLd, filAriane, listeRecords } from '@/components/JsonLd';
+import ProgressionRecords, { type ProgressionConfig } from '@/components/ProgressionRecords';
+import { progressionRecords, cleConfigLeader, type LeaderLap } from '@/lib/leaders';
 import type { Drivetrain } from '@/types/supabase';
 import {
   getApprovedCircuits,
@@ -87,6 +89,50 @@ async function getSecteursDisputes(trackId: number): Promise<BlocDisputes | null
   return meilleure;
 }
 
+/**
+ * Progression des records (bloc 📈) : pour les 3 configs du circuit ayant vu
+ * le plus de records successifs (≥ 2 étapes), rejoue lap_times ∪
+ * lap_times_history. Les clés renvoyées sont celles des pages circuit.
+ */
+async function getProgressionRecords(
+  trackId: number,
+  configs: { key: string; carClass: string; drivetrain: string; carLabel: string }[],
+): Promise<ProgressionConfig[]> {
+  if (configs.length === 0) return [];
+  const colonnes = 'player_id, track_id, car_ordinal, car_class, drivetrain, time_ms, recorded_at';
+  const [actuels, historique] = await Promise.all([
+    fetchAllRows<LeaderLap>((from, to) =>
+      supabaseAdmin.from('lap_times').select(colonnes).eq('track_id', trackId).order('id').range(from, to)),
+    fetchAllRows<LeaderLap>((from, to) =>
+      supabaseAdmin.from('lap_times_history').select(colonnes).eq('track_id', trackId).order('id').range(from, to)),
+  ]);
+  if (historique.data.length === 0) return []; // aucun record n'a jamais été battu
+
+  const parConfig = progressionRecords([...actuels.data, ...historique.data]);
+  const retenues = configs
+    .map(c => {
+      const ordinal = Number(c.key.split('|')[2]);
+      const etapes = parConfig.get(cleConfigLeader({
+        track_id: trackId, car_ordinal: ordinal, car_class: c.carClass, drivetrain: c.drivetrain,
+      } as LeaderLap)) ?? [];
+      return { c, etapes };
+    })
+    .filter(x => x.etapes.length >= 2)
+    .sort((a, b) => b.etapes.length - a.etapes.length)
+    .slice(0, 3);
+  if (retenues.length === 0) return [];
+
+  const ids = [...new Set(retenues.flatMap(x => x.etapes.map(e => e.player_id)))];
+  const { data: joueurs } = await supabaseAdmin.from('players').select('id, pseudo').in('id', ids);
+  const pseudo = new Map((joueurs ?? []).map(j => [j.id, j.pseudo]));
+
+  return retenues.map(({ c, etapes }) => ({
+    key:    c.key,
+    titre:  `${c.carLabel} (${c.carClass}/${c.drivetrain})`,
+    etapes: etapes.map(e => ({ ...e, pseudo: pseudo.get(e.player_id) ?? '—' })),
+  }));
+}
+
 const fmtEcart = (ms: number) => `${(ms / 1000).toFixed(2).replace('.', ',')} s`;
 
 export async function generateStaticParams() {
@@ -133,6 +179,9 @@ export default async function CircuitPage({ params }: Props) {
     getSecteursDisputes(id),
   ]);
   if (!track) notFound();
+
+  // Bloc secondaire : un échec ne doit pas casser la page.
+  const progression = await getProgressionRecords(id, configs).catch(() => []);
 
   // Libellé de la config du bloc « secteurs disputés » (si elle est classée).
   const configDisputee = disputes ? configs.find(c => c.key === disputes.configKey) ?? null : null;
@@ -220,6 +269,8 @@ export default async function CircuitPage({ params }: Props) {
             </p>
           </section>
         )}
+
+        <ProgressionRecords configs={progression} />
 
         {configs.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-center">
