@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import DerniersChronos from '@/components/DerniersChronos';
 import NouveauxLeaders from '@/components/NouveauxLeaders';
+import { JsonLd } from '@/components/JsonLd';
 import { siteUrl } from '@/lib/site';
 import { getDerniersChronos } from '@/lib/derniersChronos';
 import { getNouveauxLeaders } from '@/lib/leadersFeed';
@@ -37,10 +38,7 @@ export default async function Home() {
     <main className="min-h-screen flex flex-col items-center justify-start p-6 pb-24">
 
       {/* Données structurées pour Google */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       {/* --- SECTION HAUT (En-tête) --- */}
       <div className="max-w-4xl text-center space-y-8 mt-0">

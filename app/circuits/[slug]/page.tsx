@@ -12,6 +12,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { fetchAllRows } from '@/lib/fetchAllRows';
 import { ecartsParSecteur, secteursDisputes, type EcartSecteur } from '@/lib/secteursDisputes';
 import CircuitMap from '@/components/CircuitMap';
+import { JsonLd, filAriane, listeRecords } from '@/components/JsonLd';
 import type { Drivetrain } from '@/types/supabase';
 import {
   getApprovedCircuits,
@@ -142,6 +143,12 @@ export default async function CircuitPage({ params }: Props) {
 
   return (
     <main className="min-h-screen p-6">
+      <JsonLd data={filAriane([['Circuits', '/circuits'], [track.name, `/circuits/${canonical}`]])} />
+      <JsonLd data={listeRecords(
+        `Records ${track.name} — Forza Horizon 6`,
+        configs.slice(0, 20).map(c =>
+          `${c.carLabel} (${c.carClass}/${c.drivetrain}) : ${formatTime(c.laps[0].time_ms)} par ${c.laps[0].players?.pseudo ?? '—'}`),
+      )} />
       <div className="max-w-screen-xl mx-auto">
 
         <nav className="text-sm text-neutral-500 mb-4">

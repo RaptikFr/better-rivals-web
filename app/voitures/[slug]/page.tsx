@@ -10,6 +10,7 @@ import type { Drivetrain } from '@/types/supabase';
 import { carSlug, parseCarOrdinal } from '@/lib/carSlug';
 import { getCarsWithTimes, getCarRanking, MIN_TIMES_INDEXABLE } from '@/lib/carRankings';
 import { circuitSlug } from '@/lib/circuitRankings';
+import { JsonLd, filAriane, listeRecords } from '@/components/JsonLd';
 
 export const revalidate = 300;
 
@@ -63,6 +64,13 @@ export default async function VoiturePage({ params }: Props) {
 
   return (
     <main className="min-h-screen p-6">
+      <JsonLd data={filAriane([['Voitures', '/voitures'], [fullName, `/voitures/${canonical}`]])} />
+      <JsonLd data={listeRecords(
+        `Records ${fullName} — Forza Horizon 6`,
+        circuits.flatMap(ci => ci.configs.map(c =>
+          `${ci.trackName} (${c.carClass}/${c.drivetrain}) : ${formatTime(c.laps[0].time_ms)} par ${c.laps[0].players?.pseudo ?? '—'}`))
+          .slice(0, 20),
+      )} />
       <div className="max-w-screen-xl mx-auto">
 
         <nav className="text-sm text-neutral-500 mb-4">
