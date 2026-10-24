@@ -303,3 +303,23 @@ export function metaVoitureValide(opts: {
   const annee = Number(year);
   return Number.isInteger(annee) && (annee === 0 || (annee >= 1900 && annee <= 2030));
 }
+
+/**
+ * Indice de performance (PI) : obligatoire (colonne NOT NULL), entier. Bornes
+ * larges (0–999 = échelle Forza, classe X plafonnée à 999) : on refuse le type
+ * aberrant, pas un PI inattendu. Sans ce contrôle, une valeur non numérique
+ * produisait un 500 que le relais retentait indéfiniment.
+ */
+export function carPiValide(pi: unknown): boolean {
+  if (pi == null || pi === '' || typeof pi === 'boolean') return false;
+  const n = Number(pi);
+  return Number.isInteger(n) && n >= 0 && n <= 999;
+}
+
+/** Nombre de cylindres : facultatif (null = inconnu / électrique), sinon entier 0–16. */
+export function nbCylindresValide(nb: unknown): boolean {
+  if (nb == null || nb === '') return true;
+  if (typeof nb === 'boolean') return false;
+  const n = Number(nb);
+  return Number.isInteger(n) && n >= 0 && n <= 16;
+}

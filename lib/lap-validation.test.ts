@@ -11,6 +11,8 @@ import {
   secteursPlausibles,
   traceValide,
   metaVoitureValide,
+  carPiValide,
+  nbCylindresValide,
 } from './lap-validation';
 
 describe('traceValide — températures optionnelles', () => {
@@ -251,5 +253,39 @@ describe('metaVoitureValide', () => {
     expect(metaVoitureValide({ year: 2031 })).toBe(false);
     expect(metaVoitureValide({ year: 2020.5 })).toBe(false);
     expect(metaVoitureValide({ year: 'abc' })).toBe(false);
+  });
+});
+
+describe('carPiValide', () => {
+  it('accepte un PI entier dans l’échelle Forza', () => {
+    expect(carPiValide(800)).toBe(true);
+    expect(carPiValide('701')).toBe(true);
+    expect(carPiValide(999)).toBe(true);
+  });
+  it('refuse absent, non entier, hors bornes ou booléen', () => {
+    expect(carPiValide(undefined)).toBe(false);
+    expect(carPiValide(null)).toBe(false);
+    expect(carPiValide('')).toBe(false);
+    expect(carPiValide('abc')).toBe(false);
+    expect(carPiValide(800.5)).toBe(false);
+    expect(carPiValide(1000)).toBe(false);
+    expect(carPiValide(-1)).toBe(false);
+    expect(carPiValide(true)).toBe(false);
+  });
+});
+
+describe('nbCylindresValide', () => {
+  it('accepte absent (inconnu / électrique) ou entier 0–16', () => {
+    expect(nbCylindresValide(undefined)).toBe(true);
+    expect(nbCylindresValide(null)).toBe(true);
+    expect(nbCylindresValide(0)).toBe(true);
+    expect(nbCylindresValide(8)).toBe(true);
+    expect(nbCylindresValide('12')).toBe(true);
+  });
+  it('refuse non entier, hors bornes ou booléen', () => {
+    expect(nbCylindresValide(17)).toBe(false);
+    expect(nbCylindresValide(4.5)).toBe(false);
+    expect(nbCylindresValide('V8')).toBe(false);
+    expect(nbCylindresValide(false)).toBe(false);
   });
 });

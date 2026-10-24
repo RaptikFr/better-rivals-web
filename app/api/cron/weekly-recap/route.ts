@@ -4,15 +4,9 @@ import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { siteUrl } from '@/lib/site';
 import { computeWeeklyRecap } from '@/lib/weeklyRecap';
+import { echapperHtml } from '@/lib/html';
 
 export const dynamic = 'force-dynamic';
-
-// Le pseudo vient des joueurs (non borné à l'inscription) : échappé avant d'entrer
-// dans le HTML de l'email, sinon un pseudo forgé injecterait du markup dans un
-// mail envoyé depuis le domaine du site.
-function echapperHtml(texte: string): string {
-  return texte.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
-}
 
 // Comparaison en temps constant du header Authorization (évite une attaque par
 // mesure du temps sur le secret partagé).

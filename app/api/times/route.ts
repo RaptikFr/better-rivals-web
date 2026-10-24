@@ -6,6 +6,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { siteUrl } from '@/lib/site';
 import { annoncerNouveauLeaderDiscord } from '@/lib/discord';
 import { erreurServeur } from '@/lib/api-error';
+import { echapperHtml } from '@/lib/html';
 import {
   formatTime,
   bornesTempsMs,
@@ -14,6 +15,8 @@ import {
   plusRapideQueRecord,
   tourFinalReconstruitCoherent,
   metaVoitureValide,
+  carPiValide,
+  nbCylindresValide,
   DRIVETRAINS_VALIDES,
   CAR_CLASSES_VALIDES,
 } from '@/lib/lap-validation';
@@ -340,11 +343,13 @@ function buildBeatenEmailHtml(opts: {
   ctaUrl:          string;
   profileUrl:      string;
 }): string {
+  // Toutes les valeurs affichées viennent des joueurs (nom de voiture transmis
+  // par le relais, circuit communauté, pseudo) : échappées dans row().
   function row(label: string, value: string, valueColor = '#171717', mono = false) {
     return `
       <tr>
         <td style="padding:7px 0;color:#737373;font-size:13px;border-bottom:1px solid #f0f0f0;">${label}</td>
-        <td style="padding:7px 0;font-size:13px;font-weight:700;text-align:right;border-bottom:1px solid #f0f0f0;color:${valueColor};${mono ? 'font-family:monospace;font-size:15px;' : ''}">${value}</td>
+        <td style="padding:7px 0;font-size:13px;font-weight:700;text-align:right;border-bottom:1px solid #f0f0f0;color:${valueColor};${mono ? 'font-family:monospace;font-size:15px;' : ''}">${echapperHtml(value)}</td>
       </tr>`;
   }
 
@@ -361,7 +366,7 @@ function buildBeatenEmailHtml(opts: {
     </div>
     <div style="background:#ffffff;border-radius:12px;padding:32px;border:1px solid #e5e5e5;">
       <h1 style="margin:0 0 6px;font-size:20px;font-weight:800;color:#0a0a0a;">Tu viens de te faire dépasser 🏆</h1>
-      <p style="margin:0 0 24px;color:#737373;font-size:14px;"><strong style="color:#171717;">${opts.newPlayerPseudo}</strong> a battu ton record.</p>
+      <p style="margin:0 0 24px;color:#737373;font-size:14px;"><strong style="color:#171717;">${echapperHtml(opts.newPlayerPseudo)}</strong> a battu ton record.</p>
       <table style="width:100%;border-collapse:collapse;margin-bottom:28px;">
         ${row('Circuit',        opts.trackName)}
         ${row('Voiture',        opts.carLabel)}
@@ -516,6 +521,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
+    // PI (NOT NULL) et cylindres : même raison, un type aberrant donnait un 500.
+    if (!carPiValide(car_pi) || !nbCylindresValide(num_cylinders)) {
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
+    }
+    const piInt  = Number(car_pi);
+    const cylInt = num_cylinders == null || num_cylinders === '' ? null : Number(num_cylinders);
+
     // [tour-final] Garde-fou : un tour final reconstruit doit rester dans la
     // fenêtre plausible autour du dernier current_lap_s transmis (la ligne est
     // ~1 trame après le dernier paquet, jamais avant). Attrape une régression du
@@ -598,14 +610,19 @@ export async function POST(request: NextRequest) {
     // dans le chemin critique. L'enrichissement du nom (catalogue « Inconnu »)
     // n'est pas nécessaire à la réponse : il part en tâche après-réponse.
     if (!existingCar) {
-      await supabaseAdmin
+      // Upsert « ignore si présente » : deux chronos simultanés avec la même
+      // voiture inconnue ne doivent pas se marcher dessus (le second insert
+      // échouait silencieusement sur la clé primaire).
+      const { error: carError } = await supabaseAdmin
         .from('cars')
-        .insert([{
+        .upsert([{
           car_ordinal:  numCarOrdinal,
-          manufacturer: car_manufacturer ?? 'Inconnu',
-          name:         car_name         ?? `Voiture #${numCarOrdinal}`,
-          year:         car_year         ?? 0,
-        }]);
+          manufacturer: car_manufacturer || 'Inconnu',
+          name:         car_name         || `Voiture #${numCarOrdinal}`,
+          year:         car_year         ? Number(car_year) : 0,
+        }], { onConflict: 'car_ordinal', ignoreDuplicates: true });
+      // 500 (et pas une FK en erreur plus loin) → le relais remet le chrono en file.
+      if (carError) return erreurServeur(carError, 'times.cars');
     } else if (car_manufacturer && car_name && car_year) {
       after(async () => {
         await supabaseAdmin
@@ -685,7 +702,7 @@ export async function POST(request: NextRequest) {
           supabaseAdmin
             .from('lap_times')
             .update({
-              time_ms: newTimeMs, verified: is_valid, car_pi, num_cylinders,
+              time_ms: newTimeMs, verified: true, car_pi: piInt, num_cylinders: cylInt,
               previous_time_ms: existingTime.time_ms, recorded_at: new Date().toISOString(),
               // Secteurs du nouveau meilleur tour ; remis à NULL si non fournis,
               // pour ne pas garder ceux d'un tour précédent désormais battu.
@@ -724,11 +741,12 @@ export async function POST(request: NextRequest) {
           car_ordinal:  numCarOrdinal,
           track_id:     numTrackId,
           time_ms:      newTimeMs,
-          verified:     is_valid,
+          // is_valid a été vérifié plus haut : on stocke un vrai booléen.
+          verified:     true,
           drivetrain,
           car_class,
-          car_pi,
-          num_cylinders,
+          car_pi:       piInt,
+          num_cylinders: cylInt,
           sectors_ms:   secteurs,
           reconstructed: estReconstruit,
         }])
