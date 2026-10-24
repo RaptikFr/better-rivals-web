@@ -1,9 +1,14 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 
-// Icône carrée « BR » aux couleurs du site (dégradé rose → violet), générée à
-// la volée : icône Apple (app/apple-icon.tsx) et icônes du manifest PWA
-// (app/icons/[taille]/route.tsx). Pas de fichier binaire à maintenir.
-export function iconeBetterRivals(taille: number, arrondi = true) {
+// Icônes du manifest PWA (app/icons/[taille]/route.tsx) à partir du logo
+// app/apple-icon.png (seule source, 180 px) : posé à 80 % sur fond sombre, ce
+// qui respecte la zone de sécurité des icônes « maskable » Android.
+export async function iconeManifest(taille: number) {
+  const logo = await readFile(join(process.cwd(), 'app', 'apple-icon.png'));
+  const src = `data:image/png;base64,${logo.toString('base64')}`;
+  const cote = Math.round(taille * 0.8);
   return new ImageResponse(
     (
       <div
@@ -13,15 +18,11 @@ export function iconeBetterRivals(taille: number, arrondi = true) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #ec4899 0%, #7c3aed 100%)',
-          borderRadius: arrondi ? taille * 0.2 : 0,
-          color: 'white',
-          fontSize: taille * 0.46,
-          fontWeight: 900,
-          letterSpacing: -taille * 0.02,
+          background: '#0a0a0a',
         }}
       >
-        BR
+        {/* eslint-disable-next-line @next/next/no-img-element -- rendu Satori (ImageResponse), next/image n'y existe pas */}
+        <img src={src} width={cote} height={cote} alt="" />
       </div>
     ),
     { width: taille, height: taille },
